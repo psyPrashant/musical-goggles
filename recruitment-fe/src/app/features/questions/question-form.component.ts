@@ -221,7 +221,7 @@ export class QuestionFormComponent implements OnInit {
       body: this.form.get('body')!.value!,
       tags,
       ...(type === 'MCQ' && { options: this.options.value }),
-      ...(type === 'CODE_SUBMISSION' && { languageHint: this.form.get('languageHint')!.value }),
+      ...(type === 'CODE_SUBMISSION' && { languageHint: this.form.get('languageHint')!.value ?? undefined }),
     };
 
     this.saving.set(true);
