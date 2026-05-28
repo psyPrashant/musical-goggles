@@ -31,6 +31,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
+      - name: Make mvnw executable
+        run: chmod +x mvnw
+
       - name: Build
         run: ./mvnw clean package -DskipTests -q
 
@@ -67,4 +70,4 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Test
-        run: npm test -- --run
+        run: npm test
