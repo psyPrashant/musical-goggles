@@ -12,3 +12,57 @@
 
 ---
 
+## 2026-05-28 | hvbentley14
+
+> Please look at the 'Musical Goggles' board on Jira and plan out the work for the epics 'EP-01 - Auth & Access control' and 'EP-02 - Question Bank' and 'EP-07 - Infrastructure' I want the first sprint to begin and to track tickets through the board.
+
+---
+
+## 2026-05-28 | hvbentley14
+
+> [interrupted] Resume but use openspec workflow for the stories
+
+---
+
+## 2026-05-28 | hvbentley14
+
+> The sprint is called 'MG Sprint 1'. Create a branch off of main for this work.
+
+---
+
+## 2026-05-28 | hvbentley14
+
+> /opsx:apply
+
+---
+
+## 2026-05-28 | hvbentley14
+
+> CI Backend error: Run ./mvnw clean package -DskipTests -q — ./mvnw: Permission denied (exit code 126). CI Frontend error: npm test -- --run → ng test --run → Error: Unknown argument: run (exit code 1).
+
+---
+
+## 2026-05-28 | hvbentley14
+
+> CI backend still failing, throwing error: Failed to determine a suitable driver class (UnsatisfiedDependencyException on dataSourceScriptDatabaseInitializer).
+
+---
+
+## 2026-05-28 | hvbentley14
+
+> update the openspec archive for the work done, then update the jira board
+
+---
+
+## 2026-05-28 | hvbentley14
+
+> /opsx:apply
+
+---
+
+## 2026-05-28 | hvbentley14
+
+> in the root of the project is a prompts.md file. please update that document with all the prompts I have used. Then Sync Now
+
+---
+

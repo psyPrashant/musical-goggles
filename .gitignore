@@ -1,0 +1,6 @@
+# Environment secrets — never commit
+.env
+
+# OS
+.DS_Store
+Thumbs.db

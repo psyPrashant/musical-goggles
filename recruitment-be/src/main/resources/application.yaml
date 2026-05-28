@@ -1,3 +1,18 @@
 spring:
   application:
     name: recruitment
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/recruitment}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+jwt:
+  secret: ${JWT_SECRET:change-this-in-production-must-be-at-least-32-chars}
+  expiry-hours: ${JWT_EXPIRY_HOURS:1}
