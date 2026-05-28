@@ -66,3 +66,47 @@
 
 ---
 
+## 2026-05-28 | psyHFM
+
+> check frontend is working
+
+---
+
+## 2026-05-28 | psyHFM
+
+> check port 4200 now , change back to 4200 if unoccupied
+
+---
+
+## 2026-05-28 | psyHFM
+
+> commit this and make PR
+
+---
+
+## 2026-05-28 | psyHFM
+
+> check this existing PR frontend and backend Checks
+
+---
+
+## 2026-05-28 | psyHFM
+
+> thanks bro
+
+---
+
+## 2026-05-28 | psyHFM
+
+> update subtasks in jira, to done
+
+---
+
+## 2026-05-28 | psyHFM
+
+> /opsx:archive
+
+---
+
+
+
