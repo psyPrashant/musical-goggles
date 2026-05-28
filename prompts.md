@@ -109,4 +109,28 @@
 ---
 
 
+## 2026-05-28 | hendrik.muller
+
+> check if you can login to dashboard with playwright
+
+---
+
+## 2026-05-28 | hendrik.muller
+
+> check roles for dev login
+
+---
+
+## 2026-05-28 | hendrik.muller
+
+> submit button for text and codesubmission questions on question creation form does not work
+
+---
+
+## 2026-05-28 | hendrik.muller
+
+> commit and push make PR
+
+---
+    
 
