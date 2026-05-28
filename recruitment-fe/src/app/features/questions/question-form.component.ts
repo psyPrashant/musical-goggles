@@ -170,10 +170,14 @@ export class QuestionFormComponent implements OnInit {
 
   onTypeChange() {
     this.mcqError.set(null);
-    if (this.form.get('type')?.value === 'MCQ' && this.options.length < 2) {
+    if (this.form.get('type')?.value === 'MCQ') {
+      if (this.options.length < 2) {
+        this.options.clear();
+        this.options.push(this.makeOption('', true));
+        this.options.push(this.makeOption('', false));
+      }
+    } else {
       this.options.clear();
-      this.options.push(this.makeOption('', true));
-      this.options.push(this.makeOption('', false));
     }
   }
 
