@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Psybergate — Recruitment Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:             #090b14;
+  --bg-card:        #0e1120;
+  --bg-elevated:    #141828;
+  --bg-hover:       #181e33;
+  --border:         #1c2240;
+  --border-hover:   #2a3060;
+  --accent:         #6366f1;
+  --accent-hover:   #818cf8;
+  --accent-subtle:  rgba(99,102,241,.13);
+  --text-1:         #e8eaf0;
+  --text-2:         #8892b0;
+  --text-3:         #4a5278;
+  --success:        #10b981;
+  --success-subtle: rgba(16,185,129,.12);
+  --warning:        #f59e0b;
+  --warning-subtle: rgba(245,158,11,.12);
+  --danger:         #ef4444;
+  --danger-subtle:  rgba(239,68,68,.12);
+  --info:           #3b82f6;
+  --info-subtle:    rgba(59,130,246,.12);
+  --sidebar-width:  232px;
+  --topbar-height:  54px;
+  --radius:         8px;
+  --radius-sm:      6px;
+  --radius-lg:      12px;
+  --font:           'Plus Jakarta Sans', sans-serif;
+  --font-mono:      'JetBrains Mono', monospace;
+  --density-py:     11px;
+  --density-card:   20px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text-1); height: 100vh; overflow: hidden; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+.fade-in { animation: fadeIn 200ms ease-out both; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+input, textarea, select { color-scheme: dark; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="portal-icons.jsx"></script>
+<script type="text/babel" src="portal-shared.jsx"></script>
+<script type="text/babel" src="portal-admin.jsx"></script>
+<script type="text/babel" src="portal-candidate.jsx"></script>
+
+<script type="text/babel">
+
+// ─── THEMES ───────────────────────────────────────────────────────────────────
+const THEMES = {
+  'dark-indigo': {
+    '--bg':'#090b14','--bg-card':'#0e1120','--bg-elevated':'#141828','--bg-hover':'#181e33',
+    '--border':'#1c2240','--border-hover':'#2a3060',
+    '--accent':'#6366f1','--accent-hover':'#818cf8','--accent-subtle':'rgba(99,102,241,.13)',
+    '--text-1':'#e8eaf0','--text-2':'#8892b0','--text-3':'#4a5278',
+  },
+  'dark-teal': {
+    '--bg':'#070e0d','--bg-card':'#0b1512','--bg-elevated':'#101f1b','--bg-hover':'#152822',
+    '--border':'#172e28','--border-hover':'#1f3d34',
+    '--accent':'#0d9488','--accent-hover':'#14b8a6','--accent-subtle':'rgba(13,148,136,.14)',
+    '--text-1':'#e6ecea','--text-2':'#7a9a94','--text-3':'#3a5752',
+  },
+  'light': {
+    '--bg':'#f2f3f8','--bg-card':'#ffffff','--bg-elevated':'#f8f9fc','--bg-hover':'#ebedf7',
+    '--border':'#dde0ee','--border-hover':'#c4c8de',
+    '--accent':'#4f46e5','--accent-hover':'#6366f1','--accent-subtle':'rgba(79,70,229,.08)',
+    '--text-1':'#0f1429','--text-2':'#5a6280','--text-3':'#9ca3be',
+  },
+};
+
+function applyTheme(key) {
+  const vars = THEMES[key];
+  if (!vars) return;
+  Object.entries(vars).forEach(([k,v]) => document.documentElement.style.setProperty(k,v));
+}
+
+// ─── TWEAK DEFAULTS ───────────────────────────────────────────────────────────
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "dark-indigo",
+  "density": "compact"
+}/*EDITMODE-END*/;
+
+// ─── LOGO MARK ────────────────────────────────────────────────────────────────
+function LogoMark({ size = 32 }) {
+  const r = Math.round(size * 0.25);
+  return (
+    <div style={{ width:size, height:size, borderRadius:r, background:'var(--accent)',
+      display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+      <svg width={size*.56} height={size*.56} viewBox="0 0 18 18" fill="none">
+        <path d="M3 3h6a3 3 0 0 1 0 6H3V3z" fill="white" fillOpacity="0.92"/>
+        <path d="M3 9h5l5 6H8L3 9z" fill="white" fillOpacity="0.55"/>
+      </svg>
+    </div>
+  );
+}
+
+// ─── SIDEBAR ──────────────────────────────────────────────────────────────────
+function Sidebar({ portal, screen, navigate }) {
+  const adminNav = [
+    { id:'dashboard',     label:'Dashboard',      icon:'Dashboard'     },
+    { id:'assessments',   label:'Assessments',    icon:'Assessments'   },
+    { id:'question-bank', label:'Question Bank',  icon:'QuestionBank'  },
+    { id:'candidates',    label:'Candidates',     icon:'Candidates'    },
+    { id:'results',       label:'Results',        icon:'Results'       },
+  ];
+  const candidateNav = [
+    { id:'invite',     label:'My Invitation',   icon:'Mail'        },
+    { id:'taking',     label:'Take Assessment', icon:'Play'        },
+    { id:'submitted',  label:'Submitted',       icon:'CheckCircle' },
+  ];
+  const nav = portal === 'admin' ? adminNav : candidateNav;
+
+  return (
+    <div style={{ width:'var(--sidebar-width)', height:'100vh', background:'var(--bg-card)',
+      borderRight:'1px solid var(--border)', display:'flex', flexDirection:'column', flexShrink:0 }}>
+
+      {/* Logo */}
+      <div style={{ height:'var(--topbar-height)', display:'flex', alignItems:'center',
+        padding:'0 18px', borderBottom:'1px solid var(--border)', gap:10 }}>
+        <LogoMark size={32}/>
+        <div>
+          <div style={{ fontSize:12.5, fontWeight:700, letterSpacing:'.03em', color:'var(--text-1)' }}>PSYBERGATE</div>
+          <div style={{ fontSize:9.5, color:'var(--text-3)', letterSpacing:'.07em', textTransform:'uppercase' }}>Recruitment Portal</div>
+        </div>
+      </div>
+
+      {/* Portal toggle */}
+      <div style={{ padding:'12px 12px 6px' }}>
+        <div style={{ display:'flex', background:'var(--bg)', borderRadius:'var(--radius)',
+          padding:3, border:'1px solid var(--border)', gap:3 }}>
+          {[['admin','Admin'],['candidate','Candidate']].map(([p,label]) => (
+            <button key={p} onClick={() => navigate(p, p==='admin'?'dashboard':'invite')}
+              style={{ flex:1, padding:'6px 4px', background:portal===p?'var(--accent)':'transparent',
+                color:portal===p?'#fff':'var(--text-2)', border:'none', cursor:'pointer',
+                borderRadius:'calc(var(--radius) - 2px)', fontFamily:'var(--font)',
+                fontWeight:portal===p?600:400, fontSize:12.5, transition:'all 150ms' }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Nav items */}
+      <nav style={{ flex:1, padding:'6px 10px', overflowY:'auto' }}>
+        {nav.map(item => {
+          const Icon = Icons[item.icon];
+          const active = screen===item.id || screen.startsWith(item.id+'-');
+          return (
+            <button key={item.id} onClick={() => navigate(portal, item.id)}
+              style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'9px 10px',
+                marginBottom:2, background:active?'var(--accent-subtle)':'transparent',
+                color:active?'var(--accent)':'var(--text-2)', border:'none',
+                borderRadius:'var(--radius-sm)', cursor:'pointer', fontFamily:'var(--font)',
+                fontSize:13.5, fontWeight:active?500:400, transition:'all 100ms', textAlign:'left' }}
+              onMouseEnter={e => { if(!active){ e.currentTarget.style.background='var(--bg-hover)'; e.currentTarget.style.color='var(--text-1)'; }}}
+              onMouseLeave={e => { if(!active){ e.currentTarget.style.background='transparent'; e.currentTarget.style.color='var(--text-2)'; }}}>
+              {Icon && <Icon size={16}/>}
+              {item.label}
+              {item.id==='results' && (
+                <span style={{ marginLeft:'auto', background:'var(--warning-subtle)',
+                  color:'var(--warning)', fontSize:11, fontWeight:600, padding:'1px 7px', borderRadius:999 }}>2</span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* User area */}
+      <div style={{ padding:'10px 12px', borderTop:'1px solid var(--border)' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px',
+          borderRadius:'var(--radius-sm)', cursor:'pointer', transition:'background 120ms' }}
+          onMouseEnter={e=>e.currentTarget.style.background='var(--bg-hover)'}
+          onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+          <div style={{ width:30, height:30, borderRadius:'50%', background:'var(--accent-subtle)',
+            border:'1.5px solid var(--accent)', display:'flex', alignItems:'center', justifyContent:'center',
+            fontSize:11.5, fontWeight:700, color:'var(--accent)', flexShrink:0 }}>
+            {portal==='admin'?'AU':'AT'}
+          </div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:13, fontWeight:500, color:'var(--text-1)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+              {portal==='admin'?'Admin User':'Alex Thompson'}
+            </div>
+            <div style={{ fontSize:10.5, color:'var(--text-3)', marginTop:1 }}>
+              {portal==='admin'?'Administrator':'Candidate'}
+            </div>
+          </div>
+          <Icons.Sliders size={13} style={{ color:'var(--text-3)', flexShrink:0 }}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── TWEAKS PANEL ─────────────────────────────────────────────────────────────
+function TweaksPanel({ tweaks, setTweak, onClose }) {
+  return (
+    <div style={{ position:'fixed', bottom:20, right:20, width:252, background:'var(--bg-card)',
+      border:'1px solid var(--border)', borderRadius:'var(--radius-lg)', zIndex:1000,
+      overflow:'hidden', boxShadow:'0 20px 60px rgba(0,0,0,.5)' }}>
+      <div style={{ padding:'12px 16px', borderBottom:'1px solid var(--border)',
+        display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <span style={{ fontSize:13, fontWeight:600 }}>Tweaks</span>
+        <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer',
+          color:'var(--text-3)', display:'flex', padding:3, borderRadius:4 }}>
+          <Icons.X size={15}/>
+        </button>
+      </div>
+      <div style={{ padding:'14px 16px', display:'flex', flexDirection:'column', gap:18 }}>
+        <div>
+          <div style={{ fontSize:10.5, fontWeight:600, color:'var(--text-3)', textTransform:'uppercase',
+            letterSpacing:'.07em', marginBottom:8 }}>Theme</div>
+          <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+            {[
+              { val:'dark-indigo', label:'Dark Indigo',  dot:'#6366f1' },
+              { val:'dark-teal',   label:'Dark Teal',    dot:'#0d9488' },
+              { val:'light',       label:'Light',        dot:'#4f46e5' },
+            ].map(t => (
+              <button key={t.val} onClick={() => setTweak('theme',t.val)}
+                style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 10px',
+                  background: tweaks.theme===t.val?'var(--accent-subtle)':'transparent',
+                  border:`1px solid ${tweaks.theme===t.val?'var(--accent)':'var(--border)'}`,
+                  borderRadius:'var(--radius-sm)', cursor:'pointer', fontFamily:'var(--font)',
+                  fontSize:13, color:tweaks.theme===t.val?'var(--accent)':'var(--text-2)', textAlign:'left' }}>
+                <div style={{ width:12, height:12, borderRadius:'50%', background:t.dot, flexShrink:0 }}/>
+                {t.label}
+                {tweaks.theme===t.val && <Icons.Check size={13} style={{ marginLeft:'auto', color:'var(--accent)' }}/>}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div style={{ fontSize:10.5, fontWeight:600, color:'var(--text-3)', textTransform:'uppercase',
+            letterSpacing:'.07em', marginBottom:8 }}>Density</div>
+          <div style={{ display:'flex', gap:6 }}>
+            {['comfortable','compact'].map(d => (
+              <button key={d} onClick={() => setTweak('density',d)}
+                style={{ flex:1, padding:'7px', background:tweaks.density===d?'var(--accent-subtle)':'transparent',
+                  border:`1px solid ${tweaks.density===d?'var(--accent)':'var(--border)'}`,
+                  borderRadius:'var(--radius-sm)', cursor:'pointer', fontFamily:'var(--font)',
+                  fontSize:12, color:tweaks.density===d?'var(--accent)':'var(--text-2)', textTransform:'capitalize' }}>
+                {d}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── APP ──────────────────────────────────────────────────────────────────────
+function App() {
+  const [tweaks,      setTweaksState] = React.useState(TWEAK_DEFAULTS);
+  const [tweaksOpen,  setTweaksOpen]  = React.useState(false);
+  const [portal,      setPortal]      = React.useState('admin');
+  const [screen,      setScreen]      = React.useState('dashboard');
+  const [screenState, setScreenState] = React.useState({});
+
+  React.useEffect(() => { applyTheme(tweaks.theme); }, [tweaks.theme]);
+
+  React.useEffect(() => {
+    document.documentElement.style.setProperty('--density-py',   tweaks.density==='compact'?'7px':'11px');
+    document.documentElement.style.setProperty('--density-card', tweaks.density==='compact'?'14px':'20px');
+  }, [tweaks.density]);
+
+  React.useEffect(() => {
+    const handler = e => {
+      if (e.data?.type==='__activate_edit_mode')   setTweaksOpen(true);
+      if (e.data?.type==='__deactivate_edit_mode') setTweaksOpen(false);
+    };
+    window.addEventListener('message', handler);
+    window.parent.postMessage({ type:'__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  const setTweak = (key, val) => {
+    setTweaksState(t => ({...t,[key]:val}));
+    window.parent.postMessage({ type:'__edit_mode_set_keys', edits:{[key]:val} }, '*');
+  };
+
+  const navigate = (newPortal, newScreen, state={}) => {
+    setPortal(newPortal);
+    setScreen(newScreen);
+    setScreenState(state);
+  };
+
+  return (
+    <div style={{ display:'flex', height:'100vh', overflow:'hidden' }}>
+      <Sidebar portal={portal} screen={screen} navigate={navigate}/>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', background:'var(--bg)' }}>
+        {portal==='admin'
+          ? <AdminPortal     screen={screen} screenState={screenState} navigate={navigate}/>
+          : <CandidatePortal screen={screen} screenState={screenState} navigate={navigate}/>
+        }
+      </div>
+      {tweaksOpen && (
+        <TweaksPanel tweaks={tweaks} setTweak={setTweak} onClose={() => {
+          setTweaksOpen(false);
+          window.parent.postMessage({ type:'__edit_mode_dismissed' }, '*');
+        }}/>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
