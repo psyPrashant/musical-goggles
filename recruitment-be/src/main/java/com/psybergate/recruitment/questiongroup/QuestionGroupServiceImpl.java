@@ -87,10 +87,11 @@ public class QuestionGroupServiceImpl implements QuestionGroupService {
                     item.setQuestion(question);
                     item.setDisplayOrder(req.displayOrder());
                     itemRepository.save(item);
+                    group.getItems().add(item);
                 }
         );
 
-        return toResponse(groupRepository.findById(groupId).orElseThrow());
+        return toResponse(group);
     }
 
     @Override
