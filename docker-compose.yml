@@ -2,16 +2,15 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: recruitment
-      POSTGRES_USER: recruitment
-      POSTGRES_PASSWORD: recruitment
+      POSTGRES_DB: ${DB_NAME:-recruitment}
+      POSTGRES_USER: ${DB_USER:-recruitment}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-recruitment}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U recruitment"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-recruitment}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -21,9 +20,10 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/recruitment
-      SPRING_DATASOURCE_USERNAME: recruitment
-      SPRING_DATASOURCE_PASSWORD: recruitment
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME:-recruitment}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-recruitment}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-recruitment}
     depends_on:
       db:
         condition: service_healthy
