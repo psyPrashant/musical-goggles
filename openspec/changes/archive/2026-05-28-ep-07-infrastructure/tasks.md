@@ -22,9 +22,9 @@
 - [x] 3.2 Configure Flyway in `application.yaml`: set `spring.flyway.locations=classpath:db/migration`
 - [x] 3.3 Create directory `recruitment-be/src/main/resources/db/migration/`
 - [x] 3.4 Write `V1__baseline.sql` creating all Sprint 1 tables (users, roles, questions, question_groups, question_group_items, question_tags)
-- [ ] 3.5 Start the app against a fresh database and confirm Flyway applies V1 without errors
-- [ ] 3.6 Verify `flyway_schema_history` table is created and contains one record for V1
-- [ ] 3.7 Add a second test migration `V2__test_migration.sql`, start the app, confirm it applies; then delete V2 (it was a validation-only step)
+- [x] 3.5 Start the app against a fresh database and confirm Flyway applies V1 without errors
+- [x] 3.6 Verify `flyway_schema_history` table is created and contains one record for V1
+- [x] 3.7 Add a second test migration `V2__test_migration.sql`, start the app, confirm it applies; then delete V2 (it was a validation-only step)
 
 ## 4. CI/CD Pipeline — GitHub Actions (MG-42)
 
@@ -33,5 +33,5 @@
 - [x] 4.3 Add backend job: `actions/checkout`, `actions/setup-java@v4` (Java 17, Temurin), `actions/cache` for `~/.m2`, `./mvnw clean package`, `./mvnw test` — working directory `recruitment-be/`
 - [x] 4.4 Add frontend job: `actions/checkout`, `actions/setup-node@v4` (Node version from `package.json`), `actions/cache` for `node_modules` keyed on `package-lock.json`, `npm ci`, `npx tsc --noEmit`, `npm test -- --run` — working directory `recruitment-fe/`
 - [x] 4.5 Confirm both jobs are defined at the same level in the workflow (parallel, not sequential)
-- [ ] 4.6 Push the workflow file on a feature branch and verify both jobs appear and pass in GitHub Actions
-- [ ] 4.7 Open a PR to `main` and confirm the CI status check appears and is required before merge
+- [x] 4.6 Push the workflow file on a feature branch and verify both jobs appear and pass in GitHub Actions
+- [x] 4.7 Open a PR to `main` and confirm the CI status check appears and is required before merge

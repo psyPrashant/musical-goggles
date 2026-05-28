@@ -31,13 +31,11 @@ CREATE TABLE IF NOT EXISTS SPRING_SESSION_ATTRIBUTES (
 -- EP-01: Auth & Access Control
 -- ============================================================
 
-CREATE TYPE user_role AS ENUM ('ADMIN', 'RECRUITER', 'CANDIDATE');
-
 CREATE TABLE users (
     id            UUID         NOT NULL DEFAULT gen_random_uuid(),
     email         VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255),
-    role          user_role    NOT NULL,
+    role          VARCHAR(20)  NOT NULL CHECK (role IN ('ADMIN', 'RECRUITER', 'CANDIDATE')),
     created_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
     CONSTRAINT users_pk PRIMARY KEY (id),
@@ -48,16 +46,14 @@ CREATE TABLE users (
 -- EP-02: Question Bank
 -- ============================================================
 
-CREATE TYPE question_type AS ENUM ('MCQ', 'TEXT', 'CODE_SUBMISSION');
-
 CREATE TABLE questions (
-    id           UUID          NOT NULL DEFAULT gen_random_uuid(),
-    title        VARCHAR(500)  NOT NULL,
-    body         TEXT          NOT NULL,
-    type         question_type NOT NULL,
-    created_by   UUID          NOT NULL REFERENCES users (id),
-    created_at   TIMESTAMPTZ   NOT NULL DEFAULT now(),
-    updated_at   TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    id           UUID         NOT NULL DEFAULT gen_random_uuid(),
+    title        VARCHAR(500) NOT NULL,
+    body         TEXT         NOT NULL,
+    type         VARCHAR(30)  NOT NULL CHECK (type IN ('MCQ', 'TEXT', 'CODE_SUBMISSION')),
+    created_by   UUID         NOT NULL REFERENCES users (id),
+    created_at   TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    updated_at   TIMESTAMPTZ  NOT NULL DEFAULT now(),
     CONSTRAINT questions_pk PRIMARY KEY (id)
 );
 
