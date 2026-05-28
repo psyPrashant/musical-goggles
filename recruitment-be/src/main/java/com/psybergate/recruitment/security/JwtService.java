@@ -65,11 +65,11 @@ public class JwtService {
         }
     }
 
-    long getExpiryHours() {
+    public long getExpiryHours() {
         return expiryHours;
     }
 
-    SecretKey getSigningKey() {
+    public SecretKey getSigningKey() {
         return signingKey;
     }
 }

@@ -14,21 +14,6 @@ jobs:
       run:
         working-directory: recruitment-be
 
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: recruitment
-          POSTGRES_USER: recruitment
-          POSTGRES_PASSWORD: recruitment
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
 
@@ -54,12 +39,6 @@ jobs:
 
       - name: Test
         run: ./mvnw test
-        env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/recruitment
-          SPRING_DATASOURCE_USERNAME: recruitment
-          SPRING_DATASOURCE_PASSWORD: recruitment
-          SPRING_JPA_HIBERNATE_DDL_AUTO: validate
-          SPRING_JPA_SHOW_SQL: "false"
 
   frontend:
     name: Frontend — Type-check & Test
