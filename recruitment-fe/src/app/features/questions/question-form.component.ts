@@ -63,7 +63,7 @@ import { QuestionType } from '../../core/question/question.model';
           <div class="field">
             <label>Options <span class="hint">(mark exactly one correct)</span></label>
             <div formArrayName="options" class="options-list">
-              @for (opt of options.controls; track $index; let i = $index) {
+              @for (opt of options.controls; track opt; let i = $index) {
                 <div [formGroupName]="i" class="option-row">
                   <input type="radio" name="correctOption" [value]="i"
                          [checked]="opt.get('correct')?.value"
