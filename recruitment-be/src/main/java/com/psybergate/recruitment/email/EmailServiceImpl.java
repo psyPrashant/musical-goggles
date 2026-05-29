@@ -22,23 +22,28 @@ public class EmailServiceImpl implements EmailService {
 
     @Override
     public void sendInvitation(Candidate candidate, Assessment assessment,
-                                String invitationLink, Instant expiresAt) {
+                                String invitationLink, Instant expiresAt, String plainPassword) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(candidate.getEmail());
         message.setSubject("Your Assessment Invitation: " + assessment.getTitle());
-        message.setText(buildBody(candidate, assessment, invitationLink, expiresAt));
+        message.setText(buildBody(candidate, assessment, invitationLink, expiresAt, plainPassword));
         mailSender.send(message);
     }
 
     private String buildBody(Candidate candidate, Assessment assessment,
-                              String invitationLink, Instant expiresAt) {
-        return "Hi " + candidate.getFirstName() + ",\n\n"
-                + "You have been invited to complete the following assessment:\n"
-                + "  " + assessment.getTitle() + "\n\n"
-                + "Click the link below to begin:\n"
-                + "  " + invitationLink + "\n\n"
-                + "This invitation expires at: " + EXPIRY_FMT.format(expiresAt) + "\n\n"
-                + "Good luck!\n"
-                + "The Psybergate Recruitment Team";
+                              String invitationLink, Instant expiresAt, String plainPassword) {
+        StringBuilder body = new StringBuilder();
+        body.append("Hi ").append(candidate.getFirstName()).append(",\n\n")
+            .append("You have been invited to complete the following assessment:\n")
+            .append("  ").append(assessment.getTitle()).append("\n\n")
+            .append("Click the link below to begin:\n")
+            .append("  ").append(invitationLink).append("\n\n");
+        if (plainPassword != null && !plainPassword.isBlank()) {
+            body.append("Assessment password: ").append(plainPassword).append("\n\n");
+        }
+        body.append("This invitation expires at: ").append(EXPIRY_FMT.format(expiresAt)).append("\n\n")
+            .append("Good luck!\n")
+            .append("The Psybergate Recruitment Team");
+        return body.toString();
     }
 }

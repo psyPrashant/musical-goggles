@@ -6,5 +6,5 @@ import com.psybergate.recruitment.domain.Candidate;
 import java.time.Instant;
 
 public interface EmailService {
-    void sendInvitation(Candidate candidate, Assessment assessment, String invitationLink, Instant expiresAt);
+    void sendInvitation(Candidate candidate, Assessment assessment, String invitationLink, Instant expiresAt, String plainPassword);
 }

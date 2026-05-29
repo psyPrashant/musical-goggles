@@ -107,6 +107,16 @@ import { Question } from '../../core/question/question.model';
                   }
                 </div>
               </div>
+
+              @if (accessType() === 'password') {
+                <div class="field">
+                  <label class="field-label">Access Password</label>
+                  <input type="password" class="field-input" [value]="accessPassword()"
+                         (input)="accessPassword.set($any($event.target).value)"
+                         placeholder="Enter password for candidates…" autocomplete="new-password"/>
+                  <span class="field-hint">Candidates must enter this before starting</span>
+                </div>
+              }
             </form>
           </div>
         }
@@ -776,6 +786,7 @@ export class AssessmentBuilderComponent implements OnInit {
 
   readonly passingScore = signal(70);
   readonly accessType = signal<'invite' | 'password' | 'open'>('invite');
+  readonly accessPassword = signal('');
   readonly startDate = signal('');
   readonly endDate = signal('');
   readonly notifyOnSubmit = signal(true);
@@ -843,6 +854,9 @@ export class AssessmentBuilderComponent implements OnInit {
             description: a.description ?? '',
             timeLimitMinutes: a.timeLimitMinutes,
           });
+          if (a.passwordProtected) {
+            this.accessType.set('password');
+          }
           if (!isEditPath) {
             this.step.set(2);
           }
@@ -884,7 +898,8 @@ export class AssessmentBuilderComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
     const { title, description, timeLimitMinutes } = this.form.getRawValue();
-    const req = { title, description: description || null, timeLimitMinutes };
+    const accessPassword = this.accessType() === 'password' ? (this.accessPassword() || null) : null;
+    const req = { title, description: description || null, timeLimitMinutes, accessPassword };
     const existing = this.assessment();
 
     const op = existing
