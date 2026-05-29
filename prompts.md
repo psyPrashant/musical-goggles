@@ -156,3 +156,15 @@
 > update my propmts to file prompts.md
 
 ---
+## 2026-05-29 09:52 | prashant.kessa
+
+> when i run docker, the login gives me a 404.  POST http://localhost:4200/api/auth/login 404 (Not Found)
+
+---
+
+## 2026-05-29 10:01 | prashant.kessa
+
+> create a new branch, commit and push. then open a pr
+
+---
+
