@@ -168,3 +168,15 @@
 
 ---
 
+## 2026-05-29 10:14 | prashant.kessa
+
+> please look at the "Musical Goggles" jira and plan out the work for epic 3, the assessment builder, and use the openspec workflow. switch to a new branch before starting.
+
+---
+
+## 2026-05-29 10:31 | prashant.kessa
+
+> you can continue with the openspec workflow
+
+---
+

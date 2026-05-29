@@ -40,5 +40,35 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/question-groups/question-group-detail.component').then(m => m.QuestionGroupDetailComponent),
   },
+  {
+    path: 'assessments',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/assessments/assessments.component').then(m => m.AssessmentsComponent),
+  },
+  {
+    path: 'assessments/new',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/assessments/assessment-form.component').then(m => m.AssessmentFormComponent),
+  },
+  {
+    path: 'assessments/:id/edit',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/assessments/assessment-form.component').then(m => m.AssessmentFormComponent),
+  },
+  {
+    path: 'assessments/:id/preview',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/assessments/assessment-preview.component').then(m => m.AssessmentPreviewComponent),
+  },
+  {
+    path: 'assessments/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/assessments/assessment-detail.component').then(m => m.AssessmentDetailComponent),
+  },
   { path: '', redirectTo: 'login', pathMatch: 'full' },
 ];
