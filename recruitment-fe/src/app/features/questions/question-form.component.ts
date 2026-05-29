@@ -10,112 +10,228 @@ import { QuestionType } from '../../core/question/question.model';
   template: `
     <div class="page">
       <div class="page-header">
-        <h2>{{ editId() ? 'Edit Question' : 'New Question' }}</h2>
-        <a routerLink="/questions" class="btn-link">← Back</a>
+        <div>
+          <h1 class="page-title">{{ editId() ? 'Edit Question' : 'Add Question' }}</h1>
+        </div>
+        <a routerLink="/questions" class="btn btn-ghost btn-sm">← Back to Bank</a>
       </div>
 
-      <form [formGroup]="form" (ngSubmit)="submit()" class="q-form">
+      <div class="content">
+        <div class="form-card">
+          <form [formGroup]="form" (ngSubmit)="submit()">
 
-        <!-- Type -->
-        <div class="field">
-          <label>Type</label>
-          <select formControlName="type" (change)="onTypeChange()">
-            <option value="MCQ">MCQ</option>
-            <option value="TEXT">Text</option>
-            <option value="CODE_SUBMISSION">Code Submission</option>
-          </select>
-        </div>
+            <div class="field">
+              <label class="field-label">Question Type</label>
+              <div class="type-selector">
+                @for (t of typeOptions; track t.value) {
+                  <button type="button" class="type-btn" [class.active]="form.get('type')?.value === t.value"
+                    (click)="setType(t.value)">{{ t.label }}</button>
+                }
+              </div>
+            </div>
 
-        <!-- Title -->
-        <div class="field">
-          <label>Title</label>
-          <input type="text" formControlName="title" placeholder="Question title" />
-          @if (form.get('title')?.invalid && form.get('title')?.touched) {
-            <span class="err">Title is required</span>
-          }
-        </div>
-
-        <!-- Body -->
-        <div class="field">
-          <label>Body</label>
-          <textarea formControlName="body" rows="4" placeholder="Question details…"></textarea>
-          @if (form.get('body')?.invalid && form.get('body')?.touched) {
-            <span class="err">Body is required</span>
-          }
-        </div>
-
-        <!-- Tags -->
-        <div class="field">
-          <label>Tags <span class="hint">(comma-separated)</span></label>
-          <input type="text" formControlName="tagsRaw" placeholder="e.g. java, oop, sql" />
-        </div>
-
-        <!-- CODE_SUBMISSION: language hint -->
-        @if (form.get('type')?.value === 'CODE_SUBMISSION') {
-          <div class="field">
-            <label>Language hint</label>
-            <input type="text" formControlName="languageHint" placeholder="e.g. java, python" />
-          </div>
-        }
-
-        <!-- MCQ options -->
-        @if (form.get('type')?.value === 'MCQ') {
-          <div class="field">
-            <label>Options <span class="hint">(mark exactly one correct)</span></label>
-            <div formArrayName="options" class="options-list">
-              @for (opt of options.controls; track opt; let i = $index) {
-                <div [formGroupName]="i" class="option-row">
-                  <input type="radio" name="correctOption" [value]="i"
-                         [checked]="opt.get('correct')?.value"
-                         (change)="markCorrect(i)"
-                         title="Mark as correct" />
-                  <input type="text" formControlName="text" placeholder="Option text" class="opt-text" />
-                  <button type="button" class="btn-icon" (click)="removeOption(i)" [disabled]="options.length <= 2">✕</button>
-                </div>
+            <div class="field">
+              <label class="field-label">Question Title <span class="required">*</span></label>
+              <input formControlName="title" class="field-input" placeholder="e.g. What is the time complexity of binary search?"/>
+              @if (form.get('title')?.invalid && form.get('title')?.touched) {
+                <span class="field-err">Title is required</span>
               }
             </div>
-            <button type="button" class="btn-add" (click)="addOption()">+ Add option</button>
-            @if (mcqError()) {
-              <span class="err">{{ mcqError() }}</span>
+
+            <div class="field">
+              <label class="field-label">Question Body <span class="required">*</span></label>
+              <textarea formControlName="body" class="field-textarea" rows="4" placeholder="Detailed question description…"></textarea>
+              @if (form.get('body')?.invalid && form.get('body')?.touched) {
+                <span class="field-err">Body is required</span>
+              }
+            </div>
+
+            <div class="field">
+              <label class="field-label">Tags <span class="field-hint-inline">(comma-separated)</span></label>
+              <input formControlName="tagsRaw" class="field-input" placeholder="e.g. algorithms, java, sql"/>
+            </div>
+
+            @if (form.get('type')?.value === 'CODE_SUBMISSION') {
+              <div class="field">
+                <label class="field-label">Language Hint</label>
+                <input formControlName="languageHint" class="field-input" placeholder="e.g. java, python, javascript"/>
+              </div>
             }
-          </div>
-        }
 
-        @if (error()) {
-          <p class="error">{{ error() }}</p>
-        }
+            @if (form.get('type')?.value === 'MCQ') {
+              <div class="field">
+                <label class="field-label">Answer Options <span class="field-hint-inline">(select the correct one)</span></label>
+                <div formArrayName="options" class="options-list">
+                  @for (opt of options.controls; track opt; let i = $index) {
+                    <div [formGroupName]="i" class="option-row">
+                      <div class="radio-wrap" (click)="markCorrect(i)">
+                        <div class="radio-circle" [class.selected]="opt.get('correct')?.value">
+                          @if (opt.get('correct')?.value) {
+                            <div class="radio-dot"></div>
+                          }
+                        </div>
+                        <span class="option-letter">{{ optionLetter(i) }}</span>
+                      </div>
+                      <input type="text" formControlName="text" class="field-input opt-input" [placeholder]="'Option ' + optionLetter(i)"/>
+                      <button type="button" class="icon-btn" (click)="removeOption(i)" [disabled]="options.length <= 2" title="Remove option">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M18 6L6 18M6 6l12 12"/>
+                        </svg>
+                      </button>
+                    </div>
+                  }
+                </div>
+                <button type="button" class="add-option-btn" (click)="addOption()">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                  Add option
+                </button>
+                @if (mcqError()) {
+                  <span class="field-err">{{ mcqError() }}</span>
+                }
+              </div>
+            }
 
-        <div class="form-actions">
-          <a routerLink="/questions" class="btn-secondary">Cancel</a>
-          <button type="submit" class="btn-primary" [disabled]="saving()">
-            {{ saving() ? 'Saving…' : (editId() ? 'Save Changes' : 'Create Question') }}
-          </button>
+            @if (error()) {
+              <div class="error-banner">{{ error() }}</div>
+            }
+
+            <div class="form-actions">
+              <a routerLink="/questions" class="btn btn-secondary">Cancel</a>
+              <button type="submit" class="btn btn-primary" [disabled]="saving()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                {{ saving() ? 'Saving…' : (editId() ? 'Save Changes' : 'Create Question') }}
+              </button>
+            </div>
+          </form>
         </div>
-      </form>
+      </div>
     </div>
   `,
   styles: [`
-    .page { padding: 1.5rem; max-width: 700px; margin: 0 auto; }
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-    .btn-link { color: #2563eb; text-decoration: none; }
-    .q-form { display: flex; flex-direction: column; gap: 1.25rem; }
-    .field { display: flex; flex-direction: column; gap: 0.4rem; }
-    label { font-weight: 600; font-size: 0.9rem; }
-    .hint { font-weight: 400; color: #6b7280; font-size: 0.8rem; }
-    input[type=text], textarea, select { padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem; width: 100%; box-sizing: border-box; }
-    textarea { resize: vertical; }
-    .options-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.5rem; }
-    .option-row { display: flex; align-items: center; gap: 0.5rem; }
-    .opt-text { flex: 1; }
-    .btn-icon { background: none; border: none; cursor: pointer; color: #6b7280; font-size: 1rem; padding: 0.25rem; }
-    .btn-icon:disabled { opacity: 0.3; }
-    .btn-add { background: none; border: 1px dashed #d1d5db; border-radius: 6px; padding: 0.4rem 1rem; cursor: pointer; color: #2563eb; font-size: 0.85rem; align-self: flex-start; }
-    .err { color: #b91c1c; font-size: 0.8rem; }
-    .error { color: #b91c1c; }
-    .form-actions { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 0.5rem; }
-    .btn-primary { background: #2563eb; color: #fff; padding: 0.6rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; }
-    .btn-primary:disabled { opacity: 0.6; }
-    .btn-secondary { background: #e5e7eb; color: #374151; padding: 0.6rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; font-size: 0.95rem; }
+    .page { display: flex; flex-direction: column; min-height: 100vh; }
+
+    .page-header {
+      height: var(--topbar-height);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; border-bottom: 1px solid var(--border);
+      background: var(--bg-card); flex-shrink: 0;
+    }
+
+    .page-title { font-size: 15px; font-weight: 600; color: var(--text-1); letter-spacing: -0.01em; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      border: 1px solid transparent; transition: all 120ms;
+      text-decoration: none; white-space: nowrap;
+    }
+    .btn-sm { padding: 5px 11px; font-size: 12px; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary { background: var(--bg-elevated); color: var(--text-1); border-color: var(--border); }
+    .btn-secondary:hover { background: var(--bg-hover); }
+    .btn-ghost { background: transparent; color: var(--text-2); }
+    .btn-ghost:hover { background: var(--bg-hover); color: var(--text-1); }
+
+    .content { padding: 24px; overflow-y: auto; flex: 1; }
+
+    .form-card {
+      max-width: 640px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 24px;
+    }
+
+    .field { margin-bottom: 18px; }
+
+    .field-label { display: block; font-size: 13px; font-weight: 500; color: var(--text-2); margin-bottom: 6px; }
+
+    .field-hint-inline { font-weight: 400; color: var(--text-3); font-size: 11.5px; }
+
+    .required { color: var(--danger); }
+
+    .field-input {
+      width: 100%; padding: 8px 12px;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-1);
+      font-size: 13.5px; outline: none; transition: border-color 150ms;
+    }
+    .field-input:focus { border-color: var(--accent); }
+    .field-input::placeholder { color: var(--text-3); }
+
+    .field-textarea {
+      width: 100%; padding: 8px 12px;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-1);
+      font-size: 13.5px; outline: none; resize: vertical; line-height: 1.6; transition: border-color 150ms;
+    }
+    .field-textarea:focus { border-color: var(--accent); }
+    .field-textarea::placeholder { color: var(--text-3); }
+
+    .field-err { font-size: 11.5px; color: var(--danger); margin-top: 4px; display: block; }
+
+    .type-selector { display: flex; gap: 6px; }
+
+    .type-btn {
+      flex: 1; padding: 7px;
+      background: var(--bg-elevated); color: var(--text-2);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      cursor: pointer; font-family: var(--font); font-size: 13px; font-weight: 400;
+      transition: all 120ms;
+    }
+    .type-btn:hover { background: var(--bg-hover); color: var(--text-1); }
+    .type-btn.active { background: var(--accent-subtle); color: var(--accent); border-color: var(--accent); font-weight: 600; }
+
+    .options-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+
+    .option-row { display: flex; align-items: center; gap: 8px; }
+
+    .radio-wrap {
+      display: flex; align-items: center; gap: 8px; cursor: pointer;
+    }
+
+    .radio-circle {
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      transition: border-color 120ms;
+    }
+    .radio-circle.selected { border-color: var(--accent); }
+
+    .radio-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+    .option-letter { font-size: 12px; font-weight: 600; color: var(--text-3); width: 18px; }
+
+    .opt-input { flex: 1; }
+
+    .icon-btn {
+      background: none; border: none; cursor: pointer; padding: 4px;
+      border-radius: 4px; display: flex; align-items: center; color: var(--text-3);
+      transition: color 120ms, background 120ms; flex-shrink: 0;
+    }
+    .icon-btn:hover { color: var(--danger); background: var(--danger-subtle); }
+    .icon-btn:disabled { opacity: 0.3; cursor: default; }
+
+    .add-option-btn {
+      display: flex; align-items: center; gap: 6px;
+      background: none; border: 1px dashed var(--border);
+      border-radius: var(--radius-sm); padding: 6px 14px;
+      cursor: pointer; color: var(--accent); font-size: 12.5px;
+      font-family: var(--font); transition: all 120ms;
+    }
+    .add-option-btn:hover { background: var(--accent-subtle); border-color: var(--accent); }
+
+    .error-banner {
+      padding: 10px 14px; background: var(--danger-subtle);
+      border: 1px solid rgba(239,68,68,.25); border-radius: var(--radius-sm);
+      color: var(--danger); font-size: 13px; margin-bottom: 16px;
+    }
+
+    .form-actions {
+      display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px;
+      padding-top: 16px; border-top: 1px solid var(--border);
+    }
   `],
 })
 export class QuestionFormComponent implements OnInit {
@@ -135,11 +251,14 @@ export class QuestionFormComponent implements OnInit {
     body: ['', Validators.required],
     tagsRaw: [''],
     languageHint: [''],
-    options: this.fb.array([
-      this.makeOption('', true),
-      this.makeOption('', false),
-    ]),
+    options: this.fb.array([this.makeOption('', true), this.makeOption('', false)]),
   });
+
+  readonly typeOptions = [
+    { value: 'MCQ', label: 'Multiple Choice' },
+    { value: 'TEXT', label: 'Text Response' },
+    { value: 'CODE_SUBMISSION', label: 'Code Submission' },
+  ];
 
   get options(): FormArray {
     return this.form.get('options') as FormArray;
@@ -168,9 +287,10 @@ export class QuestionFormComponent implements OnInit {
     }
   }
 
-  onTypeChange() {
+  setType(type: string) {
+    this.form.patchValue({ type: type as QuestionType });
     this.mcqError.set(null);
-    if (this.form.get('type')?.value === 'MCQ') {
+    if (type === 'MCQ') {
       if (this.options.length < 2) {
         this.options.clear();
         this.options.push(this.makeOption('', true));
@@ -185,16 +305,16 @@ export class QuestionFormComponent implements OnInit {
     return this.fb.group({ text: [text, Validators.required], correct: [correct] });
   }
 
-  addOption() {
-    this.options.push(this.makeOption('', false));
-  }
+  addOption() { this.options.push(this.makeOption('', false)); }
 
-  removeOption(i: number) {
-    this.options.removeAt(i);
-  }
+  removeOption(i: number) { this.options.removeAt(i); }
 
   markCorrect(index: number) {
     this.options.controls.forEach((ctrl, i) => ctrl.patchValue({ correct: i === index }));
+  }
+
+  optionLetter(i: number): string {
+    return String.fromCharCode(65 + i);
   }
 
   submit() {
@@ -208,14 +328,8 @@ export class QuestionFormComponent implements OnInit {
     if (type === 'MCQ') {
       const opts = this.options.value as { text: string; correct: boolean }[];
       const correctCount = opts.filter(o => o.correct).length;
-      if (opts.some(o => !o.text.trim())) {
-        this.mcqError.set('All option texts are required.');
-        return;
-      }
-      if (correctCount !== 1) {
-        this.mcqError.set('Exactly one option must be marked correct.');
-        return;
-      }
+      if (opts.some(o => !o.text.trim())) { this.mcqError.set('All option texts are required.'); return; }
+      if (correctCount !== 1) { this.mcqError.set('Exactly one option must be marked correct.'); return; }
       this.mcqError.set(null);
     }
 
@@ -225,7 +339,9 @@ export class QuestionFormComponent implements OnInit {
       body: this.form.get('body')!.value!,
       tags,
       ...(type === 'MCQ' && { options: this.options.value }),
-      ...(type === 'CODE_SUBMISSION' && { languageHint: this.form.get('languageHint')!.value ?? undefined }),
+      ...(type === 'CODE_SUBMISSION' && {
+        languageHint: this.form.get('languageHint')!.value ?? undefined,
+      }),
     };
 
     this.saving.set(true);
@@ -237,7 +353,7 @@ export class QuestionFormComponent implements OnInit {
 
     op.subscribe({
       next: () => this.router.navigate(['/questions']),
-      error: (err) => {
+      error: err => {
         this.error.set(err?.error?.detail ?? 'Failed to save question.');
         this.saving.set(false);
       },

@@ -10,97 +10,230 @@ import { QuestionGroup, QuestionGroupRequest } from '../../core/question/questio
   template: `
     <div class="page">
       <div class="page-header">
-        <h2>Question Groups</h2>
-        <button class="btn-primary" (click)="openCreate()">+ New Group</button>
+        <div>
+          <h1 class="page-title">Question Groups</h1>
+          <span class="page-sub">{{ groups().length }} groups</span>
+        </div>
+        <button class="btn btn-primary" (click)="openCreate()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          New Group
+        </button>
       </div>
 
-      <!-- Create / Edit inline form -->
-      @if (showForm()) {
-        <div class="form-card">
-          <h3>{{ editingGroup() ? 'Edit Group' : 'New Group' }}</h3>
-          <div class="field">
-            <label>Name</label>
-            <input type="text" [(ngModel)]="formName" placeholder="Group name" />
-          </div>
-          <div class="field">
-            <label>Description</label>
-            <input type="text" [(ngModel)]="formDesc" placeholder="Optional description" />
-          </div>
-          <div class="field row">
-            <input type="checkbox" id="structured" [(ngModel)]="formStructured" />
-            <label for="structured">Structured (ordered questions)</label>
-          </div>
-          @if (formError()) {
-            <p class="error">{{ formError() }}</p>
-          }
-          <div class="form-actions">
-            <button class="btn-secondary" (click)="cancelForm()">Cancel</button>
-            <button class="btn-primary" (click)="saveGroup()" [disabled]="saving()">
-              {{ saving() ? 'Saving…' : 'Save' }}
-            </button>
-          </div>
-        </div>
-      }
+      <div class="content">
+        @if (showForm()) {
+          <div class="form-card">
+            <h2 class="form-title">{{ editingGroup() ? 'Edit Group' : 'New Group' }}</h2>
 
-      @if (loading()) {
-        <p class="status">Loading…</p>
-      } @else if (groups().length === 0) {
-        <p class="status">No groups yet.</p>
-      } @else {
-        <div class="group-list">
-          @for (g of groups(); track g.id) {
-            <div class="group-card">
-              <div class="group-info">
-                <a [routerLink]="['/question-groups', g.id]" class="group-name">{{ g.name }}</a>
-                @if (g.structured) {
-                  <span class="badge structured">Structured</span>
-                }
-                <span class="count">{{ g.questions.length }} question{{ g.questions.length !== 1 ? 's' : '' }}</span>
-                @if (g.description) {
-                  <p class="desc">{{ g.description }}</p>
-                }
-              </div>
-              <div class="group-actions">
-                <button class="btn-sm" (click)="openEdit(g)">Edit</button>
-                <button class="btn-sm danger" (click)="confirmDelete(g)">Delete</button>
-              </div>
+            <div class="field">
+              <label class="field-label">Name <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="formName" class="field-input" placeholder="Group name" />
             </div>
-          }
-        </div>
-      }
+            <div class="field">
+              <label class="field-label">Description</label>
+              <input type="text" [(ngModel)]="formDesc" class="field-input" placeholder="Optional description" />
+            </div>
+            <div class="field checkbox-field">
+              <label class="checkbox-label">
+                <input type="checkbox" [(ngModel)]="formStructured" class="checkbox-input" />
+                <span class="checkbox-box"></span>
+                Structured (ordered questions)
+              </label>
+            </div>
 
-      @if (pageError()) {
-        <p class="error">{{ pageError() }}</p>
-      }
+            @if (formError()) {
+              <div class="error-banner">{{ formError() }}</div>
+            }
+
+            <div class="form-actions">
+              <button class="btn btn-secondary" (click)="cancelForm()">Cancel</button>
+              <button class="btn btn-primary" (click)="saveGroup()" [disabled]="saving()">
+                {{ saving() ? 'Saving…' : 'Save Group' }}
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (loading()) {
+          <div class="empty-state">Loading…</div>
+        } @else if (groups().length === 0) {
+          <div class="empty-state">No groups yet. Create one to organize your questions.</div>
+        } @else {
+          <div class="group-list">
+            @for (g of groups(); track g.id) {
+              <div class="group-card">
+                <div class="group-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                  </svg>
+                </div>
+                <div class="group-info">
+                  <div class="group-name-row">
+                    <a [routerLink]="['/question-groups', g.id]" class="group-name">{{ g.name }}</a>
+                    @if (g.structured) {
+                      <span class="structured-badge">Structured</span>
+                    }
+                  </div>
+                  <div class="group-meta">
+                    <span>{{ g.questions.length }} question{{ g.questions.length !== 1 ? 's' : '' }}</span>
+                    @if (g.description) {
+                      <span class="meta-sep">·</span>
+                      <span>{{ g.description }}</span>
+                    }
+                  </div>
+                </div>
+                <div class="group-actions">
+                  <button class="action-btn" (click)="openEdit(g)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    Edit
+                  </button>
+                  <button class="action-btn danger" (click)="confirmDelete(g)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        @if (pageError()) {
+          <div class="error-banner">{{ pageError() }}</div>
+        }
+      </div>
     </div>
   `,
   styles: [`
-    .page { padding: 1.5rem; max-width: 900px; margin: 0 auto; }
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-    .btn-primary { background: #2563eb; color: #fff; padding: 0.5rem 1.25rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
-    .btn-primary:disabled { opacity: 0.6; }
-    .btn-secondary { background: #e5e7eb; color: #374151; padding: 0.5rem 1.25rem; border: none; border-radius: 6px; cursor: pointer; }
-    .form-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; }
-    .form-card h3 { margin: 0 0 1rem; }
-    .field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.75rem; }
-    .field.row { flex-direction: row; align-items: center; gap: 0.5rem; }
-    label { font-weight: 600; font-size: 0.9rem; }
-    input[type=text] { padding: 0.45rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem; }
-    .form-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1rem; }
-    .group-list { display: flex; flex-direction: column; gap: 0.75rem; }
-    .group-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: flex-start; }
-    .group-info { display: flex; flex-direction: column; gap: 0.25rem; }
-    .group-name { font-weight: 600; color: #2563eb; text-decoration: none; font-size: 1rem; }
-    .group-name:hover { text-decoration: underline; }
-    .badge { font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 10px; font-weight: 600; align-self: flex-start; }
-    .structured { background: #ede9fe; color: #6d28d9; }
-    .count { color: #6b7280; font-size: 0.85rem; }
-    .desc { color: #6b7280; font-size: 0.85rem; margin: 0; }
-    .group-actions { display: flex; gap: 0.5rem; }
-    .btn-sm { padding: 0.3rem 0.75rem; border-radius: 4px; font-size: 0.8rem; border: none; cursor: pointer; background: #e5e7eb; }
-    .btn-sm.danger { background: #fee2e2; color: #b91c1c; }
-    .status { color: #6b7280; text-align: center; padding: 2rem; }
-    .error { color: #b91c1c; margin-top: 0.5rem; }
+    .page { display: flex; flex-direction: column; min-height: 100vh; }
+
+    .page-header {
+      height: var(--topbar-height);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; border-bottom: 1px solid var(--border);
+      background: var(--bg-card); flex-shrink: 0;
+    }
+
+    .page-title { font-size: 15px; font-weight: 600; color: var(--text-1); letter-spacing: -0.01em; }
+    .page-sub { font-size: 12px; color: var(--text-3); }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      border: 1px solid transparent; transition: all 120ms;
+      text-decoration: none; white-space: nowrap;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary { background: var(--bg-elevated); color: var(--text-1); border-color: var(--border); }
+    .btn-secondary:hover { background: var(--bg-hover); }
+
+    .content { padding: 24px; overflow-y: auto; flex: 1; }
+
+    .form-card {
+      max-width: 520px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .form-title { font-size: 14px; font-weight: 600; color: var(--text-1); margin: 0 0 16px; }
+
+    .field { margin-bottom: 14px; }
+
+    .field-label { display: block; font-size: 13px; font-weight: 500; color: var(--text-2); margin-bottom: 6px; }
+
+    .required { color: var(--danger); }
+
+    .field-input {
+      width: 100%; padding: 8px 12px;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-1);
+      font-size: 13.5px; outline: none; transition: border-color 150ms;
+    }
+    .field-input:focus { border-color: var(--accent); }
+    .field-input::placeholder { color: var(--text-3); }
+
+    .checkbox-field { margin-bottom: 16px; }
+    .checkbox-label {
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer; font-size: 13px; color: var(--text-2);
+    }
+    .checkbox-input { display: none; }
+    .checkbox-box {
+      width: 16px; height: 16px; border-radius: 4px;
+      border: 2px solid var(--border); flex-shrink: 0;
+      transition: all 120ms; background: var(--bg-elevated);
+    }
+    .checkbox-input:checked + .checkbox-box {
+      background: var(--accent); border-color: var(--accent);
+    }
+
+    .form-actions {
+      display: flex; gap: 8px; justify-content: flex-end;
+      padding-top: 14px; border-top: 1px solid var(--border);
+    }
+
+    .group-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .group-card {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 14px 18px;
+      transition: border-color 150ms;
+    }
+
+    .group-card:hover { border-color: var(--border-hover); }
+
+    .group-icon {
+      width: 38px; height: 38px; border-radius: 9px;
+      background: var(--accent-subtle); color: var(--accent);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+
+    .group-info { flex: 1; min-width: 0; }
+
+    .group-name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+
+    .group-name {
+      font-size: 14px; font-weight: 600; color: var(--text-1);
+      text-decoration: none; transition: color 120ms;
+    }
+    .group-name:hover { color: var(--accent); }
+
+    .structured-badge {
+      font-size: 11px; padding: 2px 7px; border-radius: 999px;
+      background: var(--accent-subtle); color: var(--accent); font-weight: 500;
+    }
+
+    .group-meta { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-3); }
+
+    .meta-sep { color: var(--text-3); }
+
+    .group-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    .action-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 10px; background: transparent; color: var(--text-2);
+      border: none; border-radius: var(--radius-sm); cursor: pointer;
+      font-size: 12px; font-family: var(--font); transition: background 120ms, color 120ms;
+    }
+    .action-btn:hover { background: var(--bg-hover); color: var(--text-1); }
+    .action-btn.danger:hover { color: var(--danger); background: var(--danger-subtle); }
+
+    .empty-state { text-align: center; padding: 60px; color: var(--text-3); font-size: 13px; }
+
+    .error-banner {
+      padding: 10px 14px; background: var(--danger-subtle);
+      border: 1px solid rgba(239,68,68,.25); border-radius: var(--radius-sm);
+      color: var(--danger); font-size: 13px; margin-bottom: 16px;
+    }
   `],
 })
 export class QuestionGroupsComponent implements OnInit {
