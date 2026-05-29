@@ -132,5 +132,27 @@
 > commit and push make PR
 
 ---
-    
 
+## 2026-05-29 | hendrik.muller
+
+> can you test creation of MCQ and question groups with playwright
+
+---
+
+## 2026-05-29 | hendrik.muller
+
+> after saving a MCQ options A and B are not saved but C and D are
+
+---
+
+## 2026-05-29 | hendrik.muller
+
+> commit this and make PR
+
+---
+
+## 2026-05-29 | hendrik.muller
+
+> update my propmts to file prompts.md
+
+---
