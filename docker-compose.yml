@@ -32,7 +32,7 @@ services:
   frontend:
     build: ./recruitment-fe
     ports:
-      - "4200:80"
+      - "127.0.0.1:4200:80"
     depends_on:
       - backend
 
