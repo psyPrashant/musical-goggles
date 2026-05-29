@@ -15,6 +15,7 @@ const mockAssessment: AssessmentDetail = {
     { questionId: 'q1', title: 'Question One', type: 'TEXT', displayOrder: 10 },
     { questionId: 'q2', title: 'Question Two', type: 'MCQ', displayOrder: 20 },
   ],
+  passwordProtected: false,
   createdAt: '2026-05-29T00:00:00Z',
   updatedAt: '2026-05-29T00:00:00Z',
 };

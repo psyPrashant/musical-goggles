@@ -10,6 +10,7 @@ const mockPreview: AssessmentPreview = {
   title: 'Java Assessment',
   description: 'For senior roles',
   timeLimitMinutes: 60,
+  passwordRequired: false,
   questions: [
     {
       id: 'q1',
