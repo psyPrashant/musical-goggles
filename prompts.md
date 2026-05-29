@@ -218,3 +218,45 @@ create a new branch before starting
 
 ---
 
+## 2026-05-29 | hendrik.muller
+
+> Help me do MG-27 to MG-30 task
+
+---
+
+## 2026-05-29 | hendrik.muller
+
+> can you check with playwright docker everything is working
+
+---
+
+## 2026-05-29 | hendrik.muller
+
+> is assesment password sent via email
+
+---
+
+## 2026-05-29 | hendrik.muller
+
+> when and where is this password established
+
+---
+
+## 2026-05-29 | hendrik.muller
+
+> yes please wire that up
+
+---
+
+## 2026-05-29 | hendrik.muller
+
+> add the password to the email and check if its working with playwright
+
+---
+
+## 2026-05-29 | hendrik.muller
+
+> update promtps.md with the prompts ive use and commit , push PR
+
+---
+

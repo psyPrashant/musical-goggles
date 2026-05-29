@@ -43,6 +43,9 @@ public class Assessment {
     @OneToMany(mappedBy = "assessment", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AssessmentQuestion> questions = new ArrayList<>();
 
+    @Column(name = "access_password_hash")
+    private String accessPasswordHash;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

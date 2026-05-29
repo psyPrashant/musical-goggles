@@ -37,8 +37,12 @@ public class JwtService {
     }
 
     public String generateCandidateSessionToken(String candidateId, String assessmentId) {
+        return generateCandidateToken(candidateId, assessmentId, 2L);
+    }
+
+    public String generateCandidateToken(String candidateId, String assessmentId, long ttlHours) {
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + 2 * 3_600_000L);
+        Date expiry = new Date(now.getTime() + ttlHours * 3_600_000L);
         return Jwts.builder()
                 .subject(candidateId)
                 .claims(Map.of("role", Role.CANDIDATE.name(), "assessmentId", assessmentId))

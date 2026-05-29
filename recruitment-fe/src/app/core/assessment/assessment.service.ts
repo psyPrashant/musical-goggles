@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   AddQuestionRequest,
@@ -45,7 +45,17 @@ export class AssessmentService {
     return this.http.delete<void>(`/api/assessments/${assessmentId}/questions/${questionId}`);
   }
 
-  getPreview(assessmentId: string): Observable<AssessmentPreview> {
-    return this.http.get<AssessmentPreview>(`/api/assessments/${assessmentId}/preview`);
+  getPreview(assessmentId: string, token?: string): Observable<AssessmentPreview> {
+    const headers = token
+      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
+      : new HttpHeaders();
+    return this.http.get<AssessmentPreview>(`/api/assessments/${assessmentId}/preview`, { headers });
+  }
+
+  verifyPassword(assessmentId: string, password: string, invitationToken: string): Observable<{ valid: boolean }> {
+    return this.http.post<{ valid: boolean }>(
+      `/api/candidate/assessments/${assessmentId}/verify-password`,
+      { password, invitationToken }
+    );
   }
 }

@@ -1,33 +1,13 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { AssessmentService } from '../../core/assessment/assessment.service';
 import { Assessment } from '../../core/assessment/assessment.model';
-
-type CandidateStatus = 'invited' | 'in-progress' | 'completed' | 'expired';
-
-interface Candidate {
-  id: string;
-  name: string;
-  email: string;
-  assessment: string;
-  status: CandidateStatus;
-  score: number | null;
-  invitedAt: string;
-}
-
-const MOCK_CANDIDATES: Candidate[] = [
-  { id: '1', name: 'Sarah Johnson', email: 'sarah.j@example.com', assessment: 'Frontend Developer Assessment', status: 'completed', score: 87, invitedAt: '2026-05-20' },
-  { id: '2', name: 'Marcus Chen', email: 'mchen@techcorp.io', assessment: 'Backend Engineer Test', status: 'completed', score: 92, invitedAt: '2026-05-21' },
-  { id: '3', name: 'Priya Sharma', email: 'priya.sharma@gmail.com', assessment: 'Full Stack Challenge', status: 'in-progress', score: null, invitedAt: '2026-05-22' },
-  { id: '4', name: 'Daniel Müller', email: 'd.muller@company.de', assessment: 'Frontend Developer Assessment', status: 'invited', score: null, invitedAt: '2026-05-24' },
-  { id: '5', name: 'Aisha Okonkwo', email: 'aisha.ok@startup.ng', assessment: 'Backend Engineer Test', status: 'completed', score: 74, invitedAt: '2026-05-18' },
-  { id: '6', name: 'Liam O\'Brien', email: 'liam.ob@agency.ie', assessment: 'Full Stack Challenge', status: 'expired', score: null, invitedAt: '2026-05-10' },
-  { id: '7', name: 'Yuki Tanaka', email: 'y.tanaka@recruiter.jp', assessment: 'Frontend Developer Assessment', status: 'in-progress', score: null, invitedAt: '2026-05-25' },
-  { id: '8', name: 'Elena Petrova', email: 'e.petrova@enterprise.ru', assessment: 'Backend Engineer Test', status: 'completed', score: 81, invitedAt: '2026-05-19' },
-];
+import { CandidateService } from '../../core/candidate/candidate.service';
+import { Candidate } from '../../core/candidate/candidate.model';
 
 @Component({
   selector: 'app-candidates',
-  imports: [],
+  imports: [DatePipe],
   template: `
     <div class="page">
       <div class="page-header">
@@ -45,22 +25,12 @@ const MOCK_CANDIDATES: Candidate[] = [
       </div>
 
       <div class="content">
-        <div class="mock-banner">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          Sample data — candidate management backend not yet implemented.
-        </div>
-
         <div class="filter-row">
           <div class="search-wrap">
             <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
             </svg>
             <input class="search-input" [value]="search()" (input)="search.set($any($event.target).value)" placeholder="Search by name or email…"/>
-          </div>
-          <div class="status-filters">
-            @for (f of statusFilters; track f.value) {
-              <button class="filter-chip" [class.active]="selectedStatus() === f.value" (click)="selectedStatus.set(f.value)">{{ f.label }}</button>
-            }
           </div>
         </div>
 
@@ -70,39 +40,25 @@ const MOCK_CANDIDATES: Candidate[] = [
           <div class="candidates-table">
             <div class="table-header">
               <span>Candidate</span>
-              <span>Assessment</span>
-              <span>Status</span>
-              <span>Score</span>
-              <span>Invited</span>
+              <span>Email</span>
+              <span>Added</span>
               <span></span>
             </div>
             @for (c of filtered(); track c.id) {
               <div class="table-row">
                 <div class="candidate-cell">
-                  <div class="avatar" [style.background]="avatarColor(c.name)">{{ initials(c.name) }}</div>
+                  <div class="avatar" [style.background]="avatarColor(fullName(c))">{{ initials(fullName(c)) }}</div>
                   <div class="candidate-info">
-                    <span class="candidate-name">{{ c.name }}</span>
-                    <span class="candidate-email">{{ c.email }}</span>
+                    <span class="candidate-name">{{ fullName(c) }}</span>
                   </div>
                 </div>
-                <div class="assessment-cell">{{ c.assessment }}</div>
-                <div class="status-cell">
-                  <span class="status-badge status-{{ c.status }}">{{ statusLabel(c.status) }}</span>
-                </div>
-                <div class="score-cell">
-                  @if (c.score !== null) {
-                    <span class="score-pill" [class.score-high]="c.score >= 80" [class.score-mid]="c.score >= 60 && c.score < 80" [class.score-low]="c.score < 60">
-                      {{ c.score }}%
-                    </span>
-                  } @else {
-                    <span class="score-na">—</span>
-                  }
-                </div>
-                <div class="date-cell">{{ c.invitedAt }}</div>
+                <div class="assessment-cell">{{ c.email }}</div>
+                <div class="date-cell">{{ c.createdAt | date:'dd MMM yyyy' }}</div>
                 <div class="actions-cell">
-                  <button class="action-btn">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+                  <button class="action-btn" title="Invite" (click)="openInviteForCandidate(c)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                      <polyline points="22,6 12,13 2,6"/>
                     </svg>
                   </button>
                 </div>
@@ -117,41 +73,77 @@ const MOCK_CANDIDATES: Candidate[] = [
       <div class="overlay" (click)="closeInvite()">
         <div class="modal" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <span class="modal-title">Invite Candidate</span>
+            <span class="modal-title">{{ inviteLink() ? 'Invitation Sent' : 'Invite Candidate' }}</span>
             <button class="modal-close" (click)="closeInvite()">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
           </div>
-          <div class="modal-body">
-            <div class="field">
-              <label class="field-label">Candidate Email <span class="required">*</span></label>
-              <input type="email" [value]="inviteEmail()" (input)="inviteEmail.set($any($event.target).value)"
-                     class="field-input" placeholder="candidate@example.com" />
+          @if (inviteLink()) {
+            <div class="modal-body">
+              <p class="invite-success">Invitation sent! Share this link with the candidate:</p>
+              <div class="link-box">
+                <span class="link-text">{{ inviteLink() }}</span>
+                <button class="copy-btn" (click)="copyLink()">{{ copied() ? 'Copied!' : 'Copy' }}</button>
+              </div>
             </div>
-            <div class="field">
-              <label class="field-label">Assessment <span class="required">*</span></label>
-              <select class="field-select" [value]="inviteAssessment()" (change)="inviteAssessment.set($any($event.target).value)">
-                <option value="">Select an assessment…</option>
-                @for (a of assessments(); track a.id) {
-                  <option [value]="a.id">{{ a.title }}</option>
+            <div class="modal-footer">
+              <button class="btn btn-primary" (click)="closeInvite()">Done</button>
+            </div>
+          } @else {
+            <div class="modal-body">
+              @if (!inviteCandidate()) {
+                <div class="field">
+                  <label class="field-label">First Name <span class="required">*</span></label>
+                  <input type="text" [value]="inviteFirstName()" (input)="inviteFirstName.set($any($event.target).value)"
+                         class="field-input" placeholder="Jane" />
+                </div>
+                <div class="field">
+                  <label class="field-label">Last Name <span class="required">*</span></label>
+                  <input type="text" [value]="inviteLastName()" (input)="inviteLastName.set($any($event.target).value)"
+                         class="field-input" placeholder="Smith" />
+                </div>
+                <div class="field">
+                  <label class="field-label">Email <span class="required">*</span></label>
+                  <input type="email" [value]="inviteEmail()" (input)="inviteEmail.set($any($event.target).value)"
+                         class="field-input" placeholder="candidate@example.com" />
+                </div>
+              } @else {
+                <p class="invite-candidate-info">Inviting <strong>{{ fullName(inviteCandidate()!) }}</strong> ({{ inviteCandidate()!.email }})</p>
+              }
+              <div class="field">
+                <label class="field-label">Assessment <span class="required">*</span></label>
+                <select class="field-select" [value]="inviteAssessment()" (change)="inviteAssessment.set($any($event.target).value)">
+                  <option value="">Select an assessment…</option>
+                  @for (a of assessments(); track a.id) {
+                    <option [value]="a.id">{{ a.title }}</option>
+                  }
+                </select>
+              </div>
+              @if (selectedAssessment()?.passwordProtected) {
+                <div class="field">
+                  <label class="field-label">Assessment Password</label>
+                  <input type="password" class="field-input" [value]="invitePassword()"
+                         (input)="invitePassword.set($any($event.target).value)"
+                         placeholder="Enter password to include in email…" autocomplete="off"/>
+                  <span class="field-hint">This will be sent to the candidate in the invitation email</span>
+                </div>
+              }
+              @if (inviteError()) {
+                <p class="invite-error">{{ inviteError() }}</p>
+              }
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-ghost" (click)="closeInvite()">Cancel</button>
+              <button class="btn btn-primary" (click)="sendInvite()" [disabled]="inviteSending() || !inviteAssessment() || (!inviteCandidate() && (!inviteEmail() || !inviteFirstName() || !inviteLastName()))">
+                @if (inviteSending()) { Sending… } @else {
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
+                  Send Invite
                 }
-              </select>
+              </button>
             </div>
-            <div class="field">
-              <label class="field-label">Personal Message</label>
-              <textarea rows="3" [value]="inviteMessage()" (input)="inviteMessage.set($any($event.target).value)"
-                        class="field-textarea" placeholder="Optional message to include in the invite email…"></textarea>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-ghost" (click)="closeInvite()">Cancel</button>
-            <button class="btn btn-primary" (click)="sendInvite()" [disabled]="!inviteEmail() || !inviteAssessment()">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-              </svg>
-              Send Invite
-            </button>
-          </div>
+          }
         </div>
       </div>
     }
@@ -218,14 +210,14 @@ const MOCK_CANDIDATES: Candidate[] = [
     }
 
     .table-header {
-      display: grid; grid-template-columns: 2fr 2fr 1fr 80px 100px 40px;
+      display: grid; grid-template-columns: 2fr 2fr 120px 40px;
       gap: 12px; padding: 10px 16px;
       background: var(--bg-elevated); border-bottom: 1px solid var(--border);
       font-size: 11.5px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em;
     }
 
     .table-row {
-      display: grid; grid-template-columns: 2fr 2fr 1fr 80px 100px 40px;
+      display: grid; grid-template-columns: 2fr 2fr 120px 40px;
       gap: 12px; padding: 12px 16px; align-items: center;
       border-bottom: 1px solid var(--border); transition: background 120ms;
     }
@@ -287,6 +279,14 @@ const MOCK_CANDIDATES: Candidate[] = [
 
     .empty-state { text-align: center; padding: 60px; color: var(--text-3); font-size: 13px; }
 
+    .invite-success { font-size: 13px; color: var(--text-2); margin: 0; }
+    .invite-candidate-info { font-size: 13px; color: var(--text-2); margin: 0; }
+    .invite-error { font-size: 13px; color: var(--danger); margin: 0; }
+    .link-box { display: flex; align-items: center; gap: 8px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px; }
+    .link-text { font-size: 12px; color: var(--accent); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .copy-btn { background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; padding: 4px 10px; font-size: 12px; cursor: pointer; color: var(--text-2); white-space: nowrap; }
+    .copy-btn:hover { color: var(--text-1); }
+
     /* Invite modal */
     .overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.6);
@@ -342,47 +342,106 @@ const MOCK_CANDIDATES: Candidate[] = [
 })
 export class CandidatesComponent implements OnInit {
   private readonly assessmentSvc = inject(AssessmentService);
+  private readonly candidateSvc = inject(CandidateService);
 
-  readonly candidates = signal<Candidate[]>(MOCK_CANDIDATES);
+  readonly candidates = signal<Candidate[]>([]);
   readonly assessments = signal<Assessment[]>([]);
   readonly search = signal('');
-  readonly selectedStatus = signal('');
   readonly showInvite = signal(false);
+  readonly inviteCandidate = signal<Candidate | null>(null);
+  readonly inviteFirstName = signal('');
+  readonly inviteLastName = signal('');
   readonly inviteEmail = signal('');
   readonly inviteAssessment = signal('');
-  readonly inviteMessage = signal('');
+  readonly invitePassword = signal('');
+  readonly inviteSending = signal(false);
+  readonly inviteError = signal('');
+  readonly inviteLink = signal('');
+  readonly copied = signal(false);
 
-  readonly statusFilters = [
-    { value: '', label: 'All' },
-    { value: 'invited', label: 'Invited' },
-    { value: 'in-progress', label: 'In Progress' },
-    { value: 'completed', label: 'Completed' },
-    { value: 'expired', label: 'Expired' },
-  ];
+  readonly selectedAssessment = computed(() =>
+    this.assessments().find(a => a.id === this.inviteAssessment()) ?? null,
+  );
 
   readonly filtered = computed(() => {
     const s = this.search().toLowerCase();
-    const status = this.selectedStatus();
-    return this.candidates().filter(c => {
-      const matchSearch = !s || c.name.toLowerCase().includes(s) || c.email.toLowerCase().includes(s);
-      const matchStatus = !status || c.status === status;
-      return matchSearch && matchStatus;
-    });
+    return this.candidates().filter(c =>
+      !s || this.fullName(c).toLowerCase().includes(s) || c.email.toLowerCase().includes(s)
+    );
   });
 
   ngOnInit() {
     this.assessmentSvc.listAssessments().subscribe({ next: list => this.assessments.set(list) });
+    this.candidateSvc.listCandidates().subscribe({ next: list => this.candidates.set(list) });
+  }
+
+  openInviteForCandidate(c: Candidate) {
+    this.inviteCandidate.set(c);
+    this.showInvite.set(true);
   }
 
   closeInvite() {
     this.showInvite.set(false);
+    this.inviteCandidate.set(null);
+    this.inviteFirstName.set('');
+    this.inviteLastName.set('');
     this.inviteEmail.set('');
     this.inviteAssessment.set('');
-    this.inviteMessage.set('');
+    this.invitePassword.set('');
+    this.inviteError.set('');
+    this.inviteLink.set('');
+    this.copied.set(false);
   }
 
   sendInvite() {
-    this.closeInvite();
+    this.inviteError.set('');
+    this.inviteSending.set(true);
+
+    const doInvite = (candidateId: string) => {
+      const plainPassword = this.selectedAssessment()?.passwordProtected ? (this.invitePassword() || null) : null;
+      this.candidateSvc.sendInvitation({ candidateId, assessmentId: this.inviteAssessment(), plainPassword })
+        .subscribe({
+          next: res => {
+            this.inviteSending.set(false);
+            this.inviteLink.set(res.invitationLink);
+            this.candidateSvc.listCandidates().subscribe({ next: list => this.candidates.set(list) });
+          },
+          error: () => {
+            this.inviteSending.set(false);
+            this.inviteError.set('Failed to send invitation. Please try again.');
+          }
+        });
+    };
+
+    const existing = this.inviteCandidate();
+    if (existing) {
+      doInvite(existing.id);
+    } else {
+      this.candidateSvc.createCandidate({
+        firstName: this.inviteFirstName(),
+        lastName: this.inviteLastName(),
+        email: this.inviteEmail(),
+      }).subscribe({
+        next: candidate => doInvite(candidate.id),
+        error: err => {
+          this.inviteSending.set(false);
+          this.inviteError.set(err.status === 409
+            ? 'A candidate with this email already exists.'
+            : 'Failed to create candidate. Please try again.');
+        }
+      });
+    }
+  }
+
+  copyLink() {
+    navigator.clipboard.writeText(this.inviteLink()).then(() => {
+      this.copied.set(true);
+      setTimeout(() => this.copied.set(false), 2000);
+    });
+  }
+
+  fullName(c: Candidate): string {
+    return `${c.firstName} ${c.lastName}`;
   }
 
   initials(name: string): string {
@@ -393,9 +452,5 @@ export class CandidatesComponent implements OnInit {
     const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#14b8a6'];
     const idx = name.charCodeAt(0) % colors.length;
     return colors[idx];
-  }
-
-  statusLabel(status: CandidateStatus): string {
-    return { invited: 'Invited', 'in-progress': 'In Progress', completed: 'Completed', expired: 'Expired' }[status];
   }
 }

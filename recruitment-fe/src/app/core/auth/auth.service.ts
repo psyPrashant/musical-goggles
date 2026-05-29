@@ -38,6 +38,10 @@ export class AuthService {
     this.router.navigate(['/login']);
   }
 
+  validateCandidateToken(invitationToken: string) {
+    return this.http.post<{ token: string }>('/api/auth/candidate/validate-token', { invitationToken });
+  }
+
   getToken(): string | null {
     return this._token();
   }

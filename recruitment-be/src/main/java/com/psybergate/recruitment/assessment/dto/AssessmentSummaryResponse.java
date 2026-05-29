@@ -12,6 +12,7 @@ public record AssessmentSummaryResponse(
         Integer timeLimitMinutes,
         AssessmentStatus status,
         int questionCount,
+        boolean passwordProtected,
         Instant createdAt,
         Instant updatedAt
 ) {}

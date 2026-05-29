@@ -79,7 +79,7 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void createAssessment_valid_returns201() throws Exception {
-        AssessmentRequest req = new AssessmentRequest("Java Backend Assessment", "For senior roles", 60);
+        AssessmentRequest req = new AssessmentRequest("Java Backend Assessment", "For senior roles", 60, null);
 
         mockMvc.perform(post("/api/assessments")
                         .header("Authorization", "Bearer " + token)
@@ -94,7 +94,7 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void createAssessment_missingTitle_returns400() throws Exception {
-        AssessmentRequest req = new AssessmentRequest("", "desc", 30);
+        AssessmentRequest req = new AssessmentRequest("", "desc", 30, null);
 
         mockMvc.perform(post("/api/assessments")
                         .header("Authorization", "Bearer " + token)
@@ -105,7 +105,7 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void createAssessment_zeroTimeLimit_returns400() throws Exception {
-        AssessmentRequest req = new AssessmentRequest("Title", "desc", 0);
+        AssessmentRequest req = new AssessmentRequest("Title", "desc", 0, null);
 
         mockMvc.perform(post("/api/assessments")
                         .header("Authorization", "Bearer " + token)
@@ -145,7 +145,7 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     void updateAssessment_returns200() throws Exception {
         String id = createAssessmentViaApi("Original Title", 30);
-        AssessmentRequest update = new AssessmentRequest("Updated Title", "new desc", 60);
+        AssessmentRequest update = new AssessmentRequest("Updated Title", "new desc", 60, null);
 
         mockMvc.perform(put("/api/assessments/" + id)
                         .header("Authorization", "Bearer " + token)
@@ -400,7 +400,7 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
     // ── helpers ───────────────────────────────────────────────────────────────
 
     private String createAssessmentViaApi(String title, int minutes) throws Exception {
-        AssessmentRequest req = new AssessmentRequest(title, null, minutes);
+        AssessmentRequest req = new AssessmentRequest(title, null, minutes, null);
         String body = mockMvc.perform(post("/api/assessments")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
