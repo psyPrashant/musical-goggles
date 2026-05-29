@@ -102,6 +102,6 @@ describe('AssessmentPreviewComponent', () => {
     httpMock.expectOne('/api/assessments/abc123/preview').flush(mockPreview);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('h2').textContent.trim()).toBe('Java Assessment');
+    expect(fixture.nativeElement.querySelector('.page-title').textContent.trim()).toBe('Java Assessment');
   });
 });
