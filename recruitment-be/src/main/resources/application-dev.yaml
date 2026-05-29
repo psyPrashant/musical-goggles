@@ -1,9 +1,9 @@
 server:
-  port: 8081
+  port: 8080
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5433/recruitment
+    url: jdbc:postgresql://localhost:5432/recruitment
     username: recruitment
     password: recruitment
     driver-class-name: org.postgresql.Driver
