@@ -6,6 +6,7 @@ import com.psybergate.recruitment.repository.AssessmentQuestionRepository;
 import com.psybergate.recruitment.repository.AssessmentRepository;
 import com.psybergate.recruitment.repository.QuestionRepository;
 import com.psybergate.recruitment.repository.UserRepository;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -175,14 +176,17 @@ public class AssessmentServiceImpl implements AssessmentService {
     }
 
     private PreviewQuestionDto toPreviewQuestion(Question q) {
+        // Unproxy required: JOINED-inheritance @ManyToOne(LAZY) produces a Question proxy;
+        // instanceof checks against the proxy type always fail for subclasses.
+        Question unproxied = (Question) Hibernate.unproxy(q);
         List<PreviewOptionDto> options = null;
         String languageHint = null;
 
-        if (q instanceof McqQuestion mcq) {
+        if (unproxied instanceof McqQuestion mcq) {
             options = mcq.getOptions().stream()
                     .map(o -> new PreviewOptionDto(o.getId(), o.getOptionText()))
                     .toList();
-        } else if (q instanceof CodeSubmissionQuestion csq) {
+        } else if (unproxied instanceof CodeSubmissionQuestion csq) {
             languageHint = csq.getLanguageHint();
         }
 
