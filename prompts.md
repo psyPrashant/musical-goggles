@@ -232,12 +232,6 @@ create a new branch before starting
 
 ## 2026-05-29 | hendrik.muller
 
-> you can use my real email oopqbob102@gmail.com to send
-
----
-
-## 2026-05-29 | hendrik.muller
-
 > is assesment password sent via email
 
 ---
@@ -263,12 +257,6 @@ create a new branch before starting
 ## 2026-05-29 | hendrik.muller
 
 > update promtps.md with the prompts ive use and commit , push PR
-
----
-
-## 2026-05-29 | hendrik.muller
-
-> from this prompt and onwards : "Help me do MG-27 to MG-30 task"
 
 ---
 
