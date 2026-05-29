@@ -1,6 +1,7 @@
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AssessmentService } from '../../core/assessment/assessment.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { AssessmentPreview, PreviewQuestion } from '../../core/assessment/assessment.model';
 
 @Component({
@@ -25,6 +26,28 @@ import { AssessmentPreview, PreviewQuestion } from '../../core/assessment/assess
             </div>
             <h2 class="submitted-title">Assessment Submitted</h2>
             <p class="submitted-body">Your answers have been recorded. You will be notified once your submission has been reviewed.</p>
+          </div>
+        </div>
+      } @else if (awaitingPassword()) {
+        <div class="password-screen">
+          <div class="password-card">
+            <div class="password-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <h2 class="password-title">Assessment Protected</h2>
+            <p class="password-sub">This assessment requires a password to begin.</p>
+            <input type="password" class="password-input" [value]="passwordInput()"
+                   (input)="passwordInput.set($any($event.target).value)"
+                   (keydown.enter)="submitPassword()"
+                   placeholder="Enter password…" />
+            @if (passwordError()) {
+              <p class="password-error">{{ passwordError() }}</p>
+            }
+            <button class="password-btn" (click)="submitPassword()" [disabled]="checkingPassword() || !passwordInput()">
+              {{ checkingPassword() ? 'Verifying…' : 'Continue →' }}
+            </button>
           </div>
         </div>
       } @else if (preview()) {
@@ -399,10 +422,51 @@ import { AssessmentPreview, PreviewQuestion } from '../../core/assessment/assess
     .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .nav-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
     .nav-btn.primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+    .password-screen {
+      flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px;
+    }
+
+    .password-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 40px 36px;
+      width: 100%; max-width: 380px; display: flex; flex-direction: column;
+      align-items: center; gap: 14px; text-align: center;
+    }
+
+    .password-icon {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center; color: var(--text-2);
+    }
+
+    .password-title { font-size: 18px; font-weight: 700; color: var(--text-1); margin: 0; }
+
+    .password-sub { font-size: 13.5px; color: var(--text-2); margin: 0; }
+
+    .password-input {
+      width: 100%; padding: 10px 14px; box-sizing: border-box;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-1); font-size: 14px;
+      outline: none; text-align: center; letter-spacing: 0.1em; transition: border-color 150ms;
+    }
+    .password-input:focus { border-color: var(--accent); }
+
+    .password-error { font-size: 13px; color: var(--danger); margin: 0; }
+
+    .password-btn {
+      width: 100%; padding: 10px 14px;
+      background: var(--accent); color: #fff; border: none;
+      border-radius: var(--radius-sm); font-size: 14px; font-weight: 600;
+      cursor: pointer; font-family: var(--font); transition: background 150ms;
+    }
+    .password-btn:hover:not(:disabled) { background: var(--accent-hover); }
+    .password-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   `],
 })
 export class AssessmentTakeComponent implements OnInit, OnDestroy {
   private readonly svc = inject(AssessmentService);
+  private readonly authSvc = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
 
   readonly preview = signal<AssessmentPreview | null>(null);
@@ -410,6 +474,13 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
   readonly error = signal<string | null>(null);
   readonly submitting = signal(false);
   readonly submitted = signal(false);
+
+  readonly sessionToken = signal<string | null>(null);
+  readonly invitationToken = signal<string | null>(null);
+  readonly awaitingPassword = signal(false);
+  readonly passwordInput = signal('');
+  readonly passwordError = signal('');
+  readonly checkingPassword = signal(false);
 
   readonly currentIndex = signal(0);
   readonly answers = signal<Record<string, string | undefined>>({});
@@ -451,15 +522,62 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id')!;
+    const token = this.route.snapshot.queryParamMap.get('token');
+
+    if (!token) {
+      this.error.set('Invalid invitation link. Please check your email for the correct link.');
+      return;
+    }
+
+    this.invitationToken.set(token);
     this.loading.set(true);
-    this.svc.getPreview(id).subscribe({
-      next: p => {
-        this.preview.set(p);
-        this.timeLeft.set(p.timeLimitMinutes * 60);
-        this.loading.set(false);
-        this.startTimer();
+
+    this.authSvc.validateCandidateToken(token).subscribe({
+      next: res => {
+        this.sessionToken.set(res.token);
+        this.svc.getPreview(id, res.token).subscribe({
+          next: p => {
+            this.loading.set(false);
+            if (p.passwordRequired) {
+              this.preview.set(p);
+              this.awaitingPassword.set(true);
+            } else {
+              this.preview.set(p);
+              this.timeLeft.set(p.timeLimitMinutes * 60);
+              this.startTimer();
+            }
+          },
+          error: () => { this.error.set('Failed to load assessment.'); this.loading.set(false); },
+        });
       },
-      error: () => { this.error.set('Failed to load assessment.'); this.loading.set(false); },
+      error: () => {
+        this.error.set('Your invitation link has expired or is invalid. Please request a new one.');
+        this.loading.set(false);
+      },
+    });
+  }
+
+  submitPassword() {
+    const p = this.preview();
+    const invToken = this.invitationToken();
+    if (!p || !invToken) return;
+    this.checkingPassword.set(true);
+    this.passwordError.set('');
+    this.svc.verifyPassword(p.id, this.passwordInput(), invToken).subscribe({
+      next: res => {
+        this.checkingPassword.set(false);
+        if (res.valid) {
+          this.awaitingPassword.set(false);
+          this.timeLeft.set(p.timeLimitMinutes * 60);
+          this.startTimer();
+        } else {
+          this.passwordError.set('Incorrect password. Please try again.');
+        }
+      },
+      error: () => {
+        this.checkingPassword.set(false);
+        this.passwordError.set('Verification failed. Please try again.');
+      },
     });
   }
 

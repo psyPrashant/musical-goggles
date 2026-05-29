@@ -45,7 +45,15 @@ export class AssessmentService {
     return this.http.delete<void>(`/api/assessments/${assessmentId}/questions/${questionId}`);
   }
 
-  getPreview(assessmentId: string): Observable<AssessmentPreview> {
-    return this.http.get<AssessmentPreview>(`/api/assessments/${assessmentId}/preview`);
+  getPreview(assessmentId: string, token?: string): Observable<AssessmentPreview> {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    return this.http.get<AssessmentPreview>(`/api/assessments/${assessmentId}/preview`, { headers });
+  }
+
+  verifyPassword(assessmentId: string, password: string, invitationToken: string): Observable<{ valid: boolean }> {
+    return this.http.post<{ valid: boolean }>(
+      `/api/candidate/assessments/${assessmentId}/verify-password`,
+      { password, invitationToken }
+    );
   }
 }

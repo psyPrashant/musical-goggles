@@ -9,6 +9,7 @@ import com.psybergate.recruitment.repository.UserRepository;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -25,6 +26,7 @@ public class AssessmentServiceImpl implements AssessmentService {
     @Autowired private AssessmentQuestionRepository assessmentQuestionRepository;
     @Autowired private QuestionRepository questionRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
 
     @Override
     public AssessmentDetailResponse create(AssessmentRequest req, UUID createdById) {
@@ -36,6 +38,7 @@ public class AssessmentServiceImpl implements AssessmentService {
         assessment.setDescription(req.description());
         assessment.setTimeLimitMinutes(req.timeLimitMinutes());
         assessment.setCreatedBy(creator);
+        applyPassword(assessment, req.accessPassword());
 
         return toDetailResponse(assessmentRepository.save(assessment));
     }
@@ -60,6 +63,7 @@ public class AssessmentServiceImpl implements AssessmentService {
         assessment.setTitle(req.title());
         assessment.setDescription(req.description());
         assessment.setTimeLimitMinutes(req.timeLimitMinutes());
+        applyPassword(assessment, req.accessPassword());
         return toDetailResponse(assessmentRepository.save(assessment));
     }
 
@@ -140,6 +144,7 @@ public class AssessmentServiceImpl implements AssessmentService {
                 assessment.getTitle(),
                 assessment.getDescription(),
                 assessment.getTimeLimitMinutes(),
+                assessment.getAccessPasswordHash() != null,
                 questions
         );
     }
@@ -151,10 +156,22 @@ public class AssessmentServiceImpl implements AssessmentService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assessment not found"));
     }
 
+    private void applyPassword(Assessment assessment, String rawPassword) {
+        if (rawPassword != null && !rawPassword.isBlank()) {
+            assessment.setAccessPasswordHash(passwordEncoder.encode(rawPassword));
+        } else if (rawPassword != null) {
+            // Explicitly blank → clear any existing password
+            assessment.setAccessPasswordHash(null);
+        }
+        // null → leave unchanged
+    }
+
     private AssessmentSummaryResponse toSummaryResponse(Assessment a) {
         return new AssessmentSummaryResponse(
                 a.getId(), a.getTitle(), a.getDescription(), a.getTimeLimitMinutes(),
-                a.getStatus(), a.getQuestions().size(), a.getCreatedAt(), a.getUpdatedAt()
+                a.getStatus(), a.getQuestions().size(),
+                a.getAccessPasswordHash() != null,
+                a.getCreatedAt(), a.getUpdatedAt()
         );
     }
 
@@ -171,7 +188,9 @@ public class AssessmentServiceImpl implements AssessmentService {
 
         return new AssessmentDetailResponse(
                 a.getId(), a.getTitle(), a.getDescription(), a.getTimeLimitMinutes(),
-                a.getStatus(), questions, a.getCreatedAt(), a.getUpdatedAt()
+                a.getStatus(), questions,
+                a.getAccessPasswordHash() != null,
+                a.getCreatedAt(), a.getUpdatedAt()
         );
     }
 

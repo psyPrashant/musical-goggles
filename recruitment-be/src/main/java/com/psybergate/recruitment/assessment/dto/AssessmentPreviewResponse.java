@@ -8,5 +8,6 @@ public record AssessmentPreviewResponse(
         String title,
         String description,
         Integer timeLimitMinutes,
+        boolean passwordRequired,
         List<PreviewQuestionDto> questions
 ) {}

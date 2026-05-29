@@ -69,7 +69,17 @@ public class AssessmentController {
     }
 
     @GetMapping("/{id}/preview")
-    public ResponseEntity<AssessmentPreviewResponse> preview(@PathVariable UUID id) {
+    @PreAuthorize("hasAnyRole('ADMIN','RECRUITER','CANDIDATE')")
+    public ResponseEntity<AssessmentPreviewResponse> preview(@PathVariable UUID id,
+                                                              Authentication auth) {
+        // Candidates may only preview the specific assessment in their session token
+        if (auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_CANDIDATE"))) {
+            Object credentials = auth.getCredentials();
+            String tokenAssessmentId = credentials != null ? credentials.toString() : null;
+            if (!id.toString().equals(tokenAssessmentId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        }
         return ResponseEntity.ok(assessmentService.getPreview(id));
     }
 }

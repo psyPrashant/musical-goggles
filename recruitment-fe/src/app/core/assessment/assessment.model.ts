@@ -9,6 +9,7 @@ export interface Assessment {
   timeLimitMinutes: number;
   status: AssessmentStatus;
   questionCount: number;
+  passwordProtected: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -60,5 +61,6 @@ export interface AssessmentPreview {
   title: string;
   description: string | null;
   timeLimitMinutes: number;
+  passwordRequired: boolean;
   questions: PreviewQuestion[];
 }

@@ -13,6 +13,7 @@ public record AssessmentDetailResponse(
         Integer timeLimitMinutes,
         AssessmentStatus status,
         List<AssessmentQuestionItemResponse> questions,
+        boolean passwordProtected,
         Instant createdAt,
         Instant updatedAt
 ) {}
