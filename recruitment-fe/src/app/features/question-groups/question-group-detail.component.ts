@@ -9,123 +9,269 @@ import { GroupQuestion, Question, QuestionGroup } from '../../core/question/ques
   imports: [RouterLink, FormsModule],
   template: `
     <div class="page">
-      @if (group()) {
-        <div class="page-header">
-          <div>
-            <h2>
+      <div class="page-header">
+        <div class="header-left">
+          @if (group()) {
+            <h1 class="page-title">
               {{ group()!.name }}
               @if (group()!.structured) {
-                <span class="badge structured">Structured</span>
+                <span class="structured-badge">Structured</span>
               }
-            </h2>
+            </h1>
             @if (group()!.description) {
-              <p class="desc">{{ group()!.description }}</p>
+              <span class="page-sub">{{ group()!.description }}</span>
             }
-          </div>
-          <a routerLink="/question-groups" class="btn-link">← Groups</a>
+          }
         </div>
+        <a routerLink="/question-groups" class="btn btn-ghost btn-sm">← Groups</a>
+      </div>
 
-        <!-- Questions in group -->
-        <section>
-          <h3>Questions ({{ group()!.questions.length }})</h3>
-          @if (group()!.questions.length === 0) {
-            <p class="status">No questions in this group yet.</p>
-          } @else {
-            <table class="q-table">
-              <thead>
-                <tr>
-                  @if (group()!.structured) { <th>Order</th> }
-                  <th>Title</th>
-                  <th>Type</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (item of group()!.questions; track item.questionId) {
-                  <tr>
-                    @if (group()!.structured) {
-                      <td>
+      <div class="content">
+        @if (loading()) {
+          <div class="empty-state">Loading…</div>
+        } @else if (group()) {
+          <div class="layout">
+            <div class="main-panel">
+              <div class="section-header">
+                <span class="section-title">Questions in Group</span>
+                <span class="section-count">{{ group()!.questions.length }}</span>
+              </div>
+
+              @if (group()!.questions.length === 0) {
+                <div class="empty-panel">No questions yet. Add from the bank on the right.</div>
+              } @else {
+                <div class="question-list">
+                  @for (item of group()!.questions; track item.questionId) {
+                    <div class="question-row">
+                      <div class="drag-handle">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M9 5h.01M9 12h.01M9 19h.01M15 5h.01M15 12h.01M15 19h.01"/>
+                        </svg>
+                      </div>
+                      @if (group()!.structured) {
                         <input type="number" class="order-input"
                                [value]="item.displayOrder"
                                (change)="updateOrder(item, $event)" />
-                      </td>
-                    }
-                    <td>{{ item.title }}</td>
-                    <td><span class="type-badge type-{{ item.type.toLowerCase() }}">{{ item.type }}</span></td>
-                    <td>
-                      <button class="btn-sm danger" (click)="removeQuestion(item)">Remove</button>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          }
-        </section>
-
-        <!-- Add question panel -->
-        <section class="add-section">
-          <h3>Add Question</h3>
-          <div class="add-row">
-            <input type="text" [(ngModel)]="searchTerm" (input)="filterQuestions()"
-                   placeholder="Search available questions…" class="search-input" />
-          </div>
-          @if (group()!.structured) {
-            <div class="add-row">
-              <label>Display order</label>
-              <input type="number" [(ngModel)]="newDisplayOrder" class="order-input" min="1" />
-            </div>
-          }
-          @if (filteredAvailable().length > 0) {
-            <div class="available-list">
-              @for (q of filteredAvailable(); track q.id) {
-                <div class="available-item">
-                  <span class="type-badge type-{{ q.type.toLowerCase() }} small">{{ q.type }}</span>
-                  <span class="avail-title">{{ q.title }}</span>
-                  <button class="btn-sm" (click)="addQuestion(q)">Add</button>
+                      }
+                      <div class="question-info">
+                        <span class="type-badge type-{{ item.type.toLowerCase() }}">{{ typeLabel(item.type) }}</span>
+                        <span class="question-title">{{ item.title }}</span>
+                      </div>
+                      <button class="remove-btn" (click)="removeQuestion(item)" title="Remove">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                      </button>
+                    </div>
+                  }
                 </div>
               }
             </div>
-          }
-        </section>
 
-        @if (error()) {
-          <p class="error">{{ error() }}</p>
+            <div class="bank-panel">
+              <div class="section-header">
+                <span class="section-title">Question Bank</span>
+              </div>
+              <div class="bank-search-wrap">
+                <svg class="search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+                </svg>
+                <input type="text" [(ngModel)]="searchTerm" (input)="filterQuestions()"
+                       placeholder="Search questions…" class="bank-search" />
+              </div>
+
+              @if (group()!.structured) {
+                <div class="order-row">
+                  <label class="order-label">Display order</label>
+                  <input type="number" [(ngModel)]="newDisplayOrder" class="order-input" min="1" placeholder="#" />
+                </div>
+              }
+
+              @if (filteredAvailable().length === 0) {
+                <div class="empty-bank">No questions available to add.</div>
+              } @else {
+                <div class="bank-list">
+                  @for (q of filteredAvailable(); track q.id) {
+                    <div class="bank-item">
+                      <div class="bank-item-info">
+                        <span class="type-badge type-{{ q.type.toLowerCase() }}">{{ typeLabel(q.type) }}</span>
+                        <span class="bank-title">{{ q.title }}</span>
+                      </div>
+                      <button class="add-btn" (click)="addQuestion(q)">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+
+          @if (error()) {
+            <div class="error-banner">{{ error() }}</div>
+          }
         }
-      } @else if (loading()) {
-        <p class="status">Loading…</p>
-      }
+      </div>
     </div>
   `,
   styles: [`
-    .page { padding: 1.5rem; max-width: 900px; margin: 0 auto; }
-    .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
-    h2 { margin: 0; display: flex; align-items: center; gap: 0.75rem; }
-    .desc { color: #6b7280; margin: 0.25rem 0 0; font-size: 0.9rem; }
-    .btn-link { color: #2563eb; text-decoration: none; white-space: nowrap; padding-top: 0.25rem; }
-    .badge { font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 10px; font-weight: 600; }
-    .structured { background: #ede9fe; color: #6d28d9; }
-    section { margin-bottom: 2rem; }
-    h3 { margin: 0 0 0.75rem; font-size: 1rem; }
-    .q-table { width: 100%; border-collapse: collapse; }
-    .q-table th, .q-table td { text-align: left; padding: 0.65rem; border-bottom: 1px solid #e5e7eb; }
-    .q-table th { font-weight: 600; background: #f9fafb; font-size: 0.85rem; }
-    .order-input { width: 70px; padding: 0.3rem; border: 1px solid #d1d5db; border-radius: 4px; text-align: center; }
-    .type-badge { font-size: 0.72rem; padding: 0.2rem 0.5rem; border-radius: 10px; font-weight: 600; }
-    .type-mcq { background: #dbeafe; color: #1e40af; }
-    .type-text { background: #d1fae5; color: #065f46; }
-    .type-code_submission { background: #fef3c7; color: #92400e; }
-    .btn-sm { padding: 0.3rem 0.75rem; border-radius: 4px; font-size: 0.8rem; border: none; cursor: pointer; background: #e5e7eb; }
-    .btn-sm.danger { background: #fee2e2; color: #b91c1c; }
-    .add-section { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1.25rem; }
-    .add-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
-    .add-row label { font-weight: 600; font-size: 0.85rem; white-space: nowrap; }
-    .search-input { flex: 1; padding: 0.45rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem; }
-    .available-list { display: flex; flex-direction: column; gap: 0.4rem; max-height: 280px; overflow-y: auto; }
-    .available-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; }
-    .avail-title { flex: 1; font-size: 0.9rem; }
-    .type-badge.small { font-size: 0.68rem; }
-    .status { color: #6b7280; padding: 1rem 0; }
-    .error { color: #b91c1c; margin-top: 0.5rem; }
+    .page { display: flex; flex-direction: column; min-height: 100vh; }
+
+    .page-header {
+      height: var(--topbar-height);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; border-bottom: 1px solid var(--border);
+      background: var(--bg-card); flex-shrink: 0;
+    }
+
+    .header-left { display: flex; flex-direction: column; gap: 1px; }
+
+    .page-title {
+      font-size: 15px; font-weight: 600; color: var(--text-1); letter-spacing: -0.01em;
+      display: flex; align-items: center; gap: 8px; margin: 0;
+    }
+
+    .page-sub { font-size: 12px; color: var(--text-3); }
+
+    .structured-badge {
+      font-size: 11px; padding: 2px 7px; border-radius: 999px;
+      background: var(--accent-subtle); color: var(--accent); font-weight: 500;
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      border: 1px solid transparent; transition: all 120ms;
+      text-decoration: none; white-space: nowrap;
+    }
+    .btn-sm { padding: 5px 11px; font-size: 12px; }
+    .btn-ghost { background: transparent; color: var(--text-2); }
+    .btn-ghost:hover { background: var(--bg-hover); color: var(--text-1); }
+
+    .content { padding: 24px; overflow-y: auto; flex: 1; }
+
+    .layout { display: grid; grid-template-columns: 1fr 340px; gap: 16px; align-items: start; }
+
+    .section-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .section-title { font-size: 13px; font-weight: 600; color: var(--text-2); }
+
+    .section-count {
+      font-size: 11px; padding: 1px 7px; border-radius: 999px;
+      background: var(--bg-elevated); color: var(--text-3);
+    }
+
+    .question-list { display: flex; flex-direction: column; gap: 6px; }
+
+    .question-row {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 10px 12px;
+      transition: border-color 150ms;
+    }
+    .question-row:hover { border-color: var(--border-hover); }
+
+    .drag-handle { color: var(--text-3); cursor: grab; flex-shrink: 0; }
+
+    .order-input {
+      width: 54px; padding: 5px 8px;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-1);
+      font-size: 12px; text-align: center; outline: none;
+    }
+    .order-input:focus { border-color: var(--accent); }
+
+    .question-info { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+
+    .question-title {
+      font-size: 13px; color: var(--text-1); white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .type-badge {
+      display: inline-flex; align-items: center; padding: 2px 7px;
+      border-radius: 999px; font-size: 11px; font-weight: 500; white-space: nowrap; flex-shrink: 0;
+    }
+    .type-mcq { background: var(--accent-subtle); color: var(--accent); }
+    .type-text { background: var(--info-subtle); color: var(--info); }
+    .type-code_submission { background: rgba(168,85,247,0.13); color: #a855f7; }
+
+    .remove-btn {
+      background: none; border: none; cursor: pointer; padding: 4px;
+      border-radius: 4px; display: flex; align-items: center; color: var(--text-3);
+      transition: color 120ms, background 120ms; flex-shrink: 0;
+    }
+    .remove-btn:hover { color: var(--danger); background: var(--danger-subtle); }
+
+    .bank-panel {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 16px;
+      position: sticky; top: 0;
+    }
+
+    .bank-search-wrap {
+      position: relative; display: flex; align-items: center; margin-bottom: 10px;
+    }
+
+    .search-icon { position: absolute; left: 10px; color: var(--text-3); pointer-events: none; }
+
+    .bank-search {
+      width: 100%; padding: 7px 10px 7px 30px;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-1);
+      font-size: 12.5px; outline: none; transition: border-color 150ms;
+    }
+    .bank-search:focus { border-color: var(--accent); }
+    .bank-search::placeholder { color: var(--text-3); }
+
+    .order-row {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    }
+    .order-label { font-size: 12px; font-weight: 500; color: var(--text-2); white-space: nowrap; }
+
+    .bank-list {
+      display: flex; flex-direction: column; gap: 5px;
+      max-height: 420px; overflow-y: auto;
+    }
+
+    .bank-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); transition: border-color 150ms;
+    }
+    .bank-item:hover { border-color: var(--border-hover); }
+
+    .bank-item-info { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; }
+
+    .bank-title {
+      font-size: 12.5px; color: var(--text-1); white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .add-btn {
+      background: var(--accent-subtle); border: none; cursor: pointer; padding: 5px;
+      border-radius: 4px; display: flex; align-items: center; color: var(--accent);
+      transition: background 120ms; flex-shrink: 0;
+    }
+    .add-btn:hover { background: var(--accent); color: #fff; }
+
+    .empty-panel {
+      padding: 24px 0; text-align: center; color: var(--text-3); font-size: 12.5px;
+    }
+
+    .empty-bank { padding: 16px 0; text-align: center; color: var(--text-3); font-size: 12.5px; }
+
+    .empty-state { text-align: center; padding: 60px; color: var(--text-3); font-size: 13px; }
+
+    .error-banner {
+      margin-top: 16px; padding: 10px 14px;
+      background: var(--danger-subtle); border: 1px solid rgba(239,68,68,.25);
+      border-radius: var(--radius-sm); color: var(--danger); font-size: 13px;
+    }
   `],
 })
 export class QuestionGroupDetailComponent implements OnInit {
@@ -193,5 +339,9 @@ export class QuestionGroupDetailComponent implements OnInit {
       next: updated => { this.group.set(updated); this.filterQuestions(); },
       error: () => this.error.set('Failed to update order.'),
     });
+  }
+
+  typeLabel(type: string): string {
+    return { MCQ: 'MCQ', TEXT: 'Text', CODE_SUBMISSION: 'Code' }[type] ?? type;
   }
 }
