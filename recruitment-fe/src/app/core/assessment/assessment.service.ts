@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   AddQuestionRequest,
@@ -46,7 +46,9 @@ export class AssessmentService {
   }
 
   getPreview(assessmentId: string, token?: string): Observable<AssessmentPreview> {
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const headers = token
+      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
+      : new HttpHeaders();
     return this.http.get<AssessmentPreview>(`/api/assessments/${assessmentId}/preview`, { headers });
   }
 

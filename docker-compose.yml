@@ -15,6 +15,12 @@ services:
       timeout: 5s
       retries: 5
 
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
   backend:
     build: ./recruitment-be
     ports:
@@ -25,9 +31,13 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME:-recruitment}
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-recruitment}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-recruitment}
+      SPRING_MAIL_HOST: mailhog
+      SPRING_MAIL_PORT: 1025
     depends_on:
       db:
         condition: service_healthy
+      mailhog:
+        condition: service_started
 
   frontend:
     build: ./recruitment-fe

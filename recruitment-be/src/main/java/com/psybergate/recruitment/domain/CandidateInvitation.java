@@ -32,7 +32,7 @@ public class CandidateInvitation {
     private String invitationToken;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "invitation_status")
+    @Column(nullable = false, length = 20)
     private InvitationStatus status = InvitationStatus.PENDING;
 
     @Column(name = "expires_at", nullable = false)
