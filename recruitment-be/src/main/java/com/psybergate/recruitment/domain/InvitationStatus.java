@@ -1,5 +1,5 @@
 package com.psybergate.recruitment.domain;
 
 public enum InvitationStatus {
-    PENDING, SENT, EXPIRED
+    PENDING, SENT, EXPIRED, COMPLETED
 }
