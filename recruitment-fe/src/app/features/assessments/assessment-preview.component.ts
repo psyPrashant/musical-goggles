@@ -233,7 +233,7 @@ export class AssessmentPreviewComponent implements OnInit {
   }
 
   typeLabel(q: PreviewQuestion): string {
-    return { MCQ: 'MCQ', TEXT: 'Text', CODE_SUBMISSION: 'Code' }[q.type];
+    return ({ MCQ: 'MCQ', TEXT: 'Text', CODE_SUBMISSION: 'Code', GROUP: 'Group' } as Record<string, string>)[q.type] ?? q.type;
   }
 
   optionLetter(index: number): string {

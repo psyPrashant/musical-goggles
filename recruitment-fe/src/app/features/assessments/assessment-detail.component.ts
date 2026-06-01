@@ -227,7 +227,7 @@ export class AssessmentDetailComponent implements OnInit {
   }
 
   typeLabel(type: QuestionType): string {
-    return { MCQ: 'MCQ', TEXT: 'Text', CODE_SUBMISSION: 'Code' }[type];
+    return ({ MCQ: 'MCQ', TEXT: 'Text', CODE_SUBMISSION: 'Code', GROUP: 'Group' } as Record<string, string>)[type] ?? type;
   }
 
   private updateCodeLimit(a: AssessmentDetail) {

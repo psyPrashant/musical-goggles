@@ -63,21 +63,7 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/questions/question-form.component').then(m => m.QuestionFormComponent),
       },
-      {
-        path: 'question-groups',
-        loadComponent: () =>
-          import('./features/question-groups/question-groups.component').then(
-            m => m.QuestionGroupsComponent,
-          ),
-      },
-      {
-        path: 'question-groups/:id',
-        loadComponent: () =>
-          import('./features/question-groups/question-group-detail.component').then(
-            m => m.QuestionGroupDetailComponent,
-          ),
-      },
-      {
+{
         path: 'candidates',
         loadComponent: () =>
           import('./features/candidates/candidates.component').then(m => m.CandidatesComponent),

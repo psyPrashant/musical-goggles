@@ -10,5 +10,6 @@ public record PreviewQuestionDto(
         QuestionType type,
         String body,
         List<PreviewOptionDto> options,
-        String languageHint
+        String languageHint,
+        List<PreviewQuestionDto> subQuestions
 ) {}

@@ -411,7 +411,7 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     private String createTextQuestionViaApi(String title) throws Exception {
-        QuestionRequest req = new QuestionRequest(QuestionType.TEXT, title, "body", null, null, null);
+        QuestionRequest req = new QuestionRequest(QuestionType.TEXT, title, "body", null, null, null, null);
         String body = mockMvc.perform(post("/api/questions")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -422,7 +422,7 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     private String createCodeSubmissionQuestionViaApi(String title) throws Exception {
-        QuestionRequest req = new QuestionRequest(QuestionType.CODE_SUBMISSION, title, "body", null, null, "java");
+        QuestionRequest req = new QuestionRequest(QuestionType.CODE_SUBMISSION, title, "body", null, null, "java", null);
         String body = mockMvc.perform(post("/api/questions")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -435,7 +435,7 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
     private String createMcqQuestionViaApi(String title) throws Exception {
         QuestionRequest req = new QuestionRequest(QuestionType.MCQ, title, "body", null,
                 List.of(new QuestionOptionRequest("Option A", true),
-                        new QuestionOptionRequest("Option B", false)), null);
+                        new QuestionOptionRequest("Option B", false)), null, null);
         String body = mockMvc.perform(post("/api/questions")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)

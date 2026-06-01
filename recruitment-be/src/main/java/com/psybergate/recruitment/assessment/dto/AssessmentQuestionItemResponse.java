@@ -8,5 +8,6 @@ public record AssessmentQuestionItemResponse(
         UUID questionId,
         String title,
         QuestionType type,
-        int displayOrder
+        int displayOrder,
+        int subQuestionCount
 ) {}

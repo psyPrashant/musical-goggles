@@ -163,6 +163,9 @@ import { Question } from '../../core/question/question.model';
                     <span class="q-num">{{ i + 1 }}</span>
                     <span class="type-badge type-{{ q.type.toLowerCase() }}">{{ typeLabelMap[q.type] }}</span>
                     <span class="q-title">{{ q.title }}</span>
+                    @if (q.type === 'GROUP' && q.subQuestionCount > 0) {
+                      <span class="sub-q-hint">{{ q.subQuestionCount }} sub-questions</span>
+                    }
                     <button class="icon-btn danger" (click)="removeQuestion(q.questionId)" title="Remove">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -591,6 +594,8 @@ import { Question } from '../../core/question/question.model';
     .type-mcq { background: var(--accent-subtle); color: var(--accent); }
     .type-text { background: var(--info-subtle); color: var(--info); }
     .type-code_submission { background: rgba(168,85,247,0.13); color: #a855f7; }
+    .type-group { background: rgba(20,184,166,0.13); color: #14b8a6; }
+    .sub-q-hint { font-size: 11px; color: var(--text-3); white-space: nowrap; }
 
     .q-title {
       flex: 1;
@@ -825,12 +830,14 @@ export class AssessmentBuilderComponent implements OnInit {
     { value: 'MCQ', label: 'MCQ' },
     { value: 'TEXT', label: 'Text' },
     { value: 'CODE_SUBMISSION', label: 'Code' },
+    { value: 'GROUP', label: 'Group' },
   ];
 
   readonly typeLabelMap: Record<string, string> = {
     MCQ: 'MCQ',
     TEXT: 'Text',
     CODE_SUBMISSION: 'Code',
+    GROUP: 'Group',
   };
 
   readonly accessOptions = [

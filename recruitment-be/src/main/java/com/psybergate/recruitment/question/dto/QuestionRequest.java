@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
+import java.util.UUID;
 
 public record QuestionRequest(
         @NotNull QuestionType type,
@@ -13,5 +14,6 @@ public record QuestionRequest(
         @NotBlank String body,
         List<String> tags,
         @Valid List<QuestionOptionRequest> options,
-        String languageHint
+        String languageHint,
+        List<UUID> memberQuestionIds
 ) {}

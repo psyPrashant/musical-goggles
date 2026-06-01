@@ -11,5 +11,6 @@ public record TakeQuestionDto(
         QuestionType type,
         String title,
         String body,
-        List<TakeOptionDto> options
+        List<TakeOptionDto> options,
+        List<TakeQuestionDto> subQuestions
 ) {}
