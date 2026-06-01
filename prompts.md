@@ -260,3 +260,52 @@ create a new branch before starting
 
 ---
 
+## 2026-06-01 | hendrik.muller
+
+> git fetch and pull
+
+---
+
+## 2026-06-01 | hendrik.muller
+
+> Help me make jira tickets and with help of openspec to plan/refine these:
+> 1. refresh candidate list after inviting someone
+> 2. have a toast or modal when inviting someone with the same email, or update the invite when different assesment
+> 3. toast or modal when making invite with an assesment that is not published, maby asking them if should be published
+> 4. be able to edit candidates on list
+> 5. make dashboard accurate and represent actual data instead of mock data
+> 6. make question groups a type of question instead of its own thing (just as MCQ and code submissions)
+> 7. seed the data base with questions of different kinds (like aglorith language ect.) and assestments , should seed/be seeded on my colleges machines
+
+---
+
+## 2026-06-01 | hendrik.muller
+
+> start with ep-08
+
+---
+
+## 2026-06-01 | hendrik.muller
+
+> continue
+
+---
+
+## 2026-06-01 | hendrik.muller
+
+> verify it with playwright
+
+---
+
+## 2026-06-01 | hendrik.muller
+
+> try use docker
+
+---
+
+## 2026-06-01 | hendrik.muller
+
+> update prompt.md
+
+---
+

@@ -1,5 +1,7 @@
 server:
   port: 8080
+  error:
+    include-message: always
 
 spring:
   datasource:
@@ -14,3 +16,6 @@ spring:
   mail:
     host: localhost
     port: 1025
+  mvc:
+    problemdetails:
+      enabled: true

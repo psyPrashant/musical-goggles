@@ -37,4 +37,15 @@ public class CandidateController {
     public ResponseEntity<CandidateResponse> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(candidateService.findById(id));
     }
+
+    @GetMapping("/by-email")
+    public ResponseEntity<CandidateResponse> getByEmail(@RequestParam String email) {
+        return ResponseEntity.ok(candidateService.getByEmail(email));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<CandidateResponse> update(@PathVariable UUID id,
+                                                     @RequestBody @Valid CandidateRequest request) {
+        return ResponseEntity.ok(candidateService.update(id, request));
+    }
 }

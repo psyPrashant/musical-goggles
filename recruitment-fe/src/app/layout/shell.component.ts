@@ -1,11 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/auth/auth.service';
+import { ToastComponent } from '../core/toast/toast.component';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ToastComponent],
   template: `
     <div class="shell">
       <aside class="sidebar">
@@ -79,6 +80,7 @@ import { AuthService } from '../core/auth/auth.service';
         <router-outlet/>
       </main>
     </div>
+    <app-toast/>
   `,
   styles: [`
     .shell {

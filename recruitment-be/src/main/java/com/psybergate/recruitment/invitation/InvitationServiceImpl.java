@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -43,6 +44,14 @@ public class InvitationServiceImpl implements InvitationService {
 
         if (assessment.getStatus() != AssessmentStatus.PUBLISHED) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Assessment must be published before inviting candidates");
+        }
+
+        Optional<CandidateInvitation> existingInvite = invitationRepository
+                .findByCandidate_IdAndAssessment_Id(candidate.getId(), assessment.getId());
+        if (existingInvite.isPresent()
+                && (existingInvite.get().getStatus() == InvitationStatus.PENDING
+                        || existingInvite.get().getStatus() == InvitationStatus.SENT)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "DUPLICATE_INVITE");
         }
 
         String token = jwtService.generateCandidateToken(
