@@ -339,10 +339,38 @@ create a new branch before starting
 
 ---
 
-
 ## 2026-06-01 | hendrik.muller
 
-> continue [in: 468262, out: 246]
+> Help me implement MG-72 with open spec
 
 ---
 
+## 2026-06-01 | hendrik.muller
+
+> continue
+
+---
+
+## 2026-06-01 | hendrik.muller
+
+> test this with play right
+
+---
+
+## 2026-06-01 | hendrik.muller
+
+> commit and push, create pr
+
+---
+
+## 2026-06-01 | hendrik.muller
+
+> update jira borad
+
+---
+
+## 2026-06-01 | hendrik.muller
+
+> can you update prompt.md file
+
+---
