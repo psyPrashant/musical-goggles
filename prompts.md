@@ -309,3 +309,33 @@ create a new branch before starting
 
 ---
 
+## 2026-06-01 14:42 | prashant.kessa
+
+> my frontend is getting a 401 error when running in docker : 172.18.0.1 - - [01/Jun/2026:12:40:07 +0000] "GET /api/questions HTTP/1.1" 401 111 "http://localhost:4200/questions" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36" "-"
+
+---
+
+## 2026-06-01 14:51 | prashant.kessa
+
+> look at my jira board and work on epic 9 (Musical Goggles). move the tickets to "in progress". switch to a new branch and start with the openspec workflow
+
+---
+
+## 2026-06-01 15:12 | prashant.kessa
+
+> all good. continue
+
+---
+
+## 2026-06-01 15:15 | prashant.kessa
+
+> commit everything and open a pr
+
+---
+
+## 2026-06-01 15:19 | prashant.kessa
+
+> you can commit and push them
+
+---
+
