@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Question, QuestionGroup, QuestionGroupRequest, QuestionRequest } from './question.model';
+import { Question, QuestionRequest } from './question.model';
 
 @Injectable({ providedIn: 'root' })
 export class QuestionService {
@@ -36,38 +36,5 @@ export class QuestionService {
 
   listTags(): Observable<string[]> {
     return this.http.get<string[]>('/api/tags');
-  }
-
-  // ── Question Groups ───────────────────────────────────────────────────────
-
-  listGroups(): Observable<QuestionGroup[]> {
-    return this.http.get<QuestionGroup[]>('/api/question-groups');
-  }
-
-  getGroup(id: string): Observable<QuestionGroup> {
-    return this.http.get<QuestionGroup>(`/api/question-groups/${id}`);
-  }
-
-  createGroup(req: QuestionGroupRequest): Observable<QuestionGroup> {
-    return this.http.post<QuestionGroup>('/api/question-groups', req);
-  }
-
-  updateGroup(id: string, req: QuestionGroupRequest): Observable<QuestionGroup> {
-    return this.http.put<QuestionGroup>(`/api/question-groups/${id}`, req);
-  }
-
-  deleteGroup(id: string): Observable<void> {
-    return this.http.delete<void>(`/api/question-groups/${id}`);
-  }
-
-  addQuestionToGroup(groupId: string, questionId: string, displayOrder?: number): Observable<QuestionGroup> {
-    return this.http.post<QuestionGroup>(`/api/question-groups/${groupId}/questions`, {
-      questionId,
-      displayOrder: displayOrder ?? null,
-    });
-  }
-
-  removeQuestionFromGroup(groupId: string, questionId: string): Observable<void> {
-    return this.http.delete<void>(`/api/question-groups/${groupId}/questions/${questionId}`);
   }
 }

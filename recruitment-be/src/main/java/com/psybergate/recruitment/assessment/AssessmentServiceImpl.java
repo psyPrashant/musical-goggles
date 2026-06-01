@@ -89,7 +89,10 @@ public class AssessmentServiceImpl implements AssessmentService {
         Question question = questionRepository.findById(req.questionId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found"));
 
-        // Enforce max-one CODE_SUBMISSION rule (skip check if idempotent update of existing item)
+        // Enforce max-one CODE_SUBMISSION rule (skip check if idempotent update of existing item).
+        // Decision (EP-10): this limit applies to TOP-LEVEL questions only. A GROUP question that
+        // contains a CODE_SUBMISSION sub-question does NOT count toward this limit, because the
+        // JPQL query checks TYPE(aq.question) = CodeSubmissionQuestion at the top-level join.
         boolean alreadyLinked = assessmentQuestionRepository
                 .findByAssessmentIdAndQuestionId(assessmentId, req.questionId()).isPresent();
 
@@ -178,12 +181,13 @@ public class AssessmentServiceImpl implements AssessmentService {
     private AssessmentDetailResponse toDetailResponse(Assessment a) {
         List<AssessmentQuestionItemResponse> questions = a.getQuestions().stream()
                 .sorted(Comparator.comparingInt(AssessmentQuestion::getDisplayOrder))
-                .map(aq -> new AssessmentQuestionItemResponse(
-                        aq.getQuestion().getId(),
-                        aq.getQuestion().getTitle(),
-                        aq.getQuestion().getType(),
-                        aq.getDisplayOrder()
-                ))
+                .map(aq -> {
+                    Question q = (Question) Hibernate.unproxy(aq.getQuestion());
+                    int subCount = (q instanceof GroupQuestion gq) ? gq.getMembers().size() : 0;
+                    return new AssessmentQuestionItemResponse(
+                            q.getId(), q.getTitle(), q.getType(), aq.getDisplayOrder(), subCount
+                    );
+                })
                 .toList();
 
         return new AssessmentDetailResponse(
@@ -200,6 +204,7 @@ public class AssessmentServiceImpl implements AssessmentService {
         Question unproxied = (Question) Hibernate.unproxy(q);
         List<PreviewOptionDto> options = null;
         String languageHint = null;
+        List<PreviewQuestionDto> subQuestions = null;
 
         if (unproxied instanceof McqQuestion mcq) {
             options = mcq.getOptions().stream()
@@ -207,8 +212,14 @@ public class AssessmentServiceImpl implements AssessmentService {
                     .toList();
         } else if (unproxied instanceof CodeSubmissionQuestion csq) {
             languageHint = csq.getLanguageHint();
+        } else if (unproxied instanceof GroupQuestion gq) {
+            // GROUP question: body is the preamble; members become sub-questions.
+            // Sub-questions are rendered using their native type (MCQ/TEXT/CODE_SUBMISSION).
+            subQuestions = gq.getMembers().stream()
+                    .map(m -> toPreviewQuestion((Question) Hibernate.unproxy(m.getQuestion())))
+                    .toList();
         }
 
-        return new PreviewQuestionDto(q.getId(), q.getType(), q.getBody(), options, languageHint);
+        return new PreviewQuestionDto(q.getId(), q.getType(), q.getBody(), options, languageHint, subQuestions);
     }
 }

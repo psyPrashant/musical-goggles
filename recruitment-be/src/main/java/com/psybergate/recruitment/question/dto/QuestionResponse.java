@@ -14,6 +14,7 @@ public record QuestionResponse(
         List<String> tags,
         List<QuestionOptionResponse> options,
         String languageHint,
+        List<QuestionResponse> memberQuestions,
         Instant createdAt,
         Instant updatedAt
 ) {}

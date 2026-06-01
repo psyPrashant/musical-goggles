@@ -33,20 +33,24 @@ The system SHALL allow removing a question from an assessment via `DELETE /api/a
 - **WHEN** an Admin or Recruiter calls `DELETE /api/assessments/{id}/questions/{questionId}` for a question not linked to that assessment
 - **THEN** the response is HTTP 404
 
-### Requirement: An assessment may contain at most one CODE_SUBMISSION question
-The system SHALL enforce that no more than one question of type `CODE_SUBMISSION` is added to a single assessment. Attempting to add a second `CODE_SUBMISSION` question SHALL be rejected at the API level.
+### Requirement: An assessment may contain at most one top-level CODE_SUBMISSION question
+The system SHALL enforce that no more than one top-level question of type `CODE_SUBMISSION` is added to a single assessment. Sub-questions inside a GROUP question do not count as top-level questions and are not subject to this limit. Attempting to add a second top-level `CODE_SUBMISSION` question SHALL be rejected at the API level.
 
-#### Scenario: Adding a second CODE_SUBMISSION question is rejected
-- **WHEN** an Admin or Recruiter attempts to add a `CODE_SUBMISSION` question to an assessment that already contains one
+#### Scenario: Adding a second top-level CODE_SUBMISSION question is rejected
+- **WHEN** an Admin or Recruiter attempts to add a top-level `CODE_SUBMISSION` question to an assessment that already contains one top-level `CODE_SUBMISSION` question
 - **THEN** the response is HTTP 422 Unprocessable Entity with an error message explaining the constraint
 
 #### Scenario: Adding a non-CODE_SUBMISSION question when limit is reached is allowed
-- **WHEN** an Admin or Recruiter adds an MCQ or TEXT question to an assessment that already contains one `CODE_SUBMISSION` question
+- **WHEN** an Admin or Recruiter adds an MCQ, TEXT, or GROUP question to an assessment that already contains one top-level `CODE_SUBMISSION` question
 - **THEN** the question is added successfully and the response is HTTP 201
 
 #### Scenario: Adding the first CODE_SUBMISSION question is allowed
-- **WHEN** an Admin or Recruiter adds the first `CODE_SUBMISSION` question to an assessment that has none
+- **WHEN** an Admin or Recruiter adds the first top-level `CODE_SUBMISSION` question to an assessment that has none
 - **THEN** the question is added successfully and the response is HTTP 201
+
+#### Scenario: GROUP question containing a CODE_SUBMISSION sub-question does not trigger the top-level limit
+- **WHEN** an Admin or Recruiter adds a GROUP question that contains a `CODE_SUBMISSION` sub-question to an assessment that already contains one top-level `CODE_SUBMISSION` question
+- **THEN** the GROUP question is added successfully and the response is HTTP 201
 
 ### Requirement: Question order within an assessment is configurable
 The ordered list of questions returned by `GET /api/assessments/{id}` SHALL be sorted ascending by `displayOrder`. The display order of an existing question SHALL be updatable by re-adding it with a different `displayOrder` (idempotent add updates the order).

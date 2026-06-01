@@ -12,8 +12,8 @@ const mockAssessment: AssessmentDetail = {
   timeLimitMinutes: 60,
   status: 'DRAFT',
   questions: [
-    { questionId: 'q1', title: 'Question One', type: 'TEXT', displayOrder: 10 },
-    { questionId: 'q2', title: 'Question Two', type: 'MCQ', displayOrder: 20 },
+    { questionId: 'q1', title: 'Question One', type: 'TEXT', displayOrder: 10, subQuestionCount: 0 },
+    { questionId: 'q2', title: 'Question Two', type: 'MCQ', displayOrder: 20, subQuestionCount: 0 },
   ],
   passwordProtected: false,
   createdAt: '2026-05-29T00:00:00Z',
@@ -62,7 +62,7 @@ describe('AssessmentDetailComponent', () => {
 
     const assessmentWithCode: AssessmentDetail = {
       ...mockAssessment,
-      questions: [{ questionId: 'cq1', title: 'Sort it', type: 'CODE_SUBMISSION', displayOrder: 10 }],
+      questions: [{ questionId: 'cq1', title: 'Sort it', type: 'CODE_SUBMISSION', displayOrder: 10, subQuestionCount: 0 }],
     };
 
     httpMock.expectOne('/api/assessments/abc123').flush(assessmentWithCode);

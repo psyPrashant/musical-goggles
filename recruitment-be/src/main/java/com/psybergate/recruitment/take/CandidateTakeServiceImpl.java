@@ -2,6 +2,7 @@ package com.psybergate.recruitment.take;
 
 import com.psybergate.recruitment.domain.*;
 import com.psybergate.recruitment.repository.*;
+import java.util.ArrayList;
 import com.psybergate.recruitment.take.dto.*;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,10 +93,17 @@ public class CandidateTakeServiceImpl implements CandidateTakeService {
         Assessment assessment = requireAssessment(assessmentId);
         checkDeadline(submission, assessment);
 
-        Set<UUID> validQuestionIds = assessmentQuestionRepository
-                .findByAssessmentIdOrderByDisplayOrder(assessmentId).stream()
-                .map(aq -> aq.getQuestion().getId())
-                .collect(Collectors.toSet());
+        // Collect valid question IDs: top-level IDs plus sub-question IDs from GROUP questions.
+        // Candidates answer GROUP sub-questions by sub-question id, not the group id itself.
+        Set<UUID> validQuestionIds = new HashSet<>();
+        for (AssessmentQuestion aq : assessmentQuestionRepository
+                .findByAssessmentIdOrderByDisplayOrder(assessmentId)) {
+            Question q = (Question) Hibernate.unproxy(aq.getQuestion());
+            validQuestionIds.add(q.getId());
+            if (q instanceof GroupQuestion gq) {
+                gq.getMembers().forEach(m -> validQuestionIds.add(m.getQuestion().getId()));
+            }
+        }
 
         List<TakeAnswerDto> results = new ArrayList<>();
 
@@ -241,21 +249,35 @@ public class CandidateTakeServiceImpl implements CandidateTakeService {
 
     private TakeQuestionDto toTakeQuestion(AssessmentQuestion aq) {
         Question q = (Question) Hibernate.unproxy(aq.getQuestion());
+        return buildTakeQuestionDto(q, aq.getDisplayOrder());
+    }
+
+    private TakeQuestionDto buildTakeQuestionDto(Question q, int displayOrder) {
         List<TakeOptionDto> options = null;
+        List<TakeQuestionDto> subQuestions = null;
 
         if (q instanceof McqQuestion mcq) {
             options = mcq.getOptions().stream()
                     .map(o -> new TakeOptionDto(o.getId(), o.getOptionText()))
                     .toList();
+        } else if (q instanceof GroupQuestion gq) {
+            // GROUP: body is the preamble; members become sub-questions answered individually.
+            subQuestions = new ArrayList<>();
+            for (int i = 0; i < gq.getMembers().size(); i++) {
+                GroupQuestionMember m = gq.getMembers().get(i);
+                Question sub = (Question) Hibernate.unproxy(m.getQuestion());
+                subQuestions.add(buildTakeQuestionDto(sub, i));
+            }
         }
 
         return new TakeQuestionDto(
                 q.getId(),
-                aq.getDisplayOrder(),
+                displayOrder,
                 q.getType(),
                 q.getTitle(),
                 q.getBody(),
-                options
+                options,
+                subQuestions
         );
     }
 

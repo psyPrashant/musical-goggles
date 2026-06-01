@@ -177,6 +177,54 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
                   </div>
                 }
 
+                @if (q.type === 'GROUP' && q.subQuestions) {
+                  <div class="group-sub-questions">
+                    @for (sub of q.subQuestions; track sub.id; let si = $index) {
+                      <div class="sub-question-block">
+                        <div class="sub-q-header">
+                          <span class="sub-q-num">{{ si + 1 }}.</span>
+                          <span class="type-badge type-{{ sub.type.toLowerCase() }}">{{ typeLabel(sub.type) }}</span>
+                          <span class="sub-q-title">{{ sub.body }}</span>
+                        </div>
+                        @if (sub.type === 'MCQ' && sub.options) {
+                          <div class="mcq-options">
+                            @for (opt of sub.options; track opt.id; let j = $index) {
+                              <div class="mcq-option" [class.mcq-selected]="answers()[sub.id] === opt.id" (click)="setAnswer(sub.id, opt.id)">
+                                <div class="option-radio" [class.radio-selected]="answers()[sub.id] === opt.id">
+                                  @if (answers()[sub.id] === opt.id) { <div class="radio-dot"></div> }
+                                </div>
+                                <span class="option-letter">{{ optionLetter(j) }}</span>
+                                <span class="option-text">{{ opt.text }}</span>
+                              </div>
+                            }
+                          </div>
+                        }
+                        @if (sub.type === 'TEXT') {
+                          <div class="text-answer">
+                            <textarea rows="5" class="answer-textarea"
+                                      [value]="answers()[sub.id] ?? ''"
+                                      (input)="setAnswer(sub.id, $any($event.target).value)"
+                                      placeholder="Type your answer here…"></textarea>
+                            <span class="word-count">{{ wordCount(answers()[sub.id]) }} words</span>
+                          </div>
+                        }
+                        @if (sub.type === 'CODE_SUBMISSION') {
+                          <div class="code-answer">
+                            <div class="code-bar">
+                              @if (sub.languageHint) { <span class="lang-tag">{{ sub.languageHint }}</span> }
+                              <span class="code-hint">Paste or type your code below</span>
+                            </div>
+                            <textarea rows="10" class="answer-textarea code-textarea"
+                                      [value]="answers()[sub.id] ?? ''"
+                                      (input)="setAnswer(sub.id, $any($event.target).value)"
+                                      placeholder="// Write your solution here…"></textarea>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+
                 <div class="question-nav">
                   <button class="nav-btn" (click)="prev()" [disabled]="currentIndex() === 0">← Previous</button>
                   @if (currentIndex() < preview()!.questions.length - 1) {
@@ -418,6 +466,22 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
 
     .code-hint { font-size: 12px; color: var(--text-3); }
 
+    .group-sub-questions { display: flex; flex-direction: column; gap: 16px; padding: 0 20px 20px; }
+
+    .sub-question-block {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 14px;
+    }
+
+    .sub-q-header {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    }
+
+    .sub-q-num { font-size: 12px; font-weight: 700; color: var(--text-3); }
+    .sub-q-title { font-size: 13.5px; color: var(--text-1); flex: 1; }
+
+    .type-badge.type-group { background: rgba(20,184,166,0.13); color: #14b8a6; }
+
     .question-nav {
       display: flex; gap: 8px; justify-content: space-between;
       padding: 14px 20px; border-top: 1px solid var(--border);
@@ -512,8 +576,10 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
   });
 
   readonly answeredCount = computed(() => {
+    const p = this.preview();
+    if (!p) return 0;
     const a = this.answers();
-    return Object.keys(a).filter(k => a[k]?.trim()).length;
+    return p.questions.filter(q => this.isQuestionAnswered(q, a)).length;
   });
 
   readonly progressPercent = computed(() => {
@@ -630,6 +696,17 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
           ? q.options.map(o => ({ id: o.id, text: o.optionText }))
           : null,
         languageHint: null,
+        subQuestions: q.subQuestions
+          ? q.subQuestions.map(sub => ({
+              id: sub.id,
+              type: sub.type as any,
+              body: sub.body,
+              options: sub.options
+                ? sub.options.map(o => ({ id: o.id, text: o.optionText }))
+                : null,
+              languageHint: null,
+            }))
+          : undefined,
       })),
     });
 
@@ -691,7 +768,7 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
     const existing = this.autosaveTimers.get(questionId);
     if (existing) clearTimeout(existing);
 
-    const q = this.preview()?.questions.find(q => q.id === questionId);
+    const q = this.findQuestion(questionId);
     const debounceMs = q?.type === 'MCQ' ? 500 : 1000;
 
     const timer = setTimeout(() => {
@@ -702,12 +779,25 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
     this.autosaveTimers.set(questionId, timer);
   }
 
+  /** Find a question by id, searching both top-level and sub-questions inside GROUP questions. */
+  private findQuestion(questionId: string): any | undefined {
+    const questions = this.preview()?.questions ?? [];
+    for (const q of questions) {
+      if (q.id === questionId) return q;
+      if (q.type === 'GROUP' && q.subQuestions) {
+        const sub = (q.subQuestions as any[]).find((s: any) => s.id === questionId);
+        if (sub) return sub;
+      }
+    }
+    return undefined;
+  }
+
   private flushAnswer(questionId: string) {
     const token = this.sessionToken();
     if (!token) return;
 
     const value = this.answers()[questionId];
-    const q = this.preview()?.questions.find(q => q.id === questionId);
+    const q = this.findQuestion(questionId);
     if (!q) return;
 
     const input = q.type === 'MCQ'
@@ -724,7 +814,18 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
   }
 
   isAnswered(questionId: string): boolean {
-    return !!(this.answers()[questionId]?.trim());
+    const p = this.preview();
+    const q = p?.questions.find(q => q.id === questionId);
+    return this.isQuestionAnswered(q as any, this.answers());
+  }
+
+  private isQuestionAnswered(q: any, a: Record<string, string | undefined>): boolean {
+    if (!q) return false;
+    if (q.type === 'GROUP' && q.subQuestions?.length) {
+      // GROUP is answered only when every sub-question has a non-empty answer
+      return q.subQuestions.every((sub: any) => !!(a[sub.id]?.trim()));
+    }
+    return !!(a[q.id]?.trim());
   }
 
   toggleFlag(questionId: string) {

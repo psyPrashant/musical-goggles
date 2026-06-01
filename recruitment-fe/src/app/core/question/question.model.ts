@@ -1,4 +1,4 @@
-export type QuestionType = 'MCQ' | 'TEXT' | 'CODE_SUBMISSION';
+export type QuestionType = 'MCQ' | 'TEXT' | 'CODE_SUBMISSION' | 'GROUP';
 
 export interface QuestionOption {
   id: string;
@@ -14,6 +14,7 @@ export interface Question {
   tags: string[];
   options: QuestionOption[] | null;
   languageHint: string | null;
+  memberQuestions?: Question[];
   createdAt: string;
   updatedAt: string;
 }
@@ -25,27 +26,5 @@ export interface QuestionRequest {
   tags: string[];
   options?: { text: string; correct: boolean }[];
   languageHint?: string;
-}
-
-export interface GroupQuestion {
-  questionId: string;
-  title: string;
-  type: QuestionType;
-  displayOrder: number | null;
-}
-
-export interface QuestionGroup {
-  id: string;
-  name: string;
-  description: string | null;
-  structured: boolean;
-  questions: GroupQuestion[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface QuestionGroupRequest {
-  name: string;
-  description: string | null;
-  structured: boolean;
+  memberQuestionIds?: string[];
 }

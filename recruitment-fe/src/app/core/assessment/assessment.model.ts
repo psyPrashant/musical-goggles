@@ -19,6 +19,7 @@ export interface AssessmentQuestion {
   title: string;
   type: QuestionType;
   displayOrder: number;
+  subQuestionCount: number;
 }
 
 export interface AssessmentDetail {
@@ -56,6 +57,7 @@ export interface PreviewQuestion {
   body: string;
   options: PreviewOption[] | null;
   languageHint: string | null;
+  subQuestions?: PreviewQuestion[];
 }
 
 export interface AssessmentPreview {

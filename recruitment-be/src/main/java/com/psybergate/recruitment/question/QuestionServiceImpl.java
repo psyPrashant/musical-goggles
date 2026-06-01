@@ -2,6 +2,7 @@ package com.psybergate.recruitment.question;
 
 import com.psybergate.recruitment.domain.*;
 import com.psybergate.recruitment.question.dto.*;
+import java.util.UUID;
 import com.psybergate.recruitment.repository.QuestionRepository;
 import com.psybergate.recruitment.repository.UserRepository;
 import com.psybergate.recruitment.tag.TagService;
@@ -99,7 +100,35 @@ public class QuestionServiceImpl implements QuestionService {
                 q.setLanguageHint(req.languageHint());
                 yield q;
             }
+            case GROUP -> buildGroup(req);
         };
+    }
+
+    private GroupQuestion buildGroup(QuestionRequest req) {
+        List<UUID> memberIds = req.memberQuestionIds();
+        if (memberIds == null || memberIds.size() < 2) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "GROUP question must have at least 2 member questions");
+        }
+        GroupQuestion gq = new GroupQuestion();
+        gq.setTitle(req.title());
+        gq.setBody(req.body());
+        for (int i = 0; i < memberIds.size(); i++) {
+            UUID memberId = memberIds.get(i);
+            Question member = questionRepository.findById(memberId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "Member question not found: " + memberId));
+            if (member.getType() == QuestionType.GROUP) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Nested GROUP questions are not supported");
+            }
+            GroupQuestionMember m = new GroupQuestionMember();
+            m.setGroupQuestion(gq);
+            m.setQuestion(member);
+            m.setDisplayOrder(i);
+            gq.getMembers().add(m);
+        }
+        return gq;
     }
 
     private McqQuestion buildMcq(QuestionRequest req) {
@@ -150,6 +179,7 @@ public class QuestionServiceImpl implements QuestionService {
             case "MCQ" -> McqQuestion.class;
             case "TEXT" -> TextQuestion.class;
             case "CODE_SUBMISSION" -> CodeSubmissionQuestion.class;
+            case "GROUP" -> GroupQuestion.class;
             default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown type: " + type);
         };
     }
@@ -162,6 +192,7 @@ public class QuestionServiceImpl implements QuestionService {
     QuestionResponse toResponse(Question q) {
         List<QuestionOptionResponse> options = null;
         String languageHint = null;
+        List<QuestionResponse> memberQuestions = null;
 
         if (q instanceof McqQuestion mcq) {
             options = mcq.getOptions().stream()
@@ -169,13 +200,17 @@ public class QuestionServiceImpl implements QuestionService {
                     .toList();
         } else if (q instanceof CodeSubmissionQuestion csq) {
             languageHint = csq.getLanguageHint();
+        } else if (q instanceof GroupQuestion gq) {
+            memberQuestions = gq.getMembers().stream()
+                    .map(m -> toResponse((Question) org.hibernate.Hibernate.unproxy(m.getQuestion())))
+                    .toList();
         }
 
         List<String> tags = q.getTags().stream().map(Tag::getName).sorted().toList();
 
         return new QuestionResponse(
                 q.getId(), q.getType(), q.getTitle(), q.getBody(),
-                tags, options, languageHint, q.getCreatedAt(), q.getUpdatedAt()
+                tags, options, languageHint, memberQuestions, q.getCreatedAt(), q.getUpdatedAt()
         );
     }
 }

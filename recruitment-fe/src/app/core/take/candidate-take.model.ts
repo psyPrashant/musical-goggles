@@ -1,5 +1,5 @@
 export type SubmissionStatus = 'IN_PROGRESS' | 'SUBMITTED' | 'AUTO_SUBMITTED';
-export type QuestionType = 'MCQ' | 'TEXT' | 'CODE_SUBMISSION';
+export type QuestionType = 'MCQ' | 'TEXT' | 'CODE_SUBMISSION' | 'GROUP';
 
 export interface TakeOption {
   id: string;
@@ -13,6 +13,7 @@ export interface TakeQuestion {
   title: string;
   body: string;
   options: TakeOption[] | null;
+  subQuestions?: TakeQuestion[];
 }
 
 export interface TakeAnswer {

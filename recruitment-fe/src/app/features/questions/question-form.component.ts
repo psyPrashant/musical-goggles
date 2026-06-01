@@ -1,8 +1,8 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { QuestionService } from '../../core/question/question.service';
-import { QuestionType } from '../../core/question/question.model';
+import { Question, QuestionType } from '../../core/question/question.model';
 
 @Component({
   selector: 'app-question-form',
@@ -18,6 +18,18 @@ import { QuestionType } from '../../core/question/question.model';
 
       <div class="content">
         <div class="form-card">
+
+          <!-- Edit guard for GROUP questions -->
+          @if (groupEditBlocked()) {
+            <div class="info-banner">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Group questions cannot be edited via this form. To change the sub-questions, delete this question and recreate it.
+            </div>
+            <div class="form-actions" style="border-top: none; padding-top: 0; margin-top: 0;">
+              <a routerLink="/questions" class="btn btn-secondary">← Back to Bank</a>
+            </div>
+          } @else {
+
           <form [formGroup]="form" (ngSubmit)="submit()">
 
             <div class="field">
@@ -32,17 +44,26 @@ import { QuestionType } from '../../core/question/question.model';
 
             <div class="field">
               <label class="field-label">Question Title <span class="required">*</span></label>
-              <input formControlName="title" class="field-input" placeholder="e.g. What is the time complexity of binary search?"/>
+              <input formControlName="title" class="field-input"
+                [placeholder]="form.get('type')?.value === 'GROUP'
+                  ? 'e.g. Database scenario — query optimisation'
+                  : 'e.g. What is the time complexity of binary search?'"/>
               @if (form.get('title')?.invalid && form.get('title')?.touched) {
                 <span class="field-err">Title is required</span>
               }
             </div>
 
             <div class="field">
-              <label class="field-label">Question Body <span class="required">*</span></label>
-              <textarea formControlName="body" class="field-textarea" rows="4" placeholder="Detailed question description…"></textarea>
+              <label class="field-label">
+                {{ form.get('type')?.value === 'GROUP' ? 'Scenario Preamble' : 'Question Body' }}
+                <span class="required">*</span>
+              </label>
+              <textarea formControlName="body" class="field-textarea" rows="4"
+                [placeholder]="form.get('type')?.value === 'GROUP'
+                  ? 'Describe the scenario or context that candidates will read before answering the sub-questions…'
+                  : 'Detailed question description…'"></textarea>
               @if (form.get('body')?.invalid && form.get('body')?.touched) {
-                <span class="field-err">Body is required</span>
+                <span class="field-err">{{ form.get('type')?.value === 'GROUP' ? 'Preamble' : 'Body' }} is required</span>
               }
             </div>
 
@@ -51,6 +72,7 @@ import { QuestionType } from '../../core/question/question.model';
               <input formControlName="tagsRaw" class="field-input" placeholder="e.g. algorithms, java, sql"/>
             </div>
 
+            <!-- CODE_SUBMISSION: language hint -->
             @if (form.get('type')?.value === 'CODE_SUBMISSION') {
               <div class="field">
                 <label class="field-label">Language Hint</label>
@@ -58,6 +80,7 @@ import { QuestionType } from '../../core/question/question.model';
               </div>
             }
 
+            <!-- MCQ: answer options -->
             @if (form.get('type')?.value === 'MCQ') {
               <div class="field">
                 <label class="field-label">Answer Options <span class="field-hint-inline">(select the correct one)</span></label>
@@ -91,6 +114,72 @@ import { QuestionType } from '../../core/question/question.model';
               </div>
             }
 
+            <!-- GROUP: member question picker -->
+            @if (form.get('type')?.value === 'GROUP') {
+              <div class="field">
+                <label class="field-label">
+                  Sub-questions
+                  <span class="field-hint-inline">(add 2 or more from the question bank)</span>
+                </label>
+
+                <!-- Selected members list -->
+                @if (memberQuestions().length > 0) {
+                  <div class="members-list">
+                    @for (m of memberQuestions(); track m.id; let i = $index) {
+                      <div class="member-row">
+                        <span class="member-num">{{ i + 1 }}</span>
+                        <span class="type-badge type-{{ m.type.toLowerCase() }}">{{ typeLabel(m.type) }}</span>
+                        <span class="member-title">{{ m.title }}</span>
+                        <button type="button" class="icon-btn" (click)="removeMember(m.id)" title="Remove">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 6L6 18M6 6l12 12"/>
+                          </svg>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                }
+
+                @if (memberError()) {
+                  <span class="field-err">{{ memberError() }}</span>
+                }
+
+                <!-- Bank picker -->
+                <div class="bank-picker">
+                  <div class="bank-search-wrap">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    <input class="bank-search-input"
+                      [value]="bankSearch()"
+                      (input)="bankSearch.set($any($event.target).value)"
+                      placeholder="Search question bank…" />
+                  </div>
+
+                  @if (bankLoading()) {
+                    <div class="bank-state-msg">Loading question bank…</div>
+                  } @else if (bankError()) {
+                    <div class="bank-state-msg bank-state-err">{{ bankError() }}</div>
+                  } @else if (filteredBank().length === 0) {
+                    <div class="bank-state-msg">
+                      {{ allQuestions().length === 0 ? 'No questions in the bank yet.' : 'No matching questions available.' }}
+                    </div>
+                  } @else {
+                    <div class="bank-results">
+                      @for (q of filteredBank(); track q.id) {
+                        <div class="bank-row">
+                          <span class="type-badge type-{{ q.type.toLowerCase() }}">{{ typeLabel(q.type) }}</span>
+                          <span class="bank-row-title">{{ q.title }}</span>
+                          <button type="button" class="add-btn" (click)="addMember(q)">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                            Add
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
             @if (error()) {
               <div class="error-banner">{{ error() }}</div>
             }
@@ -103,6 +192,8 @@ import { QuestionType } from '../../core/question/question.model';
               </button>
             </div>
           </form>
+
+          } <!-- end @else groupEditBlocked -->
         </div>
       </div>
     </div>
@@ -171,10 +262,10 @@ import { QuestionType } from '../../core/question/question.model';
 
     .field-err { font-size: 11.5px; color: var(--danger); margin-top: 4px; display: block; }
 
-    .type-selector { display: flex; gap: 6px; }
+    .type-selector { display: flex; gap: 6px; flex-wrap: wrap; }
 
     .type-btn {
-      flex: 1; padding: 7px;
+      flex: 1; padding: 7px; min-width: 90px;
       background: var(--bg-elevated); color: var(--text-2);
       border: 1px solid var(--border); border-radius: var(--radius-sm);
       cursor: pointer; font-family: var(--font); font-size: 13px; font-weight: 400;
@@ -187,9 +278,7 @@ import { QuestionType } from '../../core/question/question.model';
 
     .option-row { display: flex; align-items: center; gap: 8px; }
 
-    .radio-wrap {
-      display: flex; align-items: center; gap: 8px; cursor: pointer;
-    }
+    .radio-wrap { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 
     .radio-circle {
       width: 16px; height: 16px; border-radius: 50%;
@@ -198,11 +287,8 @@ import { QuestionType } from '../../core/question/question.model';
       transition: border-color 120ms;
     }
     .radio-circle.selected { border-color: var(--accent); }
-
     .radio-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
-
     .option-letter { font-size: 12px; font-weight: 600; color: var(--text-3); width: 18px; }
-
     .opt-input { flex: 1; }
 
     .icon-btn {
@@ -221,6 +307,89 @@ import { QuestionType } from '../../core/question/question.model';
       font-family: var(--font); transition: all 120ms;
     }
     .add-option-btn:hover { background: var(--accent-subtle); border-color: var(--accent); }
+
+    /* GROUP: selected members */
+    .members-list {
+      display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;
+    }
+
+    .member-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    .member-num {
+      font-size: 11px; font-weight: 700; color: var(--text-3);
+      width: 18px; flex-shrink: 0; text-align: center;
+    }
+
+    .member-title { font-size: 13px; color: var(--text-1); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* GROUP: bank picker */
+    .bank-picker {
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .bank-search-wrap {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px; border-bottom: 1px solid var(--border);
+      background: var(--bg-elevated); color: var(--text-3);
+    }
+
+    .bank-search-input {
+      flex: 1; background: transparent; border: none; outline: none;
+      color: var(--text-1); font-size: 13px; font-family: var(--font);
+    }
+    .bank-search-input::placeholder { color: var(--text-3); }
+
+    .bank-results { max-height: 220px; overflow-y: auto; }
+
+    .bank-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px; border-bottom: 1px solid var(--border);
+      transition: background 100ms;
+    }
+    .bank-row:last-child { border-bottom: none; }
+    .bank-row:hover { background: var(--bg-hover); }
+
+    .bank-row-title { flex: 1; font-size: 13px; color: var(--text-1); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .add-btn {
+      display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
+      padding: 4px 10px; border-radius: var(--radius-sm);
+      background: var(--accent-subtle); color: var(--accent);
+      border: 1px solid transparent; font-size: 12px; font-weight: 500;
+      cursor: pointer; font-family: var(--font); transition: all 120ms;
+    }
+    .add-btn:hover { background: var(--accent); color: #fff; }
+
+    .bank-state-msg {
+      padding: 16px 12px; font-size: 12.5px; color: var(--text-3); text-align: center;
+    }
+    .bank-state-err { color: var(--danger); }
+
+    /* type badges (reused from assessment builder) */
+    .type-badge {
+      display: inline-flex; padding: 2px 7px; border-radius: 999px;
+      font-size: 11px; font-weight: 500; flex-shrink: 0;
+    }
+    .type-mcq { background: var(--accent-subtle); color: var(--accent); }
+    .type-text { background: var(--info-subtle); color: var(--info); }
+    .type-code_submission { background: rgba(168,85,247,0.13); color: #a855f7; }
+    .type-group { background: rgba(20,184,166,0.13); color: #14b8a6; }
+
+    /* info / edit-blocked banner */
+    .info-banner {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 12px 14px; margin-bottom: 20px;
+      background: var(--info-subtle); border: 1px solid rgba(59,130,246,.2);
+      border-radius: var(--radius-sm); color: var(--info); font-size: 13px;
+      line-height: 1.5;
+    }
+    .info-banner svg { flex-shrink: 0; margin-top: 1px; }
 
     .error-banner {
       padding: 10px 14px; background: var(--danger-subtle);
@@ -245,6 +414,24 @@ export class QuestionFormComponent implements OnInit {
   readonly error = signal<string | null>(null);
   readonly mcqError = signal<string | null>(null);
 
+  // ── GROUP-specific state ────────────────────────────────────────────────
+  readonly allQuestions = signal<Question[]>([]);
+  readonly memberQuestions = signal<Question[]>([]);
+  readonly bankSearch = signal('');
+  readonly bankLoading = signal(false);
+  readonly bankError = signal<string | null>(null);
+  readonly memberError = signal<string | null>(null);
+  readonly groupEditBlocked = signal(false);
+
+  readonly filteredBank = computed(() => {
+    const search = this.bankSearch().toLowerCase();
+    const memberIds = new Set(this.memberQuestions().map(q => q.id));
+    return this.allQuestions()
+      .filter(q => q.type !== 'GROUP')           // no nested groups
+      .filter(q => !memberIds.has(q.id))          // not already added
+      .filter(q => !search || q.title.toLowerCase().includes(search));
+  });
+
   readonly form = this.fb.group({
     type: ['MCQ' as QuestionType, Validators.required],
     title: ['', Validators.required],
@@ -258,6 +445,7 @@ export class QuestionFormComponent implements OnInit {
     { value: 'MCQ', label: 'Multiple Choice' },
     { value: 'TEXT', label: 'Text Response' },
     { value: 'CODE_SUBMISSION', label: 'Code Submission' },
+    { value: 'GROUP', label: 'Group / Scenario' },
   ];
 
   get options(): FormArray {
@@ -270,6 +458,12 @@ export class QuestionFormComponent implements OnInit {
       this.editId.set(id);
       this.svc.getQuestion(id).subscribe({
         next: q => {
+          // GROUP questions cannot be edited — show read-only notice
+          if (q.type === 'GROUP') {
+            this.groupEditBlocked.set(true);
+            this.form.patchValue({ type: q.type, title: q.title, body: q.body });
+            return;
+          }
           this.form.patchValue({
             type: q.type,
             title: q.title,
@@ -290,6 +484,8 @@ export class QuestionFormComponent implements OnInit {
   setType(type: string) {
     this.form.patchValue({ type: type as QuestionType });
     this.mcqError.set(null);
+    this.memberError.set(null);
+
     if (type === 'MCQ') {
       if (this.options.length < 2) {
         this.options.clear();
@@ -299,7 +495,38 @@ export class QuestionFormComponent implements OnInit {
     } else {
       this.options.clear();
     }
+
+    if (type === 'GROUP') {
+      this.memberQuestions.set([]);
+      this.bankSearch.set('');
+      this.bankError.set(null);
+      this.bankLoading.set(true);
+      this.svc.listQuestions().subscribe({
+        next: qs => { this.allQuestions.set(qs); this.bankLoading.set(false); },
+        error: () => {
+          this.bankError.set('Failed to load question bank. Please try again.');
+          this.bankLoading.set(false);
+        },
+      });
+    }
   }
+
+  // ── GROUP member management ─────────────────────────────────────────────
+
+  addMember(q: Question) {
+    this.memberQuestions.update(ms => [...ms, q]);
+    this.memberError.set(null);
+  }
+
+  removeMember(id: string) {
+    this.memberQuestions.update(ms => ms.filter(m => m.id !== id));
+  }
+
+  typeLabel(type: string): string {
+    return ({ MCQ: 'MCQ', TEXT: 'Text', CODE_SUBMISSION: 'Code', GROUP: 'Group' } as Record<string, string>)[type] ?? type;
+  }
+
+  // ── MCQ helpers ─────────────────────────────────────────────────────────
 
   makeOption(text: string, correct: boolean) {
     return this.fb.group({ text: [text, Validators.required], correct: [correct] });
@@ -317,6 +544,8 @@ export class QuestionFormComponent implements OnInit {
     return String.fromCharCode(65 + i);
   }
 
+  // ── Submit ──────────────────────────────────────────────────────────────
+
   submit() {
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
@@ -333,6 +562,14 @@ export class QuestionFormComponent implements OnInit {
       this.mcqError.set(null);
     }
 
+    if (type === 'GROUP') {
+      if (this.memberQuestions().length < 2) {
+        this.memberError.set('A group question must have at least 2 sub-questions.');
+        return;
+      }
+      this.memberError.set(null);
+    }
+
     const payload = {
       type,
       title: this.form.get('title')!.value!,
@@ -341,6 +578,9 @@ export class QuestionFormComponent implements OnInit {
       ...(type === 'MCQ' && { options: this.options.value }),
       ...(type === 'CODE_SUBMISSION' && {
         languageHint: this.form.get('languageHint')!.value ?? undefined,
+      }),
+      ...(type === 'GROUP' && {
+        memberQuestionIds: this.memberQuestions().map(q => q.id),
       }),
     };
 
