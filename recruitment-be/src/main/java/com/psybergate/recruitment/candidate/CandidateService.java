@@ -10,4 +10,6 @@ public interface CandidateService {
     CandidateResponse create(CandidateRequest request, UUID createdById);
     List<CandidateResponse> findAll();
     CandidateResponse findById(UUID id);
+    CandidateResponse getByEmail(String email);
+    CandidateResponse update(UUID id, CandidateRequest request);
 }

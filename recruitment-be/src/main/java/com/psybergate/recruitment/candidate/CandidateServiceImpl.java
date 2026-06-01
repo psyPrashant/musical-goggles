@@ -47,6 +47,26 @@ public class CandidateServiceImpl implements CandidateService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Candidate not found")));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public CandidateResponse getByEmail(String email) {
+        return toResponse(candidateRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Candidate not found")));
+    }
+
+    @Override
+    public CandidateResponse update(UUID id, CandidateRequest request) {
+        Candidate candidate = candidateRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Candidate not found"));
+        if (candidateRepository.existsByEmailAndIdNot(request.email(), id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A candidate with this email already exists");
+        }
+        candidate.setFirstName(request.firstName());
+        candidate.setLastName(request.lastName());
+        candidate.setEmail(request.email());
+        return toResponse(candidateRepository.save(candidate));
+    }
+
     private CandidateResponse toResponse(Candidate c) {
         return new CandidateResponse(c.getId(), c.getFirstName(), c.getLastName(), c.getEmail(), c.getCreatedAt());
     }

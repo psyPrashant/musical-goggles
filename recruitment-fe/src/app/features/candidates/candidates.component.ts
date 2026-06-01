@@ -3,7 +3,8 @@ import { DatePipe } from '@angular/common';
 import { AssessmentService } from '../../core/assessment/assessment.service';
 import { Assessment } from '../../core/assessment/assessment.model';
 import { CandidateService } from '../../core/candidate/candidate.service';
-import { Candidate } from '../../core/candidate/candidate.model';
+import { Candidate, CandidateRequest } from '../../core/candidate/candidate.model';
+import { ToastService } from '../../core/toast/toast.service';
 
 @Component({
   selector: 'app-candidates',
@@ -46,22 +47,56 @@ import { Candidate } from '../../core/candidate/candidate.model';
             </div>
             @for (c of filtered(); track c.id) {
               <div class="table-row">
-                <div class="candidate-cell">
-                  <div class="avatar" [style.background]="avatarColor(fullName(c))">{{ initials(fullName(c)) }}</div>
-                  <div class="candidate-info">
-                    <span class="candidate-name">{{ fullName(c) }}</span>
+                @if (editingId() === c.id) {
+                  <!-- Inline edit mode -->
+                  <div class="edit-cell">
+                    <input type="text" class="edit-input" [value]="editFirst()" (input)="editFirst.set($any($event.target).value)" placeholder="First name" />
+                    <input type="text" class="edit-input" [value]="editLast()" (input)="editLast.set($any($event.target).value)" placeholder="Last name" />
                   </div>
-                </div>
-                <div class="assessment-cell">{{ c.email }}</div>
-                <div class="date-cell">{{ c.createdAt | date:'dd MMM yyyy' }}</div>
-                <div class="actions-cell">
-                  <button class="action-btn" title="Invite" (click)="openInviteForCandidate(c)">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                      <polyline points="22,6 12,13 2,6"/>
-                    </svg>
-                  </button>
-                </div>
+                  <div class="edit-cell">
+                    <input type="email" class="edit-input" [value]="editEmail()" (input)="editEmail.set($any($event.target).value)" placeholder="Email" />
+                    @if (editError()) {
+                      <span class="edit-error">{{ editError() }}</span>
+                    }
+                  </div>
+                  <div class="date-cell">{{ c.createdAt | date:'dd MMM yyyy' }}</div>
+                  <div class="actions-cell edit-actions">
+                    <button class="action-btn action-save" title="Save" (click)="saveEdit(c.id)" [disabled]="editSaving()">
+                      @if (editSaving()) {
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>
+                      } @else {
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      }
+                    </button>
+                    <button class="action-btn" title="Cancel" (click)="cancelEdit()">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                  </div>
+                } @else {
+                  <!-- Display mode -->
+                  <div class="candidate-cell">
+                    <div class="avatar" [style.background]="avatarColor(fullName(c))">{{ initials(fullName(c)) }}</div>
+                    <div class="candidate-info">
+                      <span class="candidate-name">{{ fullName(c) }}</span>
+                    </div>
+                  </div>
+                  <div class="assessment-cell">{{ c.email }}</div>
+                  <div class="date-cell">{{ c.createdAt | date:'dd MMM yyyy' }}</div>
+                  <div class="actions-cell">
+                    <button class="action-btn" title="Edit" (click)="startEdit(c)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                    </button>
+                    <button class="action-btn" title="Invite" (click)="openInviteForCandidate(c)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                      </svg>
+                    </button>
+                  </div>
+                }
               </div>
             }
           </div>
@@ -89,8 +124,34 @@ import { Candidate } from '../../core/candidate/candidate.model';
             <div class="modal-footer">
               <button class="btn btn-primary" (click)="closeInvite()">Done</button>
             </div>
+          } @else if (showDraftConfirm()) {
+            <!-- DRAFT assessment confirmation -->
+            <div class="modal-body">
+              <div class="draft-confirm">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <p class="draft-confirm-text">
+                  <strong>{{ selectedAssessment()?.title }}</strong> is a draft and has not been published.
+                  Would you like to publish it now and send the invite?
+                </p>
+              </div>
+              @if (draftPublishError()) {
+                <p class="invite-error">{{ draftPublishError() }}</p>
+              }
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-ghost" (click)="cancelDraftConfirm()" [disabled]="inviteSending()">Cancel</button>
+              <button class="btn btn-primary" (click)="publishAndSend()" [disabled]="inviteSending()">
+                @if (inviteSending()) { Publishing… } @else { Publish & Send }
+              </button>
+            </div>
           } @else {
             <div class="modal-body">
+              @if (knownEmailNotice()) {
+                <div class="known-email-notice">{{ knownEmailNotice() }}</div>
+              }
               @if (!inviteCandidate()) {
                 <div class="field">
                   <label class="field-label">First Name <span class="required">*</span></label>
@@ -115,7 +176,7 @@ import { Candidate } from '../../core/candidate/candidate.model';
                 <select class="field-select" [value]="inviteAssessment()" (change)="inviteAssessment.set($any($event.target).value)">
                   <option value="">Select an assessment…</option>
                   @for (a of assessments(); track a.id) {
-                    <option [value]="a.id">{{ a.title }}</option>
+                    <option [value]="a.id">{{ a.title }}{{ a.status === 'DRAFT' ? ' (Draft)' : '' }}</option>
                   }
                 </select>
               </div>
@@ -172,7 +233,8 @@ import { Candidate } from '../../core/candidate/candidate.model';
     .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-ghost { background: transparent; color: var(--text-2); }
-    .btn-ghost:hover { background: var(--bg-hover); color: var(--text-1); }
+    .btn-ghost:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-1); }
+    .btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .content { padding: 24px; overflow-y: auto; flex: 1; }
 
@@ -193,31 +255,20 @@ import { Candidate } from '../../core/candidate/candidate.model';
     .search-input:focus { border-color: var(--accent); }
     .search-input::placeholder { color: var(--text-3); }
 
-    .status-filters { display: flex; gap: 5px; }
-
-    .filter-chip {
-      padding: 5px 12px; border-radius: 999px; cursor: pointer;
-      font-family: var(--font); font-size: 12.5px; font-weight: 400;
-      background: transparent; color: var(--text-2); border: 1px solid var(--border);
-      transition: all 120ms;
-    }
-    .filter-chip:hover { background: var(--bg-hover); color: var(--text-1); }
-    .filter-chip.active { background: var(--accent-subtle); color: var(--accent); border-color: var(--accent); font-weight: 600; }
-
     .candidates-table {
       background: var(--bg-card); border: 1px solid var(--border);
       border-radius: var(--radius-lg); overflow: hidden;
     }
 
     .table-header {
-      display: grid; grid-template-columns: 2fr 2fr 120px 40px;
+      display: grid; grid-template-columns: 2fr 2fr 120px 72px;
       gap: 12px; padding: 10px 16px;
       background: var(--bg-elevated); border-bottom: 1px solid var(--border);
       font-size: 11.5px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em;
     }
 
     .table-row {
-      display: grid; grid-template-columns: 2fr 2fr 120px 40px;
+      display: grid; grid-template-columns: 2fr 2fr 120px 72px;
       gap: 12px; padding: 12px 16px; align-items: center;
       border-bottom: 1px solid var(--border); transition: background 120ms;
     }
@@ -236,46 +287,35 @@ import { Candidate } from '../../core/candidate/candidate.model';
 
     .candidate-name { font-size: 13px; font-weight: 600; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .candidate-email { font-size: 11.5px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
     .assessment-cell { font-size: 12.5px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    .status-badge {
-      display: inline-flex; padding: 2px 9px; border-radius: 999px;
-      font-size: 11.5px; font-weight: 500; white-space: nowrap;
-    }
-    .status-invited { background: var(--info-subtle); color: var(--info); }
-    .status-in-progress { background: var(--warning-subtle); color: var(--warning); }
-    .status-completed { background: var(--success-subtle); color: var(--success); }
-    .status-expired { background: rgba(148,163,184,.12); color: var(--text-2); }
-
-    .score-pill {
-      display: inline-flex; padding: 2px 9px; border-radius: 999px;
-      font-size: 12px; font-weight: 600;
-    }
-    .score-high { background: var(--success-subtle); color: var(--success); }
-    .score-mid { background: var(--warning-subtle); color: var(--warning); }
-    .score-low { background: var(--danger-subtle); color: var(--danger); }
-
-    .score-na { font-size: 12px; color: var(--text-3); }
 
     .date-cell { font-size: 12px; color: var(--text-3); }
 
-    .actions-cell { display: flex; justify-content: flex-end; }
+    .actions-cell { display: flex; justify-content: flex-end; gap: 2px; }
+
+    .edit-actions { gap: 4px; }
 
     .action-btn {
       background: none; border: none; cursor: pointer; padding: 5px;
       border-radius: 4px; display: flex; align-items: center; color: var(--text-3);
       transition: color 120ms, background 120ms;
     }
-    .action-btn:hover { color: var(--text-1); background: var(--bg-elevated); }
+    .action-btn:hover:not(:disabled) { color: var(--text-1); background: var(--bg-elevated); }
+    .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .action-save:hover:not(:disabled) { color: var(--success) !important; }
 
-    .mock-banner {
-      display: flex; align-items: center; gap: 8px;
-      padding: 9px 14px; margin-bottom: 16px;
-      background: var(--warning-subtle); border: 1px solid rgba(245,158,11,.25);
-      border-radius: var(--radius-sm); color: var(--warning); font-size: 12.5px;
+    .edit-cell { display: flex; flex-direction: column; gap: 4px; }
+
+    .edit-input {
+      padding: 5px 8px;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-1);
+      font-size: 12.5px; outline: none; width: 100%;
+      transition: border-color 150ms; font-family: var(--font);
     }
+    .edit-input:focus { border-color: var(--accent); }
+
+    .edit-error { font-size: 11.5px; color: var(--danger); }
 
     .empty-state { text-align: center; padding: 60px; color: var(--text-3); font-size: 13px; }
 
@@ -286,6 +326,18 @@ import { Candidate } from '../../core/candidate/candidate.model';
     .link-text { font-size: 12px; color: var(--accent); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .copy-btn { background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; padding: 4px 10px; font-size: 12px; cursor: pointer; color: var(--text-2); white-space: nowrap; }
     .copy-btn:hover { color: var(--text-1); }
+
+    .known-email-notice {
+      padding: 9px 12px; background: var(--info-subtle); border: 1px solid rgba(59,130,246,.2);
+      border-radius: var(--radius-sm); font-size: 12.5px; color: var(--info);
+    }
+
+    .draft-confirm {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 4px 0;
+    }
+    .draft-confirm svg { flex-shrink: 0; margin-top: 2px; }
+    .draft-confirm-text { font-size: 13.5px; color: var(--text-1); line-height: 1.55; margin: 0; }
 
     /* Invite modal */
     .overlay {
@@ -337,16 +389,20 @@ import { Candidate } from '../../core/candidate/candidate.model';
     .field-input:focus, .field-select:focus, .field-textarea:focus { border-color: var(--accent); }
     .field-input::placeholder, .field-textarea::placeholder { color: var(--text-3); }
     .field-select { cursor: pointer; }
-    .field-textarea { resize: vertical; line-height: 1.6; }
+    .field-hint { font-size: 12px; color: var(--text-3); }
   `],
 })
 export class CandidatesComponent implements OnInit {
   private readonly assessmentSvc = inject(AssessmentService);
   private readonly candidateSvc = inject(CandidateService);
+  private readonly toastSvc = inject(ToastService);
 
+  // ── List state ──────────────────────────────────────────────────────────────
   readonly candidates = signal<Candidate[]>([]);
   readonly assessments = signal<Assessment[]>([]);
   readonly search = signal('');
+
+  // ── Invite modal state ───────────────────────────────────────────────────────
   readonly showInvite = signal(false);
   readonly inviteCandidate = signal<Candidate | null>(null);
   readonly inviteFirstName = signal('');
@@ -358,7 +414,21 @@ export class CandidatesComponent implements OnInit {
   readonly inviteError = signal('');
   readonly inviteLink = signal('');
   readonly copied = signal(false);
+  readonly knownEmailNotice = signal('');
 
+  // ── DRAFT confirmation state ─────────────────────────────────────────────────
+  readonly showDraftConfirm = signal(false);
+  readonly draftPublishError = signal('');
+
+  // ── Inline edit state ────────────────────────────────────────────────────────
+  readonly editingId = signal<string | null>(null);
+  readonly editFirst = signal('');
+  readonly editLast = signal('');
+  readonly editEmail = signal('');
+  readonly editError = signal('');
+  readonly editSaving = signal(false);
+
+  // ── Computed ─────────────────────────────────────────────────────────────────
   readonly selectedAssessment = computed(() =>
     this.assessments().find(a => a.id === this.inviteAssessment()) ?? null,
   );
@@ -374,6 +444,8 @@ export class CandidatesComponent implements OnInit {
     this.assessmentSvc.listAssessments().subscribe({ next: list => this.assessments.set(list) });
     this.candidateSvc.listCandidates().subscribe({ next: list => this.candidates.set(list) });
   }
+
+  // ── Invite modal ─────────────────────────────────────────────────────────────
 
   openInviteForCandidate(c: Candidate) {
     this.inviteCandidate.set(c);
@@ -391,12 +463,51 @@ export class CandidatesComponent implements OnInit {
     this.inviteError.set('');
     this.inviteLink.set('');
     this.copied.set(false);
+    this.knownEmailNotice.set('');
+    this.showDraftConfirm.set(false);
+    this.draftPublishError.set('');
   }
 
   sendInvite() {
     this.inviteError.set('');
-    this.inviteSending.set(true);
 
+    // DRAFT assessment guard — show confirmation before any HTTP call
+    if (this.selectedAssessment()?.status === 'DRAFT') {
+      this.showDraftConfirm.set(true);
+      return;
+    }
+
+    this.inviteSending.set(true);
+    this._doInviteFlow();
+  }
+
+  cancelDraftConfirm() {
+    this.showDraftConfirm.set(false);
+    this.draftPublishError.set('');
+  }
+
+  publishAndSend() {
+    const assessmentId = this.inviteAssessment();
+    this.inviteSending.set(true);
+    this.draftPublishError.set('');
+
+    this.assessmentSvc.publishAssessment(assessmentId).subscribe({
+      next: published => {
+        // Update assessment status in the local signal
+        this.assessments.update(list =>
+          list.map(a => a.id === published.id ? { ...a, status: published.status } : a)
+        );
+        this.showDraftConfirm.set(false);
+        this._doInviteFlow();
+      },
+      error: () => {
+        this.inviteSending.set(false);
+        this.draftPublishError.set('Failed to publish assessment. Please try again.');
+      },
+    });
+  }
+
+  private _doInviteFlow() {
     const doInvite = (candidateId: string) => {
       const plainPassword = this.selectedAssessment()?.passwordProtected ? (this.invitePassword() || null) : null;
       this.candidateSvc.sendInvitation({ candidateId, assessmentId: this.inviteAssessment(), plainPassword })
@@ -406,10 +517,19 @@ export class CandidatesComponent implements OnInit {
             this.inviteLink.set(res.invitationLink);
             this.candidateSvc.listCandidates().subscribe({ next: list => this.candidates.set(list) });
           },
-          error: () => {
+          error: err => {
             this.inviteSending.set(false);
-            this.inviteError.set('Failed to send invitation. Please try again.');
-          }
+            const isDuplicate = err.status === 409 && (
+              err.error?.detail === 'DUPLICATE_INVITE' ||
+              err.error?.message === 'DUPLICATE_INVITE' ||
+              err.error === 'DUPLICATE_INVITE'
+            );
+            if (isDuplicate) {
+              this.toastSvc.show('This candidate already has a pending invitation for this assessment.', 'warning');
+            } else {
+              this.inviteError.set('Failed to send invitation. Please try again.');
+            }
+          },
         });
     };
 
@@ -424,11 +544,26 @@ export class CandidatesComponent implements OnInit {
       }).subscribe({
         next: candidate => doInvite(candidate.id),
         error: err => {
-          this.inviteSending.set(false);
-          this.inviteError.set(err.status === 409
-            ? 'A candidate with this email already exists.'
-            : 'Failed to create candidate. Please try again.');
-        }
+          if (err.status === 409) {
+            // Known email — look up existing candidate and proceed
+            this.candidateSvc.getCandidateByEmail(this.inviteEmail()).subscribe({
+              next: found => {
+                this.inviteCandidate.set(found);
+                this.knownEmailNotice.set(
+                  `${found.firstName} ${found.lastName} is already registered. Inviting them to the selected assessment.`
+                );
+                doInvite(found.id);
+              },
+              error: () => {
+                this.inviteSending.set(false);
+                this.inviteError.set('A candidate with this email already exists.');
+              },
+            });
+          } else {
+            this.inviteSending.set(false);
+            this.inviteError.set('Failed to create candidate. Please try again.');
+          }
+        },
       });
     }
   }
@@ -439,6 +574,49 @@ export class CandidatesComponent implements OnInit {
       setTimeout(() => this.copied.set(false), 2000);
     });
   }
+
+  // ── Inline edit ───────────────────────────────────────────────────────────────
+
+  startEdit(c: Candidate) {
+    this.editingId.set(c.id);
+    this.editFirst.set(c.firstName);
+    this.editLast.set(c.lastName);
+    this.editEmail.set(c.email);
+    this.editError.set('');
+    this.editSaving.set(false);
+  }
+
+  saveEdit(id: string) {
+    this.editError.set('');
+    this.editSaving.set(true);
+    const req: CandidateRequest = {
+      firstName: this.editFirst(),
+      lastName: this.editLast(),
+      email: this.editEmail(),
+    };
+    this.candidateSvc.updateCandidate(id, req).subscribe({
+      next: updated => {
+        this.candidates.update(list => list.map(c => c.id === id ? updated : c));
+        this.editingId.set(null);
+        this.editSaving.set(false);
+      },
+      error: err => {
+        this.editSaving.set(false);
+        this.editError.set(
+          err.status === 409
+            ? 'This email is already used by another candidate.'
+            : 'Failed to save changes. Please try again.'
+        );
+      },
+    });
+  }
+
+  cancelEdit() {
+    this.editingId.set(null);
+    this.editError.set('');
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────────
 
   fullName(c: Candidate): string {
     return `${c.firstName} ${c.lastName}`;

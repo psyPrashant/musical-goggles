@@ -22,4 +22,12 @@ export class CandidateService {
   sendInvitation(req: InviteRequest): Observable<InviteResponse> {
     return this.http.post<InviteResponse>('/api/invitations', req);
   }
+
+  getCandidateByEmail(email: string): Observable<Candidate> {
+    return this.http.get<Candidate>(`/api/candidates/by-email?email=${encodeURIComponent(email)}`);
+  }
+
+  updateCandidate(id: string, req: CandidateRequest): Observable<Candidate> {
+    return this.http.put<Candidate>(`/api/candidates/${id}`, req);
+  }
 }
