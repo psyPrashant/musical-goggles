@@ -5,12 +5,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface AssessmentQuestionRepository extends JpaRepository<AssessmentQuestion, UUID> {
 
     Optional<AssessmentQuestion> findByAssessmentIdAndQuestionId(UUID assessmentId, UUID questionId);
+
+    List<AssessmentQuestion> findByAssessmentIdOrderByDisplayOrder(UUID assessmentId);
 
     @Query("SELECT COUNT(aq) FROM AssessmentQuestion aq WHERE aq.assessment.id = :assessmentId AND TYPE(aq.question) = CodeSubmissionQuestion")
     long countCodeSubmissionInAssessment(@Param("assessmentId") UUID assessmentId);

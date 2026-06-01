@@ -1,100 +1,6 @@
-import { Component, computed, signal } from '@angular/core';
-
-interface SubmissionAnswer {
-  questionId: string;
-  questionTitle: string;
-  questionType: 'MCQ' | 'TEXT' | 'CODE_SUBMISSION';
-  candidateAnswer: string;
-  score: number | null;
-  maxScore: number;
-  feedback: string;
-}
-
-interface Submission {
-  id: string;
-  candidateName: string;
-  candidateEmail: string;
-  assessment: string;
-  status: 'pending' | 'evaluated';
-  totalScore: number | null;
-  maxScore: number;
-  submittedAt: string;
-  answers: SubmissionAnswer[];
-}
-
-const MOCK_SUBMISSIONS: Submission[] = [
-  {
-    id: '1',
-    candidateName: 'Sarah Johnson',
-    candidateEmail: 'sarah.j@example.com',
-    assessment: 'Frontend Developer Assessment',
-    status: 'evaluated',
-    totalScore: 87,
-    maxScore: 100,
-    submittedAt: '2026-05-20T14:32:00Z',
-    answers: [
-      { questionId: 'q1', questionTitle: 'What is the Virtual DOM?', questionType: 'TEXT', candidateAnswer: 'The Virtual DOM is an in-memory representation of the actual DOM. React uses it to batch updates and minimize costly real DOM operations by diffing the previous and new virtual trees.', score: 9, maxScore: 10, feedback: '' },
-      { questionId: 'q2', questionTitle: 'Time complexity of binary search', questionType: 'MCQ', candidateAnswer: 'O(log n)', score: 10, maxScore: 10, feedback: '' },
-      { questionId: 'q3', questionTitle: 'Implement a debounce function', questionType: 'CODE_SUBMISSION', candidateAnswer: 'function debounce(fn, delay) {\n  let timer;\n  return function(...args) {\n    clearTimeout(timer);\n    timer = setTimeout(() => fn.apply(this, args), delay);\n  };\n}', score: 18, maxScore: 20, feedback: 'Good implementation. Missing TypeScript types.' },
-    ],
-  },
-  {
-    id: '2',
-    candidateName: 'Marcus Chen',
-    candidateEmail: 'mchen@techcorp.io',
-    assessment: 'Backend Engineer Test',
-    status: 'evaluated',
-    totalScore: 92,
-    maxScore: 100,
-    submittedAt: '2026-05-21T10:15:00Z',
-    answers: [
-      { questionId: 'q4', questionTitle: 'Explain REST vs GraphQL', questionType: 'TEXT', candidateAnswer: 'REST uses fixed endpoints for each resource while GraphQL exposes a single endpoint and lets clients specify exactly which data they need. GraphQL reduces over/under-fetching but adds complexity.', score: 10, maxScore: 10, feedback: 'Excellent comparison with practical tradeoffs.' },
-      { questionId: 'q5', questionTitle: 'SQL INNER JOIN vs LEFT JOIN', questionType: 'MCQ', candidateAnswer: 'INNER JOIN returns only matching rows; LEFT JOIN returns all rows from the left table', score: 10, maxScore: 10, feedback: '' },
-      { questionId: 'q6', questionTitle: 'Implement a rate limiter', questionType: 'CODE_SUBMISSION', candidateAnswer: 'class RateLimiter {\n  constructor(limit, windowMs) {\n    this.limit = limit;\n    this.windowMs = windowMs;\n    this.requests = new Map();\n  }\n  isAllowed(key) {\n    const now = Date.now();\n    const reqs = (this.requests.get(key) || []).filter(t => now - t < this.windowMs);\n    if (reqs.length >= this.limit) return false;\n    reqs.push(now);\n    this.requests.set(key, reqs);\n    return true;\n  }\n}', score: 19, maxScore: 20, feedback: '' },
-    ],
-  },
-  {
-    id: '3',
-    candidateName: 'Aisha Okonkwo',
-    candidateEmail: 'aisha.ok@startup.ng',
-    assessment: 'Backend Engineer Test',
-    status: 'pending',
-    totalScore: null,
-    maxScore: 100,
-    submittedAt: '2026-05-18T16:45:00Z',
-    answers: [
-      { questionId: 'q4', questionTitle: 'Explain REST vs GraphQL', questionType: 'TEXT', candidateAnswer: 'REST is the older standard with multiple endpoints. GraphQL is newer and uses one endpoint with a query language.', score: null, maxScore: 10, feedback: '' },
-      { questionId: 'q5', questionTitle: 'SQL INNER JOIN vs LEFT JOIN', questionType: 'MCQ', candidateAnswer: 'INNER JOIN returns only matching rows; LEFT JOIN returns all rows from the left table', score: null, maxScore: 10, feedback: '' },
-    ],
-  },
-  {
-    id: '4',
-    candidateName: 'Elena Petrova',
-    candidateEmail: 'e.petrova@enterprise.ru',
-    assessment: 'Backend Engineer Test',
-    status: 'evaluated',
-    totalScore: 81,
-    maxScore: 100,
-    submittedAt: '2026-05-19T09:20:00Z',
-    answers: [
-      { questionId: 'q4', questionTitle: 'Explain REST vs GraphQL', questionType: 'TEXT', candidateAnswer: 'REST uses HTTP methods (GET, POST, PUT, DELETE) with dedicated endpoints per resource. GraphQL provides a type system and query language, fetching only needed data in one round trip.', score: 9, maxScore: 10, feedback: '' },
-      { questionId: 'q6', questionTitle: 'Implement a rate limiter', questionType: 'CODE_SUBMISSION', candidateAnswer: 'const rateLimit = (limit, windowMs) => {\n  const hits = {};\n  return (key) => {\n    const now = Date.now();\n    hits[key] = (hits[key] || []).filter(t => now - t < windowMs);\n    if (hits[key].length >= limit) return false;\n    hits[key].push(now);\n    return true;\n  };\n};', score: 17, maxScore: 20, feedback: 'Clean closure approach. No cleanup of old keys.' },
-    ],
-  },
-  {
-    id: '5',
-    candidateName: 'Marcus Chen',
-    candidateEmail: 'mchen@techcorp.io',
-    assessment: 'Full Stack Challenge',
-    status: 'pending',
-    totalScore: null,
-    maxScore: 120,
-    submittedAt: '2026-05-26T11:00:00Z',
-    answers: [
-      { questionId: 'q7', questionTitle: 'Design a URL shortener', questionType: 'TEXT', candidateAnswer: 'Use a hash function (MD5/SHA) on the long URL, take first 7 chars. Store in Redis for fast lookup and PostgreSQL for persistence. Add CDN for redirect endpoints.', score: null, maxScore: 20, feedback: '' },
-    ],
-  },
-];
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { MarkingService } from '../../core/marking/marking.service';
+import { ResultQuestion, ResultSummary, SubmissionSummary } from '../../core/marking/marking.model';
 
 @Component({
   selector: 'app-results',
@@ -104,7 +10,7 @@ const MOCK_SUBMISSIONS: Submission[] = [
       <div class="page-header">
         <div>
           <h1 class="page-title">Results & Evaluation</h1>
-          <span class="page-sub">{{ submissions().length }} submissions</span>
+          <span class="page-sub">{{ filteredSubmissions().length }} submissions</span>
         </div>
         <div class="header-filters">
           @for (f of statusFilters; track f.value) {
@@ -113,96 +19,113 @@ const MOCK_SUBMISSIONS: Submission[] = [
         </div>
       </div>
 
-      <div class="mock-banner">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          Sample data — results and evaluation backend not yet implemented.
-        </div>
-
       <div class="split-layout">
+        <!-- Left panel: submission list -->
         <div class="submissions-panel">
-          @for (s of filteredSubmissions(); track s.id) {
-            <div class="submission-item" [class.active]="selected()?.id === s.id" (click)="selectSubmission(s)">
-              <div class="sub-avatar" [style.background]="avatarColor(s.candidateName)">{{ initials(s.candidateName) }}</div>
-              <div class="sub-info">
-                <div class="sub-name-row">
-                  <span class="sub-name">{{ s.candidateName }}</span>
-                  <span class="sub-status" [class]="'sub-status-' + s.status">{{ s.status === 'evaluated' ? 'Evaluated' : 'Pending' }}</span>
-                </div>
-                <span class="sub-assessment">{{ s.assessment }}</span>
-                <span class="sub-date">{{ formatDate(s.submittedAt) }}</span>
-              </div>
-              @if (s.totalScore !== null) {
-                <div class="sub-score" [class.score-high]="s.totalScore / s.maxScore >= 0.8" [class.score-mid]="s.totalScore / s.maxScore >= 0.6 && s.totalScore / s.maxScore < 0.8" [class.score-low]="s.totalScore / s.maxScore < 0.6">
-                  {{ s.totalScore }}<span class="score-max">/{{ s.maxScore }}</span>
-                </div>
-              }
-            </div>
-          }
-          @if (filteredSubmissions().length === 0) {
+          @if (loadingList()) {
+            <div class="empty-panel">Loading…</div>
+          } @else if (filteredSubmissions().length === 0) {
             <div class="empty-panel">No submissions.</div>
+          } @else {
+            @for (s of filteredSubmissions(); track s.submissionId) {
+              <div class="submission-item"
+                   [class.active]="selectedSummary()?.submissionId === s.submissionId"
+                   (click)="selectSubmission(s)">
+                <div class="sub-avatar" [style.background]="avatarColor(s.candidateName)">{{ initials(s.candidateName) }}</div>
+                <div class="sub-info">
+                  <div class="sub-name-row">
+                    <span class="sub-name">{{ s.candidateName }}</span>
+                    <span class="sub-status" [class]="statusClass(s)">{{ statusLabel(s) }}</span>
+                  </div>
+                  <span class="sub-date">{{ formatDate(s.submittedAt) }}</span>
+                  <span class="sub-progress">{{ s.markedCount }}/{{ s.totalAnswers }} marked</span>
+                </div>
+              </div>
+            }
           }
         </div>
 
+        <!-- Right panel: result detail -->
         <div class="detail-panel">
-          @if (!selected()) {
-            <div class="no-selection">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
-              </svg>
-              <span>Select a submission to review</span>
-            </div>
+          @if (!result()) {
+            @if (loadingResult()) {
+              <div class="no-selection">Loading result…</div>
+            } @else {
+              <div class="no-selection">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                </svg>
+                <span>Select a submission to review</span>
+              </div>
+            }
           } @else {
             <div class="detail-scroll">
+              <!-- Header -->
               <div class="detail-header">
-                <div class="detail-avatar" [style.background]="avatarColor(selected()!.candidateName)">{{ initials(selected()!.candidateName) }}</div>
+                <div class="detail-avatar" [style.background]="avatarColor(result()!.candidateName)">{{ initials(result()!.candidateName) }}</div>
                 <div class="detail-candidate-info">
-                  <span class="detail-name">{{ selected()!.candidateName }}</span>
-                  <span class="detail-email">{{ selected()!.candidateEmail }}</span>
-                  <span class="detail-assessment">{{ selected()!.assessment }}</span>
+                  <span class="detail-name">{{ result()!.candidateName }}</span>
+                  <span class="detail-assessment">{{ result()!.assessmentTitle }}</span>
+                  <span class="detail-submitted">Submitted: {{ formatDate(result()!.submittedAt) }}</span>
                 </div>
                 <div class="detail-score-block">
-                  @if (selected()!.totalScore !== null) {
-                    <div class="total-score">{{ selected()!.totalScore }}</div>
-                    <div class="total-max">/ {{ selected()!.maxScore }}</div>
-                  } @else {
-                    <div class="total-score pending-score">—</div>
-                    <div class="total-max">/ {{ selected()!.maxScore }}</div>
-                  }
-                  <div class="score-bar-wrap">
-                    <div class="score-bar" [style.width]="scorePercent(selected()!) + '%'" [class.bar-high]="(selected()!.totalScore ?? 0) / selected()!.maxScore >= 0.8" [class.bar-mid]="(selected()!.totalScore ?? 0) / selected()!.maxScore >= 0.6 && (selected()!.totalScore ?? 0) / selected()!.maxScore < 0.8" [class.bar-low]="(selected()!.totalScore ?? 0) / selected()!.maxScore < 0.6 && selected()!.totalScore !== null"></div>
-                  </div>
+                  <div class="total-score">{{ result()!.totalScore }}</div>
+                  <div class="total-max">pts</div>
+                  <span class="marking-badge" [class.badge-done]="result()!.markingStatus === 'FULLY_MARKED'" [class.badge-pending]="result()!.markingStatus === 'PENDING_REVIEW'">
+                    {{ result()!.markingStatus === 'FULLY_MARKED' ? '✓ Fully Marked' : '⏳ Pending Review' }}
+                  </span>
                 </div>
               </div>
 
+              <!-- Per-question answers -->
               <div class="answers-list">
-                @for (a of editedAnswers(); track a.questionId; let i = $index) {
+                @for (q of result()!.questions; track q.questionId; let i = $index) {
                   <div class="answer-card">
                     <div class="answer-card-header">
                       <div class="q-num">Q{{ i + 1 }}</div>
-                      <span class="q-type-badge type-{{ a.questionType.toLowerCase() }}">{{ typeLabel(a.questionType) }}</span>
-                      <span class="q-title">{{ a.questionTitle }}</span>
-                      <div class="score-input-wrap">
-                        <input type="number" class="score-input" [value]="a.score ?? ''"
-                               (input)="updateScore(i, $event)"
-                               [min]="0" [max]="a.maxScore" placeholder="0" />
-                        <span class="score-sep">/</span>
-                        <span class="score-max-label">{{ a.maxScore }}</span>
-                      </div>
+                      <span class="q-type-badge type-{{ q.questionType.toLowerCase() }}">{{ typeLabel(q.questionType) }}</span>
+                      <span class="q-title">{{ q.questionTitle }}</span>
+                      @if (q.autoMarked) {
+                        <span class="auto-badge">Auto-scored</span>
+                      }
+                      @if (q.score !== null) {
+                        <span class="score-display">{{ q.score }} pt{{ q.score !== 1 ? 's' : '' }}</span>
+                      }
                     </div>
-                    <div class="answer-content">{{ a.candidateAnswer }}</div>
-                    <textarea class="feedback-input" rows="2" [value]="a.feedback"
-                              (input)="updateFeedback(i, $event)"
-                              placeholder="Add feedback for this answer…"></textarea>
+
+                    <div class="answer-content">{{ q.candidateAnswer ?? '(No answer)' }}</div>
+
+                    @if (q.feedback) {
+                      <div class="feedback-display">{{ q.feedback }}</div>
+                    }
+
+                    <!-- Score input for text/code or override for MCQ -->
+                    @if (!q.autoMarked || q.questionType !== 'MCQ') {
+                      <div class="mark-row">
+                        <input type="number" class="score-input" [min]="0"
+                               [value]="editScores()[q.questionId] ?? q.score ?? ''"
+                               (input)="onScoreInput(q.questionId, $event)"
+                               placeholder="Score" />
+                        <input type="text" class="feedback-input-inline"
+                               [value]="editFeedback()[q.questionId] ?? q.feedback ?? ''"
+                               (input)="onFeedbackInput(q.questionId, $event)"
+                               placeholder="Feedback (optional)" />
+                        <button class="save-btn" (click)="saveScore(q)" [disabled]="saving()">Save</button>
+                      </div>
+                    } @else {
+                      <!-- MCQ auto-scored — allow override -->
+                      <div class="mark-row">
+                        <span class="override-hint">Override auto-score:</span>
+                        <input type="number" class="score-input" [min]="0"
+                               [value]="editScores()[q.questionId] ?? ''"
+                               (input)="onScoreInput(q.questionId, $event)"
+                               placeholder="{{ q.score }}" />
+                        <button class="save-btn secondary" (click)="saveScore(q)" [disabled]="saving()">Override</button>
+                      </div>
+                    }
                   </div>
                 }
-              </div>
-
-              <div class="save-row">
-                <button class="btn btn-primary" (click)="saveEvaluation()">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                  Save Evaluation
-                </button>
               </div>
             </div>
           }
@@ -223,15 +146,6 @@ const MOCK_SUBMISSIONS: Submission[] = [
     .page-title { font-size: 15px; font-weight: 600; color: var(--text-1); letter-spacing: -0.01em; }
     .page-sub { font-size: 12px; color: var(--text-3); }
 
-    .btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 7px 14px; border-radius: var(--radius-sm);
-      font-size: 13px; font-weight: 500; cursor: pointer;
-      border: 1px solid transparent; transition: all 120ms;
-    }
-    .btn-primary { background: var(--accent); color: #fff; }
-    .btn-primary:hover { background: var(--accent-hover); }
-
     .header-filters { display: flex; gap: 5px; }
 
     .filter-chip {
@@ -244,51 +158,37 @@ const MOCK_SUBMISSIONS: Submission[] = [
     .filter-chip.active { background: var(--accent-subtle); color: var(--accent); border-color: var(--accent); font-weight: 600; }
 
     .split-layout {
-      display: grid; grid-template-columns: 320px 1fr;
+      display: grid; grid-template-columns: 300px 1fr;
       flex: 1; min-height: 0;
     }
 
-    .submissions-panel {
-      border-right: 1px solid var(--border);
-      overflow-y: auto;
-    }
+    .submissions-panel { border-right: 1px solid var(--border); overflow-y: auto; }
 
     .submission-item {
       display: flex; align-items: flex-start; gap: 10px;
-      padding: 14px 16px; border-bottom: 1px solid var(--border);
+      padding: 12px 14px; border-bottom: 1px solid var(--border);
       cursor: pointer; transition: background 120ms;
     }
     .submission-item:hover { background: var(--bg-hover); }
     .submission-item.active { background: var(--accent-subtle); }
 
     .sub-avatar {
-      width: 34px; height: 34px; border-radius: 50%;
+      width: 32px; height: 32px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
+      font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
     }
 
     .sub-info { flex: 1; min-width: 0; }
-
-    .sub-name-row { display: flex; align-items: center; gap: 7px; margin-bottom: 2px; }
-
+    .sub-name-row { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
     .sub-name { font-size: 13px; font-weight: 600; color: var(--text-1); }
 
-    .sub-status {
-      font-size: 10.5px; padding: 1px 6px; border-radius: 999px; font-weight: 500;
-    }
-    .sub-status-evaluated { background: var(--success-subtle); color: var(--success); }
-    .sub-status-pending { background: var(--warning-subtle); color: var(--warning); }
+    .sub-status { font-size: 10px; padding: 1px 6px; border-radius: 999px; font-weight: 500; }
+    .status-submitted { background: var(--success-subtle); color: var(--success); }
+    .status-auto { background: var(--info-subtle); color: var(--info); }
+    .status-progress { background: var(--warning-subtle); color: var(--warning); }
 
-    .sub-assessment { display: block; font-size: 11.5px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sub-date { display: block; font-size: 11px; color: var(--text-3); margin-top: 2px; }
-
-    .sub-score {
-      font-size: 14px; font-weight: 700; flex-shrink: 0; margin-top: 2px;
-    }
-    .score-max { font-size: 11px; font-weight: 400; color: var(--text-3); }
-    .score-high { color: var(--success); }
-    .score-mid { color: var(--warning); }
-    .score-low { color: var(--danger); }
+    .sub-date { display: block; font-size: 11px; color: var(--text-3); }
+    .sub-progress { display: block; font-size: 11px; color: var(--text-2); margin-top: 1px; }
 
     .detail-panel { overflow-y: auto; }
 
@@ -303,33 +203,30 @@ const MOCK_SUBMISSIONS: Submission[] = [
     .detail-header {
       display: flex; align-items: flex-start; gap: 14px;
       background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); padding: 16px 20px;
-      margin-bottom: 16px;
+      border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 16px;
     }
 
     .detail-avatar {
-      width: 44px; height: 44px; border-radius: 50%;
+      width: 42px; height: 42px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 15px; font-weight: 700; color: #fff; flex-shrink: 0;
+      font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0;
     }
 
     .detail-candidate-info { flex: 1; }
     .detail-name { display: block; font-size: 15px; font-weight: 600; color: var(--text-1); }
-    .detail-email { display: block; font-size: 12px; color: var(--text-3); margin-top: 2px; }
-    .detail-assessment { display: block; font-size: 12px; color: var(--text-2); margin-top: 4px; }
+    .detail-assessment { display: block; font-size: 12px; color: var(--text-2); margin-top: 2px; }
+    .detail-submitted { display: block; font-size: 11px; color: var(--text-3); margin-top: 2px; }
 
     .detail-score-block { text-align: right; flex-shrink: 0; }
     .total-score { font-size: 26px; font-weight: 800; color: var(--text-1); line-height: 1; }
-    .pending-score { color: var(--text-3); }
-    .total-max { font-size: 12px; color: var(--text-3); margin-top: 2px; }
-    .score-bar-wrap {
-      width: 80px; height: 4px; background: var(--bg-elevated);
-      border-radius: 999px; margin-top: 8px; overflow: hidden;
+    .total-max { font-size: 12px; color: var(--text-3); }
+
+    .marking-badge {
+      display: inline-block; margin-top: 6px; padding: 2px 8px;
+      border-radius: 999px; font-size: 11px; font-weight: 500;
     }
-    .score-bar { height: 100%; border-radius: 999px; transition: width 300ms; min-width: 4px; }
-    .bar-high { background: var(--success); }
-    .bar-mid { background: var(--warning); }
-    .bar-low { background: var(--danger); }
+    .badge-done { background: var(--success-subtle); color: var(--success); }
+    .badge-pending { background: var(--warning-subtle); color: var(--warning); }
 
     .answers-list { display: flex; flex-direction: column; gap: 12px; }
 
@@ -339,7 +236,7 @@ const MOCK_SUBMISSIONS: Submission[] = [
     }
 
     .answer-card-header {
-      display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;
     }
 
     .q-num {
@@ -359,16 +256,15 @@ const MOCK_SUBMISSIONS: Submission[] = [
 
     .q-title { font-size: 13px; font-weight: 500; color: var(--text-1); flex: 1; }
 
-    .score-input-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-    .score-input {
-      width: 48px; padding: 4px 7px; text-align: center;
-      background: var(--bg-elevated); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); color: var(--text-1);
-      font-size: 13px; outline: none;
+    .auto-badge {
+      font-size: 10.5px; padding: 2px 7px; border-radius: 999px;
+      background: var(--success-subtle); color: var(--success); font-weight: 500;
     }
-    .score-input:focus { border-color: var(--accent); }
-    .score-sep { font-size: 12px; color: var(--text-3); }
-    .score-max-label { font-size: 12px; color: var(--text-3); }
+
+    .score-display {
+      font-size: 12px; font-weight: 700; color: var(--text-1);
+      background: var(--bg-elevated); padding: 2px 8px; border-radius: 999px;
+    }
 
     .answer-content {
       font-size: 13px; color: var(--text-2); line-height: 1.65;
@@ -377,78 +273,148 @@ const MOCK_SUBMISSIONS: Submission[] = [
       white-space: pre-wrap; font-family: var(--font-mono);
     }
 
-    .feedback-input {
-      width: 100%; padding: 8px 12px;
+    .feedback-display {
+      font-size: 12.5px; color: var(--text-2); font-style: italic;
+      padding: 6px 10px; border-left: 3px solid var(--accent-subtle);
+      margin-bottom: 10px;
+    }
+
+    .mark-row {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+
+    .override-hint { font-size: 12px; color: var(--text-3); }
+
+    .score-input {
+      width: 64px; padding: 5px 8px; text-align: center;
       background: var(--bg-elevated); border: 1px solid var(--border);
       border-radius: var(--radius-sm); color: var(--text-1);
-      font-size: 12.5px; resize: none; outline: none;
-      font-family: var(--font); line-height: 1.5; box-sizing: border-box;
-      transition: border-color 150ms;
+      font-size: 13px; outline: none;
     }
-    .feedback-input:focus { border-color: var(--accent); }
-    .feedback-input::placeholder { color: var(--text-3); }
+    .score-input:focus { border-color: var(--accent); }
 
-    .save-row { display: flex; justify-content: flex-end; margin-top: 16px; }
-
-    .mock-banner {
-      display: flex; align-items: center; gap: 8px;
-      padding: 9px 14px; margin: 0 0 0 0;
-      background: var(--warning-subtle); border-bottom: 1px solid rgba(245,158,11,.25);
-      color: var(--warning); font-size: 12.5px; flex-shrink: 0;
+    .feedback-input-inline {
+      flex: 1; padding: 5px 10px;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-1);
+      font-size: 12.5px; outline: none; font-family: var(--font);
     }
+    .feedback-input-inline:focus { border-color: var(--accent); }
+    .feedback-input-inline::placeholder { color: var(--text-3); }
+
+    .save-btn {
+      padding: 5px 14px; border-radius: var(--radius-sm);
+      background: var(--accent); color: #fff; border: none;
+      font-size: 12.5px; font-weight: 600; cursor: pointer;
+      font-family: var(--font); transition: background 120ms;
+    }
+    .save-btn:hover:not(:disabled) { background: var(--accent-hover); }
+    .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .save-btn.secondary { background: var(--bg-elevated); color: var(--text-2); border: 1px solid var(--border); }
+    .save-btn.secondary:hover:not(:disabled) { background: var(--bg-hover); }
 
     .empty-panel { padding: 40px; text-align: center; color: var(--text-3); font-size: 13px; }
   `],
 })
-export class ResultsComponent {
-  readonly submissions = signal<Submission[]>(MOCK_SUBMISSIONS);
-  readonly selected = signal<Submission | null>(null);
-  readonly editedAnswers = signal<SubmissionAnswer[]>([]);
+export class ResultsComponent implements OnInit {
+  private readonly markingSvc = inject(MarkingService);
+
+  readonly submissions = signal<SubmissionSummary[]>([]);
+  readonly selectedSummary = signal<SubmissionSummary | null>(null);
+  readonly result = signal<ResultSummary | null>(null);
+  readonly loadingList = signal(false);
+  readonly loadingResult = signal(false);
+  readonly saving = signal(false);
   readonly statusFilter = signal('');
+
+  readonly editScores = signal<Record<string, number | undefined>>({});
+  readonly editFeedback = signal<Record<string, string | undefined>>({});
 
   readonly statusFilters = [
     { value: '', label: 'All' },
-    { value: 'pending', label: 'Pending' },
-    { value: 'evaluated', label: 'Evaluated' },
+    { value: 'SUBMITTED', label: 'Submitted' },
+    { value: 'AUTO_SUBMITTED', label: 'Auto-submitted' },
+    { value: 'IN_PROGRESS', label: 'In Progress' },
   ];
 
   readonly filteredSubmissions = computed(() => {
-    const filter = this.statusFilter();
-    return this.submissions().filter(s => !filter || s.status === filter);
+    const f = this.statusFilter();
+    return f ? this.submissions().filter(s => s.status === f) : this.submissions();
   });
 
-  selectSubmission(s: Submission) {
-    this.selected.set(s);
-    this.editedAnswers.set(s.answers.map(a => ({ ...a })));
+  ngOnInit() {
+    this.loadingList.set(true);
+    this.markingSvc.listAllSubmissions().subscribe({
+      next: list => { this.submissions.set(list); this.loadingList.set(false); },
+      error: () => this.loadingList.set(false),
+    });
   }
 
-  updateScore(index: number, event: Event) {
+  selectSubmission(s: SubmissionSummary) {
+    this.selectedSummary.set(s);
+    this.result.set(null);
+    this.editScores.set({});
+    this.editFeedback.set({});
+    this.loadingResult.set(true);
+    this.markingSvc.getResult(s.submissionId).subscribe({
+      next: r => { this.result.set(r); this.loadingResult.set(false); },
+      error: () => this.loadingResult.set(false),
+    });
+  }
+
+  onScoreInput(questionId: string, event: Event) {
     const val = parseFloat((event.target as HTMLInputElement).value);
-    const answers = [...this.editedAnswers()];
-    answers[index] = { ...answers[index], score: isNaN(val) ? null : val };
-    this.editedAnswers.set(answers);
+    this.editScores.update(s => ({ ...s, [questionId]: isNaN(val) ? undefined : val }));
   }
 
-  updateFeedback(index: number, event: Event) {
-    const val = (event.target as HTMLTextAreaElement).value;
-    const answers = [...this.editedAnswers()];
-    answers[index] = { ...answers[index], feedback: val };
-    this.editedAnswers.set(answers);
+  onFeedbackInput(questionId: string, event: Event) {
+    const val = (event.target as HTMLInputElement).value;
+    this.editFeedback.update(f => ({ ...f, [questionId]: val }));
   }
 
-  saveEvaluation() {
-    const sub = this.selected();
-    if (!sub) return;
-    const answers = this.editedAnswers();
-    const total = answers.reduce((sum, a) => sum + (a.score ?? 0), 0);
-    const updated: Submission = { ...sub, answers, totalScore: total, status: 'evaluated' };
-    this.submissions.update(list => list.map(s => s.id === updated.id ? updated : s));
-    this.selected.set(updated);
+  saveScore(q: ResultQuestion) {
+    const r = this.result();
+    const s = this.selectedSummary();
+    if (!r || !s || !q.answerId) return;
+
+    const scoreVal = this.editScores()[q.questionId] ?? q.score;
+    if (scoreVal == null) return;
+
+    const feedbackVal = this.editFeedback()[q.questionId] ?? q.feedback ?? undefined;
+    this.saving.set(true);
+
+    this.markingSvc.scoreAnswer(r.submissionId, q.answerId, { score: scoreVal, feedback: feedbackVal }).subscribe({
+      next: saved => {
+        this.saving.set(false);
+        // Refresh the result to show updated score/marking status
+        this.markingSvc.getResult(r.submissionId).subscribe({
+          next: updated => {
+            this.result.set(updated);
+            this.editScores.update(e => { const c = {...e}; delete c[q.questionId]; return c; });
+            this.editFeedback.update(e => { const c = {...e}; delete c[q.questionId]; return c; });
+            // Update marking progress in list
+            this.submissions.update(list => list.map(sub =>
+              sub.submissionId === s.submissionId
+                ? { ...sub, markedCount: updated.questions.filter(qq => qq.score !== null).length }
+                : sub
+            ));
+          },
+        });
+      },
+      error: () => this.saving.set(false),
+    });
   }
 
-  scorePercent(s: Submission): number {
-    if (s.totalScore === null) return 0;
-    return Math.round((s.totalScore / s.maxScore) * 100);
+  statusClass(s: SubmissionSummary): string {
+    if (s.status === 'SUBMITTED') return 'sub-status status-submitted';
+    if (s.status === 'AUTO_SUBMITTED') return 'sub-status status-auto';
+    return 'sub-status status-progress';
+  }
+
+  statusLabel(s: SubmissionSummary): string {
+    if (s.status === 'SUBMITTED') return 'Submitted';
+    if (s.status === 'AUTO_SUBMITTED') return 'Auto-submitted';
+    return 'In Progress';
   }
 
   initials(name: string): string {
@@ -460,7 +426,8 @@ export class ResultsComponent {
     return colors[name.charCodeAt(0) % colors.length];
   }
 
-  formatDate(iso: string): string {
+  formatDate(iso: string | null): string {
+    if (!iso) return '—';
     return new Date(iso).toLocaleDateString('en-ZA', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 

@@ -1,12 +1,15 @@
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { AssessmentService } from '../../core/assessment/assessment.service';
 import { AuthService } from '../../core/auth/auth.service';
-import { AssessmentPreview, PreviewQuestion } from '../../core/assessment/assessment.model';
+import { AssessmentPreview } from '../../core/assessment/assessment.model';
+import { CandidateTakeService } from '../../core/take/candidate-take.service';
+import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidate-take.model';
 
 @Component({
   selector: 'app-assessment-take',
-  imports: [],
+  imports: [DatePipe],
   template: `
     <div class="take-page">
       @if (loading()) {
@@ -25,7 +28,15 @@ import { AssessmentPreview, PreviewQuestion } from '../../core/assessment/assess
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
             </div>
             <h2 class="submitted-title">Assessment Submitted</h2>
-            <p class="submitted-body">Your answers have been recorded. You will be notified once your submission has been reviewed.</p>
+            @if (submitResult(); as r) {
+              <p class="submitted-body">
+                <strong>{{ r.assessmentTitle }}</strong><br>
+                {{ r.answeredCount }} of {{ r.totalQuestionCount }} questions answered.<br>
+                Submitted at {{ r.submittedAt | date:'medium' }}.
+              </p>
+            } @else {
+              <p class="submitted-body">Your answers have been recorded. You will be notified once your submission has been reviewed.</p>
+            }
           </div>
         </div>
       } @else if (awaitingPassword()) {
@@ -466,6 +477,7 @@ import { AssessmentPreview, PreviewQuestion } from '../../core/assessment/assess
 })
 export class AssessmentTakeComponent implements OnInit, OnDestroy {
   private readonly svc = inject(AssessmentService);
+  private readonly takeSvc = inject(CandidateTakeService);
   private readonly authSvc = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
 
@@ -474,6 +486,7 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
   readonly error = signal<string | null>(null);
   readonly submitting = signal(false);
   readonly submitted = signal(false);
+  readonly submitResult = signal<SubmitResponse | null>(null);
 
   readonly sessionToken = signal<string | null>(null);
   readonly invitationToken = signal<string | null>(null);
@@ -488,6 +501,9 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
   readonly timeLeft = signal(0);
 
   private timerId: ReturnType<typeof setInterval> | null = null;
+  private deadlineMs: number | null = null;
+  private autosaveTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private assessmentId = '';
 
   readonly currentQuestion = computed(() => {
     const p = this.preview();
@@ -521,7 +537,7 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit() {
-    const id = this.route.snapshot.paramMap.get('id')!;
+    this.assessmentId = this.route.snapshot.paramMap.get('id')!;
     const token = this.route.snapshot.queryParamMap.get('token');
 
     if (!token) {
@@ -535,16 +551,15 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
     this.authSvc.validateCandidateToken(token).subscribe({
       next: res => {
         this.sessionToken.set(res.token);
-        this.svc.getPreview(id, res.token).subscribe({
+        // Check if password-protected before loading
+        this.svc.getPreview(this.assessmentId, res.token).subscribe({
           next: p => {
             this.loading.set(false);
             if (p.passwordRequired) {
               this.preview.set(p);
               this.awaitingPassword.set(true);
             } else {
-              this.preview.set(p);
-              this.timeLeft.set(p.timeLimitMinutes * 60);
-              this.startTimer();
+              this.startAssessment(res.token);
             }
           },
           error: () => { this.error.set('Failed to load assessment.'); this.loading.set(false); },
@@ -560,7 +575,8 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
   submitPassword() {
     const p = this.preview();
     const invToken = this.invitationToken();
-    if (!p || !invToken) return;
+    const sessionTok = this.sessionToken();
+    if (!p || !invToken || !sessionTok) return;
     this.checkingPassword.set(true);
     this.passwordError.set('');
     this.svc.verifyPassword(p.id, this.passwordInput(), invToken).subscribe({
@@ -568,8 +584,7 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
         this.checkingPassword.set(false);
         if (res.valid) {
           this.awaitingPassword.set(false);
-          this.timeLeft.set(p.timeLimitMinutes * 60);
-          this.startTimer();
+          this.startAssessment(sessionTok);
         } else {
           this.passwordError.set('Incorrect password. Please try again.');
         }
@@ -581,18 +596,81 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
     });
   }
 
+  private startAssessment(sessionToken: string) {
+    this.loading.set(true);
+    this.takeSvc.loadAssessment(sessionToken).subscribe({
+      next: takeData => {
+        this.loading.set(false);
+        this.applyTakeResponse(takeData);
+      },
+      error: err => {
+        this.loading.set(false);
+        if (err.status === 409) {
+          this.submitted.set(true);
+        } else {
+          this.error.set('Failed to load assessment.');
+        }
+      },
+    });
+  }
+
+  private applyTakeResponse(data: AssessmentTakeResponse) {
+    // Map take response → AssessmentPreview for template compatibility
+    this.preview.set({
+      id: data.assessmentId,
+      title: data.title,
+      description: data.description,
+      timeLimitMinutes: 0, // not used for timer — we use deadline
+      passwordRequired: false,
+      questions: data.questions.map(q => ({
+        id: q.id,
+        type: q.type as any,
+        body: q.body,
+        options: q.options
+          ? q.options.map(o => ({ id: o.id, text: o.optionText }))
+          : null,
+        languageHint: null,
+      })),
+    });
+
+    // Pre-populate saved answers (task 7.3)
+    const preloaded: Record<string, string> = {};
+    for (const ans of data.answers) {
+      if (ans.selectedOptionIds && ans.selectedOptionIds.length > 0) {
+        preloaded[ans.questionId] = ans.selectedOptionIds[0];
+      } else if (ans.textContent) {
+        preloaded[ans.questionId] = ans.textContent;
+      }
+    }
+    this.answers.set(preloaded);
+
+    // Init timer from server deadline (task 6.3)
+    this.deadlineMs = new Date(data.deadline).getTime();
+    const secsLeft = Math.max(0, Math.round((this.deadlineMs - Date.now()) / 1000));
+    // Override timeLimitMinutes-based percent using actual seconds
+    const totalSecs = Math.round(
+      (new Date(data.deadline).getTime() - new Date(data.startedAt).getTime()) / 1000
+    );
+    // Patch preview timeLimitMinutes so timePercent() works
+    this.preview.update(p => p ? { ...p, timeLimitMinutes: Math.ceil(totalSecs / 60) } : p);
+    this.timeLeft.set(secsLeft);
+    this.startTimer();
+  }
+
   ngOnDestroy() {
     this.stopTimer();
+    this.autosaveTimers.forEach(t => clearTimeout(t));
   }
 
   private startTimer() {
     this.timerId = setInterval(() => {
-      const t = this.timeLeft();
-      if (t <= 0) {
+      const secsLeft = this.deadlineMs
+        ? Math.max(0, Math.round((this.deadlineMs - Date.now()) / 1000))
+        : Math.max(0, this.timeLeft() - 1);
+      this.timeLeft.set(secsLeft);
+      if (secsLeft <= 0) {
         this.stopTimer();
-        this.doSubmit();
-      } else {
-        this.timeLeft.set(t - 1);
+        this.doSubmit(true);
       }
     }, 1000);
   }
@@ -606,6 +684,43 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
 
   setAnswer(questionId: string, value: string) {
     this.answers.update(a => ({ ...a, [questionId]: value }));
+    this.scheduleAutosave(questionId);
+  }
+
+  private scheduleAutosave(questionId: string) {
+    const existing = this.autosaveTimers.get(questionId);
+    if (existing) clearTimeout(existing);
+
+    const q = this.preview()?.questions.find(q => q.id === questionId);
+    const debounceMs = q?.type === 'MCQ' ? 500 : 1000;
+
+    const timer = setTimeout(() => {
+      this.autosaveTimers.delete(questionId);
+      this.flushAnswer(questionId);
+    }, debounceMs);
+
+    this.autosaveTimers.set(questionId, timer);
+  }
+
+  private flushAnswer(questionId: string) {
+    const token = this.sessionToken();
+    if (!token) return;
+
+    const value = this.answers()[questionId];
+    const q = this.preview()?.questions.find(q => q.id === questionId);
+    if (!q) return;
+
+    const input = q.type === 'MCQ'
+      ? { questionId, selectedOptionIds: value ? [value] : [] }
+      : { questionId, textContent: value ?? '' };
+
+    this.takeSvc.saveAnswers(token, { answers: [input] }).subscribe({
+      error: err => {
+        if (err.status === 409) {
+          this.submitted.set(true);
+        }
+      },
+    });
   }
 
   isAnswered(questionId: string): boolean {
@@ -637,16 +752,29 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
     if (unanswered > 0) {
       if (!confirm(`You have ${unanswered} unanswered question${unanswered > 1 ? 's' : ''}. Submit anyway?`)) return;
     }
-    this.doSubmit();
+    this.doSubmit(false);
   }
 
-  private doSubmit() {
+  private doSubmit(autoSubmitted: boolean) {
+    const token = this.sessionToken();
+    if (!token) return;
     this.stopTimer();
+    // Cancel pending autosaves before submitting
+    this.autosaveTimers.forEach(t => clearTimeout(t));
+    this.autosaveTimers.clear();
     this.submitting.set(true);
-    setTimeout(() => {
-      this.submitting.set(false);
-      this.submitted.set(true);
-    }, 800);
+
+    this.takeSvc.submit(token, { autoSubmitted }).subscribe({
+      next: result => {
+        this.submitting.set(false);
+        this.submitResult.set(result);
+        this.submitted.set(true);
+      },
+      error: () => {
+        this.submitting.set(false);
+        this.submitted.set(true);
+      },
+    });
   }
 
   optionLetter(index: number): string {
