@@ -1,15 +1,10 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { DatePipe } from '@angular/common';
 import { AssessmentService } from '../../core/assessment/assessment.service';
 import { Assessment } from '../../core/assessment/assessment.model';
-import { DatePipe } from '@angular/common';
-
-interface ActivityItem {
-  text: string;
-  meta: string;
-  time: string;
-  color: 'success' | 'info' | 'warning' | 'danger';
-}
+import { DashboardService } from '../../core/dashboard/dashboard.service';
+import { DashboardStats } from '../../core/dashboard/dashboard.model';
 
 @Component({
   selector: 'app-dashboard',
@@ -36,6 +31,12 @@ interface ActivityItem {
         </div>
       </div>
 
+      @if (statsError()) {
+        <div class="stats-error">
+          Failed to load dashboard stats. Showing placeholder values.
+        </div>
+      }
+
       <div class="content">
         <div class="stat-row">
           <div class="stat-card">
@@ -58,7 +59,7 @@ interface ActivityItem {
             <div class="stat-body">
               <div>
                 <div class="stat-label">Active Candidates</div>
-                <div class="stat-value">24</div>
+                <div class="stat-value">{{ stats()?.activeCandidates ?? '—' }}</div>
                 <div class="stat-sub">Across all assessments</div>
               </div>
               <div class="stat-icon info">
@@ -75,7 +76,7 @@ interface ActivityItem {
             <div class="stat-body">
               <div>
                 <div class="stat-label">Pending Reviews</div>
-                <div class="stat-value">7</div>
+                <div class="stat-value">{{ stats()?.pendingReviews ?? '—' }}</div>
                 <div class="stat-sub">Awaiting evaluation</div>
               </div>
               <div class="stat-icon warning">
@@ -91,7 +92,7 @@ interface ActivityItem {
             <div class="stat-body">
               <div>
                 <div class="stat-label">Average Score</div>
-                <div class="stat-value">73%</div>
+                <div class="stat-value">{{ avgScoreDisplay() }}</div>
                 <div class="stat-sub">Last 30 days</div>
               </div>
               <div class="stat-icon success">
@@ -150,17 +151,19 @@ interface ActivityItem {
               <span class="card-title">Recent Activity</span>
             </div>
             <div class="activity-list">
-              @for (item of activity; track $index) {
+              @for (item of stats()?.recentActivity ?? []; track $index) {
                 <div class="activity-item">
-                  <div class="activity-dot" [class]="'dot-' + item.color"></div>
+                  <div class="activity-dot" [class]="'dot-' + activityColor(item.type)"></div>
                   <div class="activity-body">
-                    <div class="activity-text">{{ item.text }}</div>
+                    <div class="activity-text">{{ item.description }}</div>
                     <div class="activity-meta">
                       <span>{{ item.meta }}</span>
-                      <span>{{ item.time }}</span>
+                      <span>{{ item.occurredAt | date:'MMM d, h:mm a' }}</span>
                     </div>
                   </div>
                 </div>
+              } @empty {
+                <div class="activity-empty">No recent activity</div>
               }
             </div>
           </div>
@@ -172,8 +175,8 @@ interface ActivityItem {
             <a routerLink="/candidates" class="btn btn-ghost btn-sm">Manage →</a>
           </div>
           <div class="pipeline">
-            @for (stage of pipeline; track stage.label; let i = $index) {
-              <div class="pipeline-stage" [class.last]="i === pipeline.length - 1">
+            @for (stage of pipelineStages(); track stage.label; let i = $index) {
+              <div class="pipeline-stage" [class.last]="i === pipelineStages().length - 1">
                 <div class="pipeline-count" [style.color]="stage.color">{{ stage.count }}</div>
                 <div class="pipeline-label">{{ stage.label }}</div>
                 <div class="pipeline-bar">
@@ -204,6 +207,15 @@ interface ActivityItem {
     .page-sub { font-size: 12px; color: var(--text-3); }
 
     .header-actions { display: flex; gap: 8px; align-items: center; }
+
+    .stats-error {
+      margin: 12px 24px 0;
+      padding: 10px 14px;
+      background: var(--danger-subtle, rgba(239,68,68,.08));
+      color: var(--danger, #ef4444);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+    }
 
     .btn {
       display: inline-flex; align-items: center; gap: 6px;
@@ -343,6 +355,13 @@ interface ActivityItem {
       font-size: 11.5px; color: var(--text-3);
     }
 
+    .activity-empty {
+      padding: 32px 20px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-3);
+    }
+
     .pipeline { display: grid; grid-template-columns: repeat(4, 1fr); }
 
     .pipeline-stage {
@@ -360,30 +379,47 @@ interface ActivityItem {
 })
 export class DashboardComponent implements OnInit {
   private readonly assessmentService = inject(AssessmentService);
+  private readonly dashboardService = inject(DashboardService);
 
   readonly assessments = signal<Assessment[]>([]);
   readonly loading = signal(true);
   readonly today = new Date();
 
-  readonly activity: ActivityItem[] = [
-    { text: 'Alex Thompson completed Senior Frontend Developer', meta: 'Score: 87%', time: '2h ago', color: 'success' },
-    { text: 'Sarah Kim started Python Backend Engineer', meta: 'Currently in progress', time: '3h ago', color: 'info' },
-    { text: 'Emma Wilson invited to Senior Frontend Developer', meta: 'Awaiting response', time: '1h ago', color: 'warning' },
-    { text: "Priya Patel's submission ready for review", meta: 'Python Backend Engineer', time: '1d ago', color: 'warning' },
-    { text: 'System Design Challenge created', meta: 'Draft — not yet published', time: '2d ago', color: 'info' },
-  ];
+  readonly stats = signal<DashboardStats | null>(null);
+  readonly statsError = signal(false);
 
-  readonly pipeline = [
-    { label: 'Invited', count: 4, color: 'var(--text-2)' },
-    { label: 'In Progress', count: 3, color: 'var(--info)' },
-    { label: 'Pending Review', count: 7, color: 'var(--warning)' },
-    { label: 'Completed', count: 10, color: 'var(--success)' },
-  ];
+  readonly avgScoreDisplay = computed(() => {
+    const s = this.stats();
+    if (!s || s.averageScore === null) return '—';
+    return s.averageScore.toFixed(1) + '%';
+  });
+
+  readonly pipelineStages = computed(() => {
+    const p = this.stats()?.pipeline;
+    if (!p) return [];
+    return [
+      { label: 'Invited', count: p.invited, color: 'var(--text-2)' },
+      { label: 'In Progress', count: p.inProgress, color: 'var(--info)' },
+      { label: 'Pending Review', count: p.pendingReview, color: 'var(--warning)' },
+      { label: 'Completed', count: p.completed, color: 'var(--success)' },
+    ];
+  });
+
+  activityColor(type: string): string {
+    if (type === 'SUBMISSION_COMPLETED') return 'success';
+    if (type === 'SUBMISSION_STARTED') return 'info';
+    return 'warning';
+  }
 
   ngOnInit() {
     this.assessmentService.listAssessments().subscribe({
       next: a => { this.assessments.set(a); this.loading.set(false); },
       error: () => this.loading.set(false),
+    });
+
+    this.dashboardService.getStats().subscribe({
+      next: s => this.stats.set(s),
+      error: () => this.statsError.set(true),
     });
   }
 }
