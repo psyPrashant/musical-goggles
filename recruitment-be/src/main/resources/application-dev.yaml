@@ -4,6 +4,8 @@ server:
     include-message: always
 
 spring:
+  flyway:
+    locations: classpath:db/migration,classpath:db/seed
   datasource:
     url: jdbc:postgresql://localhost:5432/recruitment
     username: recruitment
