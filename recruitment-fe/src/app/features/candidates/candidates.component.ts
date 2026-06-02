@@ -44,6 +44,7 @@ import { FlagListItem } from '../../core/flag/flag.model';
             <div class="table-header">
               <span>Candidate</span>
               <span>Email</span>
+              <span>Phone</span>
               <span>Added</span>
               <span></span>
             </div>
@@ -60,6 +61,9 @@ import { FlagListItem } from '../../core/flag/flag.model';
                     @if (editError()) {
                       <span class="edit-error">{{ editError() }}</span>
                     }
+                  </div>
+                  <div class="edit-cell">
+                    <input type="tel" class="edit-input" [value]="editPhone()" (input)="editPhone.set($any($event.target).value)" placeholder="Phone (optional)" />
                   </div>
                   <div class="date-cell">{{ c.createdAt | date:'dd MMM yyyy' }}</div>
                   <div class="actions-cell edit-actions">
@@ -83,6 +87,7 @@ import { FlagListItem } from '../../core/flag/flag.model';
                     </div>
                   </div>
                   <div class="assessment-cell">{{ c.email }}</div>
+                  <div class="assessment-cell">{{ c.cellPhone ?? '—' }}</div>
                   <div class="date-cell">{{ c.createdAt | date:'dd MMM yyyy' }}</div>
                   <div class="actions-cell">
                     <button class="action-btn" title="Edit" (click)="startEdit(c)">
@@ -389,14 +394,14 @@ import { FlagListItem } from '../../core/flag/flag.model';
     }
 
     .table-header {
-      display: grid; grid-template-columns: 2fr 2fr 120px 72px;
+      display: grid; grid-template-columns: 2fr 2fr 140px 120px 72px;
       gap: 12px; padding: 10px 16px;
       background: var(--bg-elevated); border-bottom: 1px solid var(--border);
       font-size: 11.5px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em;
     }
 
     .table-row {
-      display: grid; grid-template-columns: 2fr 2fr 120px 72px;
+      display: grid; grid-template-columns: 2fr 2fr 140px 120px 72px;
       gap: 12px; padding: 12px 16px; align-items: center;
       border-bottom: 1px solid var(--border); transition: background 120ms;
     }
@@ -610,6 +615,7 @@ export class CandidatesComponent implements OnInit {
   readonly editFirst = signal('');
   readonly editLast = signal('');
   readonly editEmail = signal('');
+  readonly editPhone = signal('');
   readonly editError = signal('');
   readonly editSaving = signal(false);
 
@@ -801,6 +807,7 @@ export class CandidatesComponent implements OnInit {
     this.editFirst.set(c.firstName);
     this.editLast.set(c.lastName);
     this.editEmail.set(c.email);
+    this.editPhone.set(c.cellPhone ?? '');
     this.editError.set('');
     this.editSaving.set(false);
   }
@@ -812,6 +819,7 @@ export class CandidatesComponent implements OnInit {
       firstName: this.editFirst(),
       lastName: this.editLast(),
       email: this.editEmail(),
+      cellPhone: this.editPhone() || null,
     };
     this.candidateSvc.updateCandidate(id, req).subscribe({
       next: updated => {

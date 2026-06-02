@@ -1,10 +1,4 @@
-# candidate-edit Specification
-
-## Purpose
-
-Allows recruiters to correct a candidate's first name, last name, and email address directly from the candidates list, using inline editing in the table row.
-
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Recruiter can update a candidate's details
 The system SHALL expose `PUT /api/candidates/{id}` accepting `firstName`, `lastName`, `email`, and optional `cellPhone`. `firstName`, `lastName`, and `email` are required. `cellPhone` is optional; when provided it SHALL match the pattern `^[+\d\s()\-]{7,20}$`. The updated candidate SHALL be returned in the response including the `cellPhone` field.
@@ -51,7 +45,6 @@ The UI SHALL display an edit icon button on each candidate row. Clicking the ico
 #### Scenario: Enter edit mode
 - **WHEN** a recruiter clicks the edit icon on a candidate row
 - **THEN** the row switches to inline edit mode showing input fields pre-populated with current values for first name, last name, email, and cell phone
-- **AND** Save and Cancel icon buttons appear
 
 #### Scenario: Save valid changes with phone
 - **WHEN** the recruiter edits fields including a valid phone number and clicks Save
@@ -67,7 +60,7 @@ The UI SHALL display an edit icon button on each candidate row. Clicking the ico
 #### Scenario: Save with duplicate email
 - **WHEN** the recruiter changes the email to one belonging to another candidate and clicks Save
 - **THEN** the system returns 409
-- **AND** an inline error message appears in the row: "This email is already used by another candidate."
+- **AND** an inline error message appears: "This email is already used by another candidate."
 - **AND** the row remains in edit mode
 
 #### Scenario: Cancel discards changes

@@ -30,6 +30,9 @@ public class Candidate {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(name = "cell_phone")
+    private String cellPhone;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
     private User createdBy;

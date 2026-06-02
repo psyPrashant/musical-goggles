@@ -8,5 +8,6 @@ public record CandidateResponse(
         String firstName,
         String lastName,
         String email,
+        String cellPhone,
         Instant createdAt
 ) {}
