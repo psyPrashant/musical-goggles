@@ -431,7 +431,13 @@ create a new branch before starting
 
 ## 2026-06-02 | hendrik.muller
 
-> help me plan ep-14 with openspec 
+> help me plan ep-14 with openspec
+
+---
+
+## 2026-06-02 | hendrik.muller
+
+> fetch and pull
 
 ---
 
@@ -443,7 +449,19 @@ create a new branch before starting
 
 ## 2026-06-02 | hendrik.muller
 
+> fetch and pull from main to branch
+
+---
+
+## 2026-06-02 | hendrik.muller
+
 > continue
+
+---
+
+## 2026-06-02 | hendrik.muller
+
+> can you seed more data 20 more questions ,some group questions aswell, populate some candidates too, and assemsment check MG-72
 
 ---
 
@@ -455,7 +473,19 @@ create a new branch before starting
 
 ## 2026-06-02 | hendrik.muller
 
+> ship it
+
+---
+
+## 2026-06-02 | hendrik.muller
+
 > test ep-14 with play right and docker
+
+---
+
+## 2026-06-02 | hendrik.muller
+
+> check if this works with playwright
 
 ---
 
@@ -465,9 +495,62 @@ create a new branch before starting
 
 ---
 
+## 2026-06-02 | hendrik.muller
+
+> append to prompts.md , commit and make PR
+
+---
+
+## 2026-06-02 | hendrik.muller
+
+> should append to the end of md file
+
+---
 
 ## 2026-06-02 15:28 | hendrik.muller
 
 > commit and push, make a PR
+
+---
+
+## 2026-06-02 | shaaira.mayet
+
+> connect to the musical goggles jira board and look for epic 13 in the current sprint. pull from git to update the project. move each story and the epic to in progress and assign them to me. create a new branch and implement the stories using the open spec workflow. run open spec when needed. append prompts used to prompt.md
+
+---
+
+## 2026-06-02 13:49 | prashant.kessa
+
+> look at the tickets on the jira board Musical Goggles for Epic 12 - implement them using the openspec workflow, switch branches before starting
+
+---
+
+## 2026-06-02 14:04 | prashant.kessa
+
+> the previous spec wasn't archived, can you do that for the ep-11 one and then continue with /opsx:apply for the current one
+
+---
+
+## 2026-06-02 14:25 | prashant.kessa
+
+> the candidates that were invited don't show up in the results section - only shows after they start their attempt
+
+---
+
+## 2026-06-02 14:37 | prashant.kessa
+
+> theres a visual bug with selecting a profile that has not started. i have 2 people that have not started and selecting one makes it look like both are selected
+
+---
+
+## 2026-06-02 14:43 | prashant.kessa
+
+> all good. archive, then commit and push everything and create a pr
+
+---
+
+## 2026-06-02 14:52 | prashant.kessa
+
+> i have merge conflicts, resolve them. keep both for prompts.md, take the V12 fly migration file from main and resolve the last one
 
 ---

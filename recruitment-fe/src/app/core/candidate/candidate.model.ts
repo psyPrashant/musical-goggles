@@ -26,3 +26,18 @@ export interface InviteResponse {
   token: string;
   expiresAt: string;
 }
+
+export type HistoryStatus = 'PENDING' | 'EXPIRED' | 'IN_PROGRESS' | 'SUBMITTED' | 'AUTO_SUBMITTED';
+export type HistoryMarkingStatus = 'FULLY_MARKED' | 'PENDING_REVIEW';
+
+export interface CandidateHistoryItem {
+  assessmentId: string;
+  assessmentName: string;
+  invitedAt: string;
+  submissionId: string | null;
+  status: HistoryStatus;
+  submittedAt: string | null;
+  totalScore: number | null;
+  markingStatus: HistoryMarkingStatus | null;
+  linkedRole: string | null;
+}

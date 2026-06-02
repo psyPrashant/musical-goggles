@@ -6,6 +6,7 @@ import { ResultSummary, SubmissionSummary } from './marking.model';
 
 const mockSummary: SubmissionSummary = {
   submissionId: 'sub-1',
+  invitationId: 'inv-1',
   candidateId: 'cand-1',
   candidateName: 'Jane Doe',
   status: 'SUBMITTED',

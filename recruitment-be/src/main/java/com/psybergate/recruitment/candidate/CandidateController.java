@@ -1,5 +1,6 @@
 package com.psybergate.recruitment.candidate;
 
+import com.psybergate.recruitment.candidate.dto.CandidateHistoryItemResponse;
 import com.psybergate.recruitment.candidate.dto.CandidateRequest;
 import com.psybergate.recruitment.candidate.dto.CandidateResponse;
 import jakarta.validation.Valid;
@@ -47,5 +48,10 @@ public class CandidateController {
     public ResponseEntity<CandidateResponse> update(@PathVariable UUID id,
                                                      @RequestBody @Valid CandidateRequest request) {
         return ResponseEntity.ok(candidateService.update(id, request));
+    }
+
+    @GetMapping("/{candidateId}/history")
+    public ResponseEntity<List<CandidateHistoryItemResponse>> getHistory(@PathVariable UUID candidateId) {
+        return ResponseEntity.ok(candidateService.getAssessmentHistory(candidateId));
     }
 }

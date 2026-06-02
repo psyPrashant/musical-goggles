@@ -1,5 +1,6 @@
 package com.psybergate.recruitment.candidate;
 
+import com.psybergate.recruitment.candidate.dto.CandidateHistoryItemResponse;
 import com.psybergate.recruitment.candidate.dto.CandidateRequest;
 import com.psybergate.recruitment.candidate.dto.CandidateResponse;
 
@@ -12,4 +13,5 @@ public interface CandidateService {
     CandidateResponse findById(UUID id);
     CandidateResponse getByEmail(String email);
     CandidateResponse update(UUID id, CandidateRequest request);
+    List<CandidateHistoryItemResponse> getAssessmentHistory(UUID candidateId);
 }
