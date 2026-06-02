@@ -5,12 +5,15 @@ import { ResultsComponent } from './results.component';
 import { MarkingService } from '../../core/marking/marking.service';
 import { ResultSummary, SubmissionSummary } from '../../core/marking/marking.model';
 import { FlagService } from '../../core/flag/flag.service';
+import { ReminderService } from '../../core/reminder/reminder.service';
 
 const mockSubmissions: SubmissionSummary[] = [
-  { submissionId: 's1', candidateId: 'c1', candidateName: 'Alice Smith', status: 'SUBMITTED',
+  { submissionId: 's1', invitationId: 'inv1', candidateId: 'c1', candidateName: 'Alice Smith', status: 'SUBMITTED',
     submittedAt: '2026-05-29T10:00:00Z', answeredCount: 2, totalAnswers: 2, markedCount: 0, flagStatus: null },
-  { submissionId: 's2', candidateId: 'c2', candidateName: 'Bob Jones', status: 'IN_PROGRESS',
+  { submissionId: 's2', invitationId: 'inv2', candidateId: 'c2', candidateName: 'Bob Jones', status: 'IN_PROGRESS',
     submittedAt: null, answeredCount: 1, totalAnswers: 3, markedCount: 0, flagStatus: 'FLAGGED' },
+  { submissionId: null, invitationId: 'inv3', candidateId: 'c3', candidateName: 'Carol White', status: 'NOT_STARTED',
+    submittedAt: null, answeredCount: 0, totalAnswers: 0, markedCount: 0, flagStatus: null },
 ];
 
 const mockResult: ResultSummary = {
@@ -42,12 +45,17 @@ describe('ResultsComponent', () => {
       transitionFlag: vi.fn().mockReturnValue(of({})),
       getAuditTrail: vi.fn().mockReturnValue(of([])),
     };
+    const reminderSvc = {
+      sendReminder: vi.fn().mockReturnValue(of({ id: 'r1', sentAt: '2026-06-02T08:00:00Z', sendType: 'MANUAL', sentBy: 'u1' })),
+      getReminderHistory: vi.fn().mockReturnValue(of([])),
+    };
 
     TestBed.configureTestingModule({
       imports: [ResultsComponent],
       providers: [
         { provide: MarkingService, useValue: markingSvc },
         { provide: FlagService, useValue: flagSvc },
+        { provide: ReminderService, useValue: reminderSvc },
       ],
     });
   });
@@ -59,7 +67,7 @@ describe('ResultsComponent', () => {
     fixture.detectChanges();
 
     expect(markingSvc.listAllSubmissions).toHaveBeenCalled();
-    expect(fixture.componentInstance.submissions().length).toBe(2);
+    expect(fixture.componentInstance.submissions().length).toBe(3);
   });
 
   it('clicking a submission loads its result', () => {

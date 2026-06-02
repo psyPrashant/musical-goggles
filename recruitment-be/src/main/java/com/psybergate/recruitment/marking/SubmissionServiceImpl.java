@@ -30,6 +30,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     @Autowired private AssessmentQuestionRepository assessmentQuestionRepository;
     @Autowired private QuestionRepository questionRepository;
     @Autowired private com.psybergate.recruitment.repository.SubmissionFlagRepository submissionFlagRepository;
+    @Autowired private com.psybergate.recruitment.repository.InvitationRepository invitationRepository;
 
     @Override
     public List<SubmissionSummaryResponse> listSubmissions(UUID assessmentId) {
@@ -37,12 +38,16 @@ public class SubmissionServiceImpl implements SubmissionService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assessment not found"));
 
         List<CandidateSubmission> submissions = submissionRepository.findByAssessmentId(assessmentId);
-        return buildSummaries(submissions);
+        List<SubmissionSummaryResponse> result = new ArrayList<>(buildSummaries(submissions));
+        result.addAll(buildNotStartedSummaries(invitationRepository.findSentWithNoSubmissionByAssessment(assessmentId)));
+        return result;
     }
 
     @Override
     public List<SubmissionSummaryResponse> listAllSubmissions() {
-        return buildSummaries(submissionRepository.findAll());
+        List<SubmissionSummaryResponse> result = new ArrayList<>(buildSummaries(submissionRepository.findAll()));
+        result.addAll(buildNotStartedSummaries(invitationRepository.findSentWithNoSubmission()));
+        return result;
     }
 
     @Override
@@ -213,8 +218,22 @@ public class SubmissionServiceImpl implements SubmissionService {
                     int marked = scoredBySubmission.getOrDefault(s.getId(), 0L).intValue();
                     FlagStatus flagStatus = flagStatusBySubmission.get(s.getId());
                     return new SubmissionSummaryResponse(
-                            s.getId(), s.getCandidateId(), name, s.getStatus(),
+                            s.getId(), s.getInvitationId(), s.getCandidateId(), name, s.getStatus(),
                             s.getSubmittedAt(), answered, answered, marked, flagStatus
+                    );
+                })
+                .toList();
+    }
+
+    private List<SubmissionSummaryResponse> buildNotStartedSummaries(
+            List<com.psybergate.recruitment.domain.CandidateInvitation> invitations) {
+        return invitations.stream()
+                .map(inv -> {
+                    com.psybergate.recruitment.domain.Candidate c = inv.getCandidate();
+                    String name = c.getFirstName() + " " + c.getLastName();
+                    return new SubmissionSummaryResponse(
+                            null, inv.getId(), c.getId(), name, SubmissionStatus.NOT_STARTED,
+                            null, 0, 0, 0, null
                     );
                 })
                 .toList();

@@ -30,6 +30,27 @@ public class EmailServiceImpl implements EmailService {
         mailSender.send(message);
     }
 
+    @Override
+    public void sendReminder(Candidate candidate, Assessment assessment, Instant expiresAt, String invitationLink) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(candidate.getEmail());
+        message.setSubject("Reminder: Complete Your Assessment — " + assessment.getTitle());
+        message.setText(buildReminderBody(candidate, assessment, invitationLink, expiresAt));
+        mailSender.send(message);
+    }
+
+    private String buildReminderBody(Candidate candidate, Assessment assessment,
+                                      String invitationLink, Instant expiresAt) {
+        return "Hi " + candidate.getFirstName() + ",\n\n"
+                + "This is a friendly reminder that you have an outstanding assessment to complete:\n"
+                + "  " + assessment.getTitle() + "\n\n"
+                + "Please click the link below to begin or continue:\n"
+                + "  " + invitationLink + "\n\n"
+                + "This assessment expires at: " + EXPIRY_FMT.format(expiresAt) + "\n\n"
+                + "Good luck!\n"
+                + "The Psybergate Recruitment Team";
+    }
+
     private String buildBody(Candidate candidate, Assessment assessment,
                               String invitationLink, Instant expiresAt, String plainPassword) {
         StringBuilder body = new StringBuilder();
