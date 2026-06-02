@@ -62,6 +62,12 @@ import { Question, QuestionType } from '../../core/question/question.model';
                   <span class="pts-label">10 pts</span>
                 </div>
                 <div class="q-actions">
+                  <button class="action-btn" (click)="togglePreview(q.id)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    {{ previewedId() === q.id ? 'Close' : 'Preview' }}
+                  </button>
                   <a [routerLink]="['/questions', q.id, 'edit']" class="action-btn">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -75,6 +81,81 @@ import { Question, QuestionType } from '../../core/question/question.model';
                     </svg>
                   </button>
                 </div>
+
+                @if (previewedId() === q.id) {
+                  <div class="candidate-preview">
+                    <p class="preview-body">{{ q.body }}</p>
+
+                    @if (q.type === 'MCQ' && q.options) {
+                      <div class="preview-options">
+                        @for (opt of q.options; track opt.id; let j = $index) {
+                          <div class="preview-option-row">
+                            <div class="preview-radio"></div>
+                            <span class="preview-letter">{{ optionLetter(j) }}</span>
+                            <span class="preview-option-text">{{ opt.text }}</span>
+                          </div>
+                        }
+                      </div>
+                    }
+
+                    @if (q.type === 'TEXT') {
+                      <div class="preview-answer-area">
+                        <textarea rows="3" disabled placeholder="Candidate types their answer here…"></textarea>
+                      </div>
+                    }
+
+                    @if (q.type === 'CODE_SUBMISSION') {
+                      <div class="preview-code-area">
+                        @if (q.languageHint) {
+                          <span class="preview-lang-badge">{{ q.languageHint }}</span>
+                        }
+                        <textarea rows="5" disabled placeholder="Candidate submits code here…" class="preview-code-textarea"></textarea>
+                      </div>
+                    }
+
+                    @if (q.type === 'GROUP') {
+                      <div class="sub-q-stack">
+                        @if (!q.memberQuestions || q.memberQuestions.length === 0) {
+                          <span class="sub-q-empty">No sub-questions available.</span>
+                        } @else {
+                          @for (sub of q.memberQuestions; track sub.id; let i = $index) {
+                            <div class="sub-q-item">
+                              <div class="sub-q-header">
+                                <span class="sub-q-pos">{{ i + 1 }}</span>
+                                <span class="type-badge type-{{ sub.type.toLowerCase() }}">{{ typeLabel(sub.type) }}</span>
+                              </div>
+                              <p class="sub-q-body">{{ sub.body }}</p>
+                              @if (sub.type === 'MCQ' && sub.options) {
+                                <div class="preview-options">
+                                  @for (opt of sub.options; track opt.id; let j = $index) {
+                                    <div class="preview-option-row">
+                                      <div class="preview-radio"></div>
+                                      <span class="preview-letter">{{ optionLetter(j) }}</span>
+                                      <span class="preview-option-text">{{ opt.text }}</span>
+                                    </div>
+                                  }
+                                </div>
+                              }
+                              @if (sub.type === 'TEXT') {
+                                <div class="preview-answer-area">
+                                  <textarea rows="2" disabled placeholder="Candidate types their answer here…"></textarea>
+                                </div>
+                              }
+                              @if (sub.type === 'CODE_SUBMISSION') {
+                                <div class="preview-code-area">
+                                  @if (sub.languageHint) {
+                                    <span class="preview-lang-badge">{{ sub.languageHint }}</span>
+                                  }
+                                  <textarea rows="4" disabled placeholder="Candidate submits code here…" class="preview-code-textarea"></textarea>
+                                </div>
+                              }
+                            </div>
+                          }
+                        }
+                      </div>
+                    }
+                  </div>
+                }
               </div>
             }
           </div>
@@ -228,6 +309,62 @@ import { Question, QuestionType } from '../../core/question/question.model';
       background: var(--danger-subtle); border: 1px solid rgba(239,68,68,.25);
       border-radius: var(--radius-sm); color: var(--danger); font-size: 13px;
     }
+
+    .candidate-preview {
+      border-top: 1px solid var(--border); padding-top: 14px;
+      max-height: 480px; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+
+    .preview-body { font-size: 13px; color: var(--text-1); line-height: 1.65; margin: 0; }
+
+    .preview-options { display: flex; flex-direction: column; gap: 6px; }
+
+    .preview-option-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    }
+
+    .preview-radio {
+      width: 15px; height: 15px; border-radius: 50%;
+      border: 2px solid var(--border); flex-shrink: 0;
+    }
+
+    .preview-letter { font-size: 12px; font-weight: 600; color: var(--text-3); width: 14px; }
+
+    .preview-option-text { font-size: 12.5px; color: var(--text-1); }
+
+    .preview-answer-area, .preview-code-area { display: flex; flex-direction: column; gap: 6px; }
+
+    .preview-lang-badge {
+      font-size: 11.5px; background: rgba(168,85,247,0.13); color: #a855f7;
+      padding: 2px 8px; border-radius: 999px; font-weight: 500; align-self: flex-start;
+    }
+
+    .candidate-preview textarea {
+      width: 100%; padding: 8px 10px;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-3);
+      font-size: 12.5px; resize: vertical; box-sizing: border-box;
+      font-family: var(--font); line-height: 1.6;
+    }
+
+    .preview-code-textarea { font-family: var(--font-mono) !important; }
+
+    .sub-q-stack { display: flex; flex-direction: column; gap: 10px; }
+
+    .sub-q-item {
+      background: var(--bg-elevated); border-radius: var(--radius-sm); padding: 10px 12px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+
+    .sub-q-header { display: flex; align-items: center; gap: 8px; }
+
+    .sub-q-pos { font-size: 11px; font-weight: 600; color: var(--text-3); }
+
+    .sub-q-body { font-size: 12.5px; color: var(--text-1); line-height: 1.6; margin: 0; }
+
+    .sub-q-empty { font-size: 12px; color: var(--text-3); font-style: italic; }
   `],
 })
 export class QuestionsComponent implements OnInit {
@@ -240,12 +377,14 @@ export class QuestionsComponent implements OnInit {
   readonly search = signal('');
   readonly selectedType = signal('');
   readonly selectedTag = signal('');
+  readonly previewedId = signal<string | null>(null);
 
   readonly typeFilters = [
     { value: '', label: 'All Types' },
     { value: 'MCQ', label: 'MCQ' },
     { value: 'TEXT', label: 'Text' },
     { value: 'CODE_SUBMISSION', label: 'Code' },
+    { value: 'GROUP', label: 'Group' },
   ];
 
   readonly filtered = computed(() => {
@@ -283,12 +422,20 @@ export class QuestionsComponent implements OnInit {
     this.load();
   }
 
+  togglePreview(id: string) {
+    this.previewedId.update(cur => cur === id ? null : id);
+  }
+
   confirmDelete(q: Question) {
     if (!confirm(`Delete "${q.title}"?`)) return;
     this.svc.deleteQuestion(q.id).subscribe({
       next: () => { this.load(); this.loadTags(); },
       error: () => this.error.set('Failed to delete question.'),
     });
+  }
+
+  optionLetter(index: number): string {
+    return String.fromCharCode(65 + index);
   }
 
   typeLabel(type: QuestionType): string {

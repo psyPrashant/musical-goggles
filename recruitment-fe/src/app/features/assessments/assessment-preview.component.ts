@@ -83,6 +83,30 @@ import { AssessmentPreview, PreviewQuestion } from '../../core/assessment/assess
                         <textarea rows="6" disabled placeholder="Candidate submits code here…" class="code-textarea"></textarea>
                       </div>
                     }
+
+                    @if (q.type === 'GROUP' && q.subQuestions) {
+                      <div class="sub-questions">
+                        @for (sub of q.subQuestions; track sub.id; let j = $index) {
+                          <div class="sub-q-card">
+                            <div class="sub-q-header">
+                              <span class="sub-q-num">{{ j + 1 }}</span>
+                              <span class="type-badge type-{{ sub.type.toLowerCase() }}">{{ typeLabel(sub) }}</span>
+                            </div>
+                            <p class="sub-q-body">{{ sub.body }}</p>
+                            @if (sub.type === 'MCQ' && sub.options) {
+                              <div class="sub-q-option-list">
+                                @for (opt of sub.options; track opt.id; let k = $index) {
+                                  <div class="sub-q-option-item">
+                                    <span class="option-letter">{{ optionLetter(k) }}.</span>
+                                    <span class="option-text">{{ opt.text }}</span>
+                                  </div>
+                                }
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
                   </div>
                 }
               </div>
@@ -205,6 +229,20 @@ import { AssessmentPreview, PreviewQuestion } from '../../core/assessment/assess
       font-size: 11.5px; background: rgba(168,85,247,0.13); color: #a855f7;
       padding: 2px 8px; border-radius: 999px; font-weight: 500; align-self: flex-start;
     }
+
+    .sub-questions { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--border); padding-top: 12px; }
+
+    .sub-q-card { background: var(--bg-elevated); border-radius: var(--radius-sm); padding: 12px 14px; }
+
+    .sub-q-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+
+    .sub-q-num { font-size: 11px; color: var(--text-3); font-weight: 600; }
+
+    .sub-q-body { font-size: 13px; color: var(--text-1); line-height: 1.6; margin: 0 0 8px; }
+
+    .sub-q-option-list { display: flex; flex-direction: column; gap: 5px; }
+
+    .sub-q-option-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: var(--text-1); }
 
     .empty-state { text-align: center; padding: 60px; color: var(--text-3); font-size: 13px; }
 

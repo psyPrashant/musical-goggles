@@ -6,7 +6,7 @@ TBD - created by archiving change ep-02-question-bank. Update Purpose after arch
 ## Requirements
 
 ### Requirement: Admin and Recruiter can create questions of four types
-The system SHALL support creating questions of type `MCQ`, `TEXT`, `CODE_SUBMISSION`, and `GROUP`. Every question SHALL have a `title` (short label) and a `body` (the question text presented to the candidate). MCQ questions SHALL additionally require at least two answer options and exactly one correct option marked. GROUP questions SHALL require a `memberQuestionIds` list of at least two existing question ids.
+The system SHALL support creating questions of type `MCQ`, `TEXT`, `CODE_SUBMISSION`, and `GROUP` via both the API and the question creation UI. Every question SHALL have a `title` (short label) and a `body` (the question text presented to the candidate). MCQ questions SHALL additionally require at least two answer options and exactly one correct option marked. GROUP questions SHALL require a `memberQuestionIds` list of at least two existing question ids. The `QuestionFormComponent` SHALL present a "Group / Scenario" option in the type selector and, when selected, render a member picker that allows the recruiter to search the question bank and add ≥ 2 sub-questions before saving.
 
 #### Scenario: Create MCQ question with options
 - **WHEN** an Admin or Recruiter submits a valid `POST /api/questions` with `type=MCQ` and at least two options (one marked correct)
@@ -24,9 +24,25 @@ The system SHALL support creating questions of type `MCQ`, `TEXT`, `CODE_SUBMISS
 - **WHEN** an Admin or Recruiter submits a valid `POST /api/questions` with `type=CODE_SUBMISSION`
 - **THEN** the question is persisted with an optional `languageHint` field (e.g., "Java", "Python")
 
-#### Scenario: Create GROUP question
-- **WHEN** an Admin or Recruiter submits a valid `POST /api/questions` with `type=GROUP`, a `body`, and `memberQuestionIds` referencing two or more existing questions
-- **THEN** the question is persisted and the response is HTTP 201 with the created GROUP question including its `id` and ordered `members`
+#### Scenario: Create GROUP question via the UI
+- **WHEN** a Recruiter selects "Group / Scenario" in the question form, searches the bank, adds at least 2 sub-questions, fills in the title and preamble body, and clicks "Create Question"
+- **THEN** the form submits `POST /api/questions` with `type=GROUP` and `memberQuestionIds`, the question is persisted, and the recruiter is navigated back to the question bank
+
+#### Scenario: GROUP question with fewer than 2 members is blocked in the UI
+- **WHEN** a Recruiter selects GROUP type, adds only one sub-question, and attempts to submit
+- **THEN** the form displays an inline error "A group question must have at least 2 sub-questions" and does not submit
+
+#### Scenario: Already-selected sub-questions are hidden from the picker
+- **WHEN** a Recruiter has added question X to the member list
+- **THEN** question X no longer appears in the bank search results, preventing it from being added twice
+
+#### Scenario: GROUP questions are excluded from the member picker
+- **WHEN** the member picker is shown
+- **THEN** GROUP-type questions do not appear as selectable members (no nested groups)
+
+#### Scenario: Edit mode for GROUP question shows read-only notice
+- **WHEN** a Recruiter navigates to `/questions/:id/edit` for a GROUP question
+- **THEN** the form displays a notice stating the question cannot be edited via this form and hides the save button
 
 ### Requirement: Questions can be retrieved individually or as a filtered list
 The system SHALL expose `GET /api/questions` returning a list of all questions visible to the authenticated user. The endpoint SHALL support optional query parameters `type` (filter by question type) and `tag` (filter by tag name, case-insensitive).
@@ -64,3 +80,38 @@ All question CRUD endpoints SHALL require the `ADMIN` or `RECRUITER` role. Unaut
 #### Scenario: Candidate cannot access question list
 - **WHEN** a request to `GET /api/questions` is made with a candidate session JWT
 - **THEN** the response is HTTP 403
+
+### Requirement: Admin and Recruiter can filter and inspect questions from the question bank list
+The question bank view SHALL support filtering by all four question types including `GROUP`. GROUP questions SHALL be filterable via a "Group" chip in the type filter bar. Every question card SHALL provide an inline "Preview" toggle that expands the card to show a full candidate-facing preview of the question. The preview SHALL be identical in content and layout to how the candidate sees the question during an assessment: MCQ questions SHALL show the question body and all answer options in a lettered radio-button list; TEXT questions SHALL show the question body and a disabled textarea; CODE_SUBMISSION questions SHALL show the question body, an optional language badge, and a disabled code editor area; GROUP questions SHALL show the group preamble body followed by each sub-question rendered with its own type-specific candidate view (MCQ sub shows options, TEXT sub shows textarea, CODE sub shows code area). Only one preview panel SHALL be open at a time — opening a new card's preview SHALL close any previously open one. The preview data SHALL be sourced from the `memberQuestions`, `options`, and `languageHint` fields already returned by `GET /api/questions` — no additional API call is required.
+
+#### Scenario: Preview toggle opens a candidate-facing MCQ preview
+- **WHEN** a recruiter clicks "Preview" on an MCQ question card
+- **THEN** the card expands to show the question body and a lettered radio-button list of all answer options
+
+#### Scenario: Preview toggle opens a candidate-facing TEXT preview
+- **WHEN** a recruiter clicks "Preview" on a TEXT question card
+- **THEN** the card expands to show the question body and a disabled textarea representing the candidate's answer area
+
+#### Scenario: Preview toggle opens a candidate-facing CODE_SUBMISSION preview
+- **WHEN** a recruiter clicks "Preview" on a CODE_SUBMISSION question card
+- **THEN** the card expands to show the question body, the language badge (if set), and a disabled code editor textarea
+
+#### Scenario: Preview toggle opens a candidate-facing GROUP preview with sub-questions
+- **WHEN** a recruiter clicks "Preview" on a GROUP question card
+- **THEN** the card expands to show the group preamble body followed by each sub-question with its position number, type badge, body text, and its own type-specific candidate input area
+
+#### Scenario: MCQ sub-question within a GROUP preview shows its options
+- **WHEN** a GROUP question contains an MCQ sub-question and the recruiter opens the GROUP preview
+- **THEN** the MCQ sub-question entry shows its answer options in a lettered list
+
+#### Scenario: Clicking Preview again collapses the panel
+- **WHEN** a recruiter clicks "Preview" (now labelled "Close") on an already-expanded card
+- **THEN** the expansion collapses and only the standard card content is shown
+
+#### Scenario: Expanding one card collapses another
+- **WHEN** card A is expanded and a recruiter clicks "Preview" on card B
+- **THEN** card B expands and card A collapses
+
+#### Scenario: GROUP card with no loaded sub-questions shows empty state
+- **WHEN** a GROUP question's `memberQuestions` list is empty or absent
+- **THEN** the expansion shows a message indicating no sub-questions are available
