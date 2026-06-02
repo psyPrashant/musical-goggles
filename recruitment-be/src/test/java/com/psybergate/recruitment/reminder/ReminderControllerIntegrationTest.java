@@ -10,8 +10,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
@@ -26,6 +28,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ContextConfiguration(initializers = TestDatasourceInitializer.class)
 class ReminderControllerIntegrationTest extends AbstractIntegrationTest {
+
+    @MockBean JavaMailSender mailSender;
 
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
@@ -96,7 +100,7 @@ class ReminderControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void sendReminder_noSubmissionYet_returns201() throws Exception {
+    void sendReminder_incompleteSubmission_returns201() throws Exception {
         mockMvc.perform(post("/api/invitations/{id}/reminders", invitation.getId())
                 .header("Authorization", "Bearer " + recruiterToken)
                 .contentType(MediaType.APPLICATION_JSON))
@@ -107,14 +111,10 @@ class ReminderControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void sendReminder_completedSubmission_returns400() throws Exception {
-        CandidateSubmission submitted = new CandidateSubmission();
-        submitted.setCandidateId(candidate.getId());
-        submitted.setAssessmentId(assessment.getId());
-        submitted.setInvitationId(invitation.getId());
-        submitted.setStatus(SubmissionStatus.SUBMITTED);
-        submitted.setStartedAt(Instant.now().minusSeconds(3600));
-        submitted.setSubmittedAt(Instant.now());
-        submissionRepository.save(submitted);
+        // Update the existing in-progress submission to SUBMITTED (avoids duplicate invitation_id)
+        inProgressSubmission.setStatus(SubmissionStatus.SUBMITTED);
+        inProgressSubmission.setSubmittedAt(Instant.now());
+        submissionRepository.save(inProgressSubmission);
 
         mockMvc.perform(post("/api/invitations/{id}/reminders", invitation.getId())
                 .header("Authorization", "Bearer " + recruiterToken)
