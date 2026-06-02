@@ -1,10 +1,11 @@
-export type SubmissionStatus = 'IN_PROGRESS' | 'SUBMITTED' | 'AUTO_SUBMITTED';
+export type SubmissionStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'SUBMITTED' | 'AUTO_SUBMITTED';
 export type MarkingStatus = 'FULLY_MARKED' | 'PENDING_REVIEW';
 export type QuestionType = 'MCQ' | 'TEXT' | 'CODE_SUBMISSION';
 export type FlagStatus = 'FLAGGED' | 'UNDER_REVIEW' | 'RESOLVED' | 'DISMISSED';
 
 export interface SubmissionSummary {
-  submissionId: string;
+  submissionId: string | null;
+  invitationId: string;
   candidateId: string;
   candidateName: string;
   status: SubmissionStatus;

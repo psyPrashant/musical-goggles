@@ -8,6 +8,7 @@ import java.util.UUID;
 
 public record SubmissionSummaryResponse(
         UUID submissionId,
+        UUID invitationId,
         UUID candidateId,
         String candidateName,
         SubmissionStatus status,

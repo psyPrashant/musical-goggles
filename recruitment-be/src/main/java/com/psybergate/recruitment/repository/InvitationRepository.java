@@ -38,6 +38,42 @@ public interface InvitationRepository extends JpaRepository<CandidateInvitation,
 
     @Query("""
             SELECT i FROM CandidateInvitation i
+            JOIN FETCH i.candidate
+            JOIN FETCH i.assessment a
+            WHERE i.status = 'SENT'
+            AND a.reminderDaysBeforeDeadline IS NOT NULL
+            AND i.expiresAt > :now
+            AND NOT EXISTS (
+                SELECT cs FROM CandidateSubmission cs
+                WHERE cs.invitationId = i.id
+                AND cs.status IN ('SUBMITTED', 'AUTO_SUBMITTED')
+            )
+            """)
+    List<CandidateInvitation> findSentWithReminderWindowAndIncomplete(@Param("now") Instant now);
+
+    @Query("""
+            SELECT i FROM CandidateInvitation i
+            JOIN FETCH i.candidate
+            JOIN FETCH i.assessment
+            WHERE i.status = 'SENT'
+            AND NOT EXISTS (SELECT cs FROM CandidateSubmission cs WHERE cs.invitationId = i.id)
+            ORDER BY i.createdAt DESC
+            """)
+    List<CandidateInvitation> findSentWithNoSubmission();
+
+    @Query("""
+            SELECT i FROM CandidateInvitation i
+            JOIN FETCH i.candidate
+            JOIN FETCH i.assessment
+            WHERE i.status = 'SENT'
+            AND i.assessment.id = :assessmentId
+            AND NOT EXISTS (SELECT cs FROM CandidateSubmission cs WHERE cs.invitationId = i.id)
+            ORDER BY i.createdAt DESC
+            """)
+    List<CandidateInvitation> findSentWithNoSubmissionByAssessment(@Param("assessmentId") UUID assessmentId);
+
+    @Query("""
+            SELECT i FROM CandidateInvitation i
             JOIN FETCH i.assessment
             WHERE i.candidate.id = :candidateId
             ORDER BY i.createdAt DESC

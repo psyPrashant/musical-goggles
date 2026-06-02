@@ -3,6 +3,8 @@ import { MarkingService } from '../../core/marking/marking.service';
 import { ResultQuestion, ResultSummary, SubmissionSummary } from '../../core/marking/marking.model';
 import { FlagService } from '../../core/flag/flag.service';
 import { FlagAuditEntry, FlagReason, FlagResponse, FlagStatus } from '../../core/flag/flag.model';
+import { ReminderService } from '../../core/reminder/reminder.service';
+import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
 
 @Component({
   selector: 'app-results',
@@ -31,7 +33,7 @@ import { FlagAuditEntry, FlagReason, FlagResponse, FlagStatus } from '../../core
           } @else {
             @for (s of filteredSubmissions(); track s.submissionId) {
               <div class="submission-item"
-                   [class.active]="selectedSummary()?.submissionId === s.submissionId"
+                   [class.active]="selectedSummary()?.invitationId === s.invitationId"
                    (click)="selectSubmission(s)">
                 <div class="sub-avatar" [style.background]="avatarColor(s.candidateName)">{{ initials(s.candidateName) }}</div>
                 <div class="sub-info">
@@ -55,6 +57,52 @@ import { FlagAuditEntry, FlagReason, FlagResponse, FlagStatus } from '../../core
           @if (!result()) {
             @if (loadingResult()) {
               <div class="no-selection">Loading result…</div>
+            } @else if (selectedSummary()?.status === 'NOT_STARTED') {
+              <!-- Invited but hasn't started yet -->
+              <div class="detail-scroll">
+                <div class="detail-header">
+                  <div class="detail-avatar" [style.background]="avatarColor(selectedSummary()!.candidateName)">{{ initials(selectedSummary()!.candidateName) }}</div>
+                  <div class="detail-candidate-info">
+                    <span class="detail-name">{{ selectedSummary()!.candidateName }}</span>
+                    <span class="detail-assessment" style="margin-top:4px">
+                      <span class="sub-status status-not-started">Not Started</span>
+                    </span>
+                    <span class="detail-submitted">Invited — hasn't opened the assessment yet</span>
+                  </div>
+                </div>
+                <!-- Reminder section for not-started candidates -->
+                <div class="reminder-section">
+                  @if (!showReminderConfirm()) {
+                    <button class="btn-reminder" (click)="showReminderConfirm.set(true)" [disabled]="reminderSending()">✉ Send Reminder</button>
+                  } @else {
+                    <div class="reminder-confirm">
+                      <span class="reminder-confirm-text">Send a reminder email to this candidate?</span>
+                      <button class="save-btn" (click)="sendReminder()" [disabled]="reminderSending()">{{ reminderSending() ? 'Sending…' : 'Confirm' }}</button>
+                      <button class="save-btn secondary" (click)="showReminderConfirm.set(false)">Cancel</button>
+                    </div>
+                  }
+                  @if (reminderSuccess()) {
+                    <span class="reminder-toast">✓ Reminder sent</span>
+                  }
+                </div>
+                <!-- Reminder history -->
+                <div class="audit-section">
+                  <div class="audit-title">Reminder History</div>
+                  @if (reminderHistory().length === 0) {
+                    <div class="audit-empty">No reminders sent yet</div>
+                  } @else {
+                    @for (r of reminderHistory(); track r.id) {
+                      <div class="audit-entry">
+                        <span class="audit-action">
+                          <span class="reminder-type-badge" [class.type-auto]="r.sendType === 'AUTOMATED'">{{ r.sendType === 'AUTOMATED' ? 'Automated' : 'Manual' }}</span>
+                          {{ r.sentBy ? 'by recruiter' : 'by system' }}
+                        </span>
+                        <span class="audit-meta">{{ formatDate(r.sentAt) }}</span>
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
             } @else {
               <div class="no-selection">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -143,6 +191,48 @@ import { FlagAuditEntry, FlagReason, FlagResponse, FlagStatus } from '../../core
                   }
                 </div>
               }
+
+              <!-- Reminder section -->
+              @if (selectedSummary()!.status !== 'SUBMITTED' && selectedSummary()!.status !== 'AUTO_SUBMITTED') {
+                <div class="reminder-section">
+                  @if (!showReminderConfirm()) {
+                    <button class="btn-reminder" (click)="showReminderConfirm.set(true)" [disabled]="reminderSending()">
+                      ✉ Send Reminder
+                    </button>
+                  } @else {
+                    <div class="reminder-confirm">
+                      <span class="reminder-confirm-text">Send a reminder email to this candidate?</span>
+                      <button class="save-btn" (click)="sendReminder()" [disabled]="reminderSending()">
+                        {{ reminderSending() ? 'Sending…' : 'Confirm' }}
+                      </button>
+                      <button class="save-btn secondary" (click)="showReminderConfirm.set(false)">Cancel</button>
+                    </div>
+                  }
+                  @if (reminderSuccess()) {
+                    <span class="reminder-toast">✓ Reminder sent</span>
+                  }
+                </div>
+              }
+
+              <!-- Reminder history -->
+              <div class="audit-section">
+                <div class="audit-title">Reminder History</div>
+                @if (reminderHistory().length === 0) {
+                  <div class="audit-empty">No reminders sent yet</div>
+                } @else {
+                  @for (r of reminderHistory(); track r.id) {
+                    <div class="audit-entry">
+                      <span class="audit-action">
+                        <span class="reminder-type-badge" [class.type-auto]="r.sendType === 'AUTOMATED'">
+                          {{ r.sendType === 'AUTOMATED' ? 'Automated' : 'Manual' }}
+                        </span>
+                        {{ r.sentBy ? 'by recruiter' : 'by system' }}
+                      </span>
+                      <span class="audit-meta">{{ formatDate(r.sentAt) }}</span>
+                    </div>
+                  }
+                }
+              </div>
 
               <!-- Per-question answers -->
               <div class="answers-list">
@@ -252,6 +342,7 @@ import { FlagAuditEntry, FlagReason, FlagResponse, FlagStatus } from '../../core
     .status-submitted { background: var(--success-subtle); color: var(--success); }
     .status-auto { background: var(--info-subtle); color: var(--info); }
     .status-progress { background: var(--warning-subtle); color: var(--warning); }
+    .status-not-started { background: var(--bg-elevated); color: var(--text-3); border: 1px solid var(--border); }
 
     .sub-date { display: block; font-size: 11px; color: var(--text-3); }
     .sub-progress { display: block; font-size: 11px; color: var(--text-2); margin-top: 1px; }
@@ -426,13 +517,36 @@ import { FlagAuditEntry, FlagReason, FlagResponse, FlagStatus } from '../../core
     .audit-title { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
     .audit-entry { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--border); }
     .audit-entry:last-child { border-bottom: none; }
-    .audit-action { font-size: 12.5px; color: var(--text-1); font-weight: 500; }
+    .audit-action { font-size: 12.5px; color: var(--text-1); font-weight: 500; display: flex; align-items: center; gap: 6px; }
     .audit-meta { font-size: 11.5px; color: var(--text-3); }
+    .audit-empty { font-size: 12px; color: var(--text-3); font-style: italic; }
+
+    .reminder-section {
+      margin: 0 20px 16px; padding: 12px 14px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .btn-reminder {
+      background: none; border: 1px solid var(--accent); color: var(--accent);
+      padding: 5px 12px; border-radius: var(--radius-sm); font-size: 12.5px; font-weight: 500;
+      cursor: pointer; font-family: var(--font); transition: all 120ms;
+    }
+    .btn-reminder:hover:not(:disabled) { background: var(--accent-subtle); }
+    .btn-reminder:disabled { opacity: 0.5; cursor: not-allowed; }
+    .reminder-confirm { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .reminder-confirm-text { font-size: 12.5px; color: var(--text-2); }
+    .reminder-toast { font-size: 12px; color: var(--success); font-weight: 500; }
+    .reminder-type-badge {
+      display: inline-block; padding: 1px 6px; border-radius: 999px; font-size: 10.5px; font-weight: 500;
+      background: var(--info-subtle); color: var(--info);
+    }
+    .reminder-type-badge.type-auto { background: var(--accent-subtle); color: var(--accent); }
   `],
 })
 export class ResultsComponent implements OnInit {
   private readonly markingSvc = inject(MarkingService);
   private readonly flagSvc = inject(FlagService);
+  private readonly reminderSvc = inject(ReminderService);
 
   readonly submissions = signal<SubmissionSummary[]>([]);
   readonly selectedSummary = signal<SubmissionSummary | null>(null);
@@ -451,14 +565,21 @@ export class ResultsComponent implements OnInit {
   readonly showResolveForm = signal<FlagStatus | null>(null);
   readonly resolveNotes = signal('');
 
+  // Reminder state
+  readonly showReminderConfirm = signal(false);
+  readonly reminderSending = signal(false);
+  readonly reminderSuccess = signal(false);
+  readonly reminderHistory = signal<ReminderSendLogDto[]>([]);
+
   readonly editScores = signal<Record<string, number | undefined>>({});
   readonly editFeedback = signal<Record<string, string | undefined>>({});
 
   readonly statusFilters = [
     { value: '', label: 'All' },
+    { value: 'NOT_STARTED', label: 'Not Started' },
+    { value: 'IN_PROGRESS', label: 'In Progress' },
     { value: 'SUBMITTED', label: 'Submitted' },
     { value: 'AUTO_SUBMITTED', label: 'Auto-submitted' },
-    { value: 'IN_PROGRESS', label: 'In Progress' },
   ];
 
   readonly filteredSubmissions = computed(() => {
@@ -485,15 +606,25 @@ export class ResultsComponent implements OnInit {
     this.flagReason.set('');
     this.showResolveForm.set(null);
     this.resolveNotes.set('');
-    this.loadingResult.set(true);
-    this.markingSvc.getResult(s.submissionId).subscribe({
-      next: r => { this.result.set(r); this.loadingResult.set(false); },
-      error: () => this.loadingResult.set(false),
-    });
-    // Load existing open flag if flagged
-    if (s.flagStatus === 'FLAGGED' || s.flagStatus === 'UNDER_REVIEW') {
-      this.loadActiveFlagForSubmission(s.submissionId, s.flagStatus as FlagStatus);
+    this.showReminderConfirm.set(false);
+    this.reminderSending.set(false);
+    this.reminderSuccess.set(false);
+    this.reminderHistory.set([]);
+    // NOT_STARTED candidates have no submission to load
+    if (s.status !== 'NOT_STARTED' && s.submissionId) {
+      this.loadingResult.set(true);
+      this.markingSvc.getResult(s.submissionId).subscribe({
+        next: r => { this.result.set(r); this.loadingResult.set(false); },
+        error: () => this.loadingResult.set(false),
+      });
+      if (s.flagStatus === 'FLAGGED' || s.flagStatus === 'UNDER_REVIEW') {
+        this.loadActiveFlagForSubmission(s.submissionId, s.flagStatus as FlagStatus);
+      }
     }
+    // Load reminder history via invitationId
+    this.reminderSvc.getReminderHistory(s.invitationId).subscribe({
+      next: history => this.reminderHistory.set(history),
+    });
   }
 
   private loadActiveFlagForSubmission(submissionId: string, status: FlagStatus) {
@@ -510,7 +641,7 @@ export class ResultsComponent implements OnInit {
   submitFlag() {
     const s = this.selectedSummary();
     const reason = this.flagReason();
-    if (!s || !reason) return;
+    if (!s || !s.submissionId || !reason) return;
     this.flagSaving.set(true);
     this.flagSvc.createFlag(s.submissionId, { reason }).subscribe({
       next: flag => {
@@ -518,7 +649,7 @@ export class ResultsComponent implements OnInit {
         this.showFlagForm.set(false);
         this.flagReason.set('');
         this.flagSaving.set(false);
-        this.loadAuditTrail(s.submissionId, flag.flagId);
+        this.loadAuditTrail(s.submissionId!, flag.flagId);
         this.submissions.update(list => list.map(sub =>
           sub.submissionId === s.submissionId ? { ...sub, flagStatus: 'FLAGGED' as any } : sub
         ));
@@ -530,7 +661,7 @@ export class ResultsComponent implements OnInit {
   transitionFlag(newStatus: FlagStatus, notes: string | null) {
     const s = this.selectedSummary();
     const flag = this.activeFlag();
-    if (!s || !flag?.flagId) return;
+    if (!s || !s.submissionId || !flag?.flagId) return;
     this.flagSaving.set(true);
     this.flagSvc.transitionFlag(s.submissionId, flag.flagId, { status: newStatus, resolutionNotes: notes }).subscribe({
       next: updated => {
@@ -538,7 +669,7 @@ export class ResultsComponent implements OnInit {
         this.showResolveForm.set(null);
         this.resolveNotes.set('');
         this.flagSaving.set(false);
-        this.loadAuditTrail(s.submissionId, updated.flagId);
+        this.loadAuditTrail(s.submissionId!, updated.flagId);
         const flagStatus = (newStatus === 'RESOLVED' || newStatus === 'DISMISSED') ? null : newStatus;
         this.submissions.update(list => list.map(sub =>
           sub.submissionId === s.submissionId ? { ...sub, flagStatus: flagStatus as any } : sub
@@ -555,6 +686,22 @@ export class ResultsComponent implements OnInit {
     });
   }
 
+  sendReminder() {
+    const s = this.selectedSummary();
+    if (!s) return;
+    this.reminderSending.set(true);
+    this.reminderSvc.sendReminder(s.invitationId).subscribe({
+      next: log => {
+        this.reminderSending.set(false);
+        this.showReminderConfirm.set(false);
+        this.reminderSuccess.set(true);
+        this.reminderHistory.update(h => [log, ...h]);
+        setTimeout(() => this.reminderSuccess.set(false), 3000);
+      },
+      error: () => this.reminderSending.set(false),
+    });
+  }
+
   onScoreInput(questionId: string, event: Event) {
     const val = parseFloat((event.target as HTMLInputElement).value);
     this.editScores.update(s => ({ ...s, [questionId]: isNaN(val) ? undefined : val }));
@@ -568,7 +715,7 @@ export class ResultsComponent implements OnInit {
   saveScore(q: ResultQuestion) {
     const r = this.result();
     const s = this.selectedSummary();
-    if (!r || !s || !q.answerId) return;
+    if (!r || !s || !s.submissionId || !q.answerId) return;
 
     const scoreVal = this.editScores()[q.questionId] ?? q.score;
     if (scoreVal == null) return;
@@ -601,12 +748,14 @@ export class ResultsComponent implements OnInit {
   statusClass(s: SubmissionSummary): string {
     if (s.status === 'SUBMITTED') return 'sub-status status-submitted';
     if (s.status === 'AUTO_SUBMITTED') return 'sub-status status-auto';
+    if (s.status === 'NOT_STARTED') return 'sub-status status-not-started';
     return 'sub-status status-progress';
   }
 
   statusLabel(s: SubmissionSummary): string {
     if (s.status === 'SUBMITTED') return 'Submitted';
     if (s.status === 'AUTO_SUBMITTED') return 'Auto-submitted';
+    if (s.status === 'NOT_STARTED') return 'Not Started';
     return 'In Progress';
   }
 

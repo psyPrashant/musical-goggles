@@ -14,12 +14,11 @@ import java.util.UUID;
 public interface CandidateSubmissionRepository extends JpaRepository<CandidateSubmission, UUID> {
 
     Optional<CandidateSubmission> findByCandidateIdAndAssessmentId(UUID candidateId, UUID assessmentId);
+    Optional<CandidateSubmission> findByInvitationId(UUID invitationId);
 
     List<CandidateSubmission> findByAssessmentId(UUID assessmentId);
 
     List<CandidateSubmission> findByCandidateId(UUID candidateId);
-
-    Optional<CandidateSubmission> findByInvitationId(UUID invitationId);
 
     List<CandidateSubmission> findAll();
 
