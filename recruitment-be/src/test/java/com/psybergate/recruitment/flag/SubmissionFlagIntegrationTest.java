@@ -142,11 +142,11 @@ class SubmissionFlagIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void createFlag_withoutAuth_returns403() throws Exception {
+    void createFlag_withoutAuth_returns401() throws Exception {
         mockMvc.perform(post("/api/submissions/{id}/flags", submission.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"reason\":\"COPIED_ANSWERS\"}"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // ── 5.3: flag status transitions ──────────────────────────────────────
