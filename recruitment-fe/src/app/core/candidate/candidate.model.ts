@@ -3,6 +3,7 @@ export interface Candidate {
   firstName: string;
   lastName: string;
   email: string;
+  cellPhone?: string | null;
   createdAt: string;
 }
 
@@ -10,6 +11,7 @@ export interface CandidateRequest {
   firstName: string;
   lastName: string;
   email: string;
+  cellPhone?: string | null;
 }
 
 export interface InviteRequest {

@@ -20,11 +20,14 @@ public class DevDataSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (userRepository.findByEmail("admin@recruitment.dev").isEmpty()) {
-            User admin = new User();
-            admin.setEmail("admin@recruitment.dev");
+        User admin = userRepository.findByEmail("admin@recruitment.dev").orElseGet(() -> {
+            User u = new User();
+            u.setEmail("admin@recruitment.dev");
+            u.setRole(Role.ADMIN);
+            return u;
+        });
+        if (admin.getPasswordHash() == null) {
             admin.setPasswordHash(passwordEncoder.encode("admin123"));
-            admin.setRole(Role.ADMIN);
             userRepository.save(admin);
         }
     }

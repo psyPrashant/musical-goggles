@@ -30,6 +30,7 @@ public class CandidateServiceImpl implements CandidateService {
         candidate.setFirstName(request.firstName());
         candidate.setLastName(request.lastName());
         candidate.setEmail(request.email());
+        candidate.setCellPhone(request.cellPhone());
         userRepository.findById(createdById).ifPresent(candidate::setCreatedBy);
         return toResponse(candidateRepository.save(candidate));
     }
@@ -64,10 +65,11 @@ public class CandidateServiceImpl implements CandidateService {
         candidate.setFirstName(request.firstName());
         candidate.setLastName(request.lastName());
         candidate.setEmail(request.email());
+        candidate.setCellPhone(request.cellPhone());
         return toResponse(candidateRepository.save(candidate));
     }
 
     private CandidateResponse toResponse(Candidate c) {
-        return new CandidateResponse(c.getId(), c.getFirstName(), c.getLastName(), c.getEmail(), c.getCreatedAt());
+        return new CandidateResponse(c.getId(), c.getFirstName(), c.getLastName(), c.getEmail(), c.getCellPhone(), c.getCreatedAt());
     }
 }

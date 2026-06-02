@@ -428,3 +428,46 @@ create a new branch before starting
 > update the prompt.md file by appending the prompts used and update the PR
 
 ---
+
+## 2026-06-02 | hendrik.muller
+
+> help me plan ep-14 with openspec 
+
+---
+
+## 2026-06-02 | hendrik.muller
+
+> run /opsx:apply
+
+---
+
+## 2026-06-02 | hendrik.muller
+
+> continue
+
+---
+
+## 2026-06-02 | hendrik.muller
+
+> test ep-14 with play right
+
+---
+
+## 2026-06-02 | hendrik.muller
+
+> test ep-14 with play right and docker
+
+---
+
+## 2026-06-02 | hendrik.muller
+
+> archive spec , append my prompt used to prompts.md
+
+---
+
+
+## 2026-06-02 15:28 | hendrik.muller
+
+> commit and push, make a PR
+
+---
