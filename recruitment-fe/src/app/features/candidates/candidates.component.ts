@@ -3,7 +3,7 @@ import { DatePipe } from '@angular/common';
 import { AssessmentService } from '../../core/assessment/assessment.service';
 import { Assessment } from '../../core/assessment/assessment.model';
 import { CandidateService } from '../../core/candidate/candidate.service';
-import { Candidate, CandidateRequest } from '../../core/candidate/candidate.model';
+import { Candidate, CandidateHistoryItem, CandidateRequest, HistoryStatus } from '../../core/candidate/candidate.model';
 import { ToastService } from '../../core/toast/toast.service';
 import { FlagService } from '../../core/flag/flag.service';
 import { FlagListItem } from '../../core/flag/flag.model';
@@ -97,6 +97,12 @@ import { FlagListItem } from '../../core/flag/flag.model';
                         <polyline points="22,6 12,13 2,6"/>
                       </svg>
                     </button>
+                    <button class="action-btn" title="Assessment history" (click)="openAssessmentHistory(c)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                      </svg>
+                    </button>
                     <button class="action-btn" title="View flag history" (click)="openFlagHistory(c)">
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
@@ -111,6 +117,85 @@ import { FlagListItem } from '../../core/flag/flag.model';
         }
       </div>
     </div>
+
+    @if (showAssessmentHistory()) {
+      <div class="overlay" (click)="showAssessmentHistory.set(false)">
+        <div class="modal modal-wide" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <span class="modal-title">Assessment History — {{ fullName(historyCandidate()!) }}</span>
+            <button class="modal-close" (click)="showAssessmentHistory.set(false)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <!-- Filter + Sort controls -->
+            <div class="history-controls">
+              <div class="history-filters">
+                @for (f of historyFilters; track f.value) {
+                  <button class="filter-chip" [class.active]="historyStatusFilter() === f.value"
+                          (click)="historyStatusFilter.set(f.value)">{{ f.label }}</button>
+                }
+              </div>
+              <button class="btn-ghost-sm" (click)="historySortAsc.set(!historySortAsc())">
+                {{ historySortAsc() ? '↑ Oldest first' : '↓ Newest first' }}
+              </button>
+            </div>
+
+            @if (historyLoading()) {
+              <p class="invite-success">Loading…</p>
+            } @else if (historyFiltered().length === 0) {
+              <p class="invite-success">No assessment history recorded.</p>
+            } @else {
+              <div class="history-table">
+                <div class="history-table-header">
+                  <span>Assessment</span>
+                  <span>Date</span>
+                  <span>Status</span>
+                  <span>Score</span>
+                  <span>Role</span>
+                </div>
+                @for (entry of historyFiltered(); track entry.assessmentId + (entry.submissionId ?? '')) {
+                  <div class="history-table-row">
+                    <div class="history-name">
+                      @if (entry.submissionId && (entry.status === 'SUBMITTED' || entry.status === 'AUTO_SUBMITTED')) {
+                        <a class="history-link" [attr.href]="'/results?submission=' + entry.submissionId">
+                          {{ entry.assessmentName }}
+                        </a>
+                      } @else {
+                        {{ entry.assessmentName }}
+                      }
+                    </div>
+                    <div class="history-date">
+                      {{ formatFlagDate(entry.status === 'SUBMITTED' || entry.status === 'AUTO_SUBMITTED' ? (entry.submittedAt ?? entry.invitedAt) : entry.invitedAt) }}
+                    </div>
+                    <div>
+                      <span class="history-status-badge" [class]="historyStatusClass(entry.status)">
+                        {{ historyStatusLabel(entry.status) }}
+                      </span>
+                    </div>
+                    <div class="history-score">
+                      @if (entry.status === 'SUBMITTED' || entry.status === 'AUTO_SUBMITTED') {
+                        @if (entry.markingStatus === 'FULLY_MARKED') {
+                          {{ entry.totalScore }} pts
+                        } @else {
+                          <span class="score-pending">Pending review</span>
+                        }
+                      } @else {
+                        —
+                      }
+                    </div>
+                    <div class="history-role">{{ entry.linkedRole ?? 'No linked role' }}</div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-primary" (click)="showAssessmentHistory.set(false)">Close</button>
+          </div>
+        </div>
+      </div>
+    }
 
     @if (showFlagHistory()) {
       <div class="overlay" (click)="showFlagHistory.set(false)">
@@ -393,6 +478,51 @@ import { FlagListItem } from '../../core/flag/flag.model';
     .status-resolved { background: var(--success-subtle); color: var(--success); }
     .status-dismissed { background: rgba(148,163,184,.12); color: var(--text-2); }
 
+    .modal-wide { max-width: 720px; }
+
+    .history-controls { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+    .history-filters { display: flex; gap: 5px; flex-wrap: wrap; }
+    .filter-chip {
+      padding: 4px 11px; border-radius: 999px; cursor: pointer;
+      font-family: var(--font); font-size: 12px; font-weight: 400;
+      background: transparent; color: var(--text-2); border: 1px solid var(--border); transition: all 120ms;
+    }
+    .filter-chip:hover { background: var(--bg-hover); color: var(--text-1); }
+    .filter-chip.active { background: var(--accent-subtle); color: var(--accent); border-color: var(--accent); font-weight: 600; }
+    .btn-ghost-sm {
+      padding: 4px 10px; background: transparent; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-2); font-size: 12px;
+      cursor: pointer; transition: all 120ms; font-family: var(--font);
+    }
+    .btn-ghost-sm:hover { background: var(--bg-hover); color: var(--text-1); }
+
+    .history-table { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+    .history-table-header {
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+      gap: 10px; padding: 8px 12px;
+      background: var(--bg-elevated); border-bottom: 1px solid var(--border);
+      font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .history-table-row {
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+      gap: 10px; padding: 10px 12px; align-items: center;
+      border-bottom: 1px solid var(--border); transition: background 120ms;
+    }
+    .history-table-row:last-child { border-bottom: none; }
+    .history-table-row:hover { background: var(--bg-hover); }
+    .history-name { font-size: 13px; font-weight: 500; color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .history-link { color: var(--accent); text-decoration: none; }
+    .history-link:hover { text-decoration: underline; }
+    .history-date { font-size: 12px; color: var(--text-3); }
+    .history-score { font-size: 12.5px; font-weight: 600; color: var(--text-1); }
+    .score-pending { font-size: 11.5px; color: var(--text-3); font-weight: 400; font-style: italic; }
+    .history-role { font-size: 11.5px; color: var(--text-3); }
+    .history-status-badge { display: inline-flex; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; }
+    .h-status-submitted { background: var(--success-subtle); color: var(--success); }
+    .h-status-pending { background: var(--info-subtle); color: var(--info); }
+    .h-status-expired { background: rgba(148,163,184,.12); color: var(--text-2); }
+    .h-status-in-progress { background: var(--warning-subtle); color: var(--warning); }
+
     /* Invite modal */
     .overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.6);
@@ -482,6 +612,34 @@ export class CandidatesComponent implements OnInit {
   readonly editEmail = signal('');
   readonly editError = signal('');
   readonly editSaving = signal(false);
+
+  // ── Assessment history state ─────────────────────────────────────────────────
+  readonly showAssessmentHistory = signal(false);
+  readonly historyCandidate = signal<Candidate | null>(null);
+  readonly historyItems = signal<CandidateHistoryItem[]>([]);
+  readonly historyLoading = signal(false);
+  readonly historyStatusFilter = signal<HistoryStatus | ''>('');
+  readonly historySortAsc = signal(false);
+
+  readonly historyFilters = [
+    { value: '' as const, label: 'All' },
+    { value: 'SUBMITTED' as HistoryStatus, label: 'Completed' },
+    { value: 'PENDING' as HistoryStatus, label: 'Pending' },
+    { value: 'EXPIRED' as HistoryStatus, label: 'Expired' },
+  ];
+
+  readonly historyFiltered = computed(() => {
+    const filter = this.historyStatusFilter();
+    let items = this.historyItems();
+    if (filter === 'SUBMITTED') {
+      items = items.filter(i => i.status === 'SUBMITTED' || i.status === 'AUTO_SUBMITTED');
+    } else if (filter) {
+      items = items.filter(i => i.status === filter);
+    }
+    return this.historySortAsc()
+      ? [...items].sort((a, b) => a.invitedAt.localeCompare(b.invitedAt))
+      : [...items].sort((a, b) => b.invitedAt.localeCompare(a.invitedAt));
+  });
 
   // ── Flag history state ───────────────────────────────────────────────────────
   readonly showFlagHistory = signal(false);
@@ -675,6 +833,36 @@ export class CandidatesComponent implements OnInit {
   cancelEdit() {
     this.editingId.set(null);
     this.editError.set('');
+  }
+
+  // ── Assessment history ────────────────────────────────────────────────────────
+
+  openAssessmentHistory(c: Candidate) {
+    this.historyCandidate.set(c);
+    this.showAssessmentHistory.set(true);
+    this.historyItems.set([]);
+    this.historyStatusFilter.set('');
+    this.historySortAsc.set(false);
+    this.historyLoading.set(true);
+    this.candidateSvc.getHistory(c.id).subscribe({
+      next: items => { this.historyItems.set(items); this.historyLoading.set(false); },
+      error: () => this.historyLoading.set(false),
+    });
+  }
+
+  historyStatusLabel(status: HistoryStatus): string {
+    const map: Record<HistoryStatus, string> = {
+      PENDING: 'Pending', EXPIRED: 'Expired',
+      IN_PROGRESS: 'In Progress', SUBMITTED: 'Submitted', AUTO_SUBMITTED: 'Auto-submitted',
+    };
+    return map[status] ?? status;
+  }
+
+  historyStatusClass(status: HistoryStatus): string {
+    if (status === 'SUBMITTED' || status === 'AUTO_SUBMITTED') return 'history-status-badge h-status-submitted';
+    if (status === 'PENDING') return 'history-status-badge h-status-pending';
+    if (status === 'EXPIRED') return 'history-status-badge h-status-expired';
+    return 'history-status-badge h-status-in-progress';
   }
 
   // ── Flag history ──────────────────────────────────────────────────────────────

@@ -428,6 +428,54 @@ create a new branch before starting
 > update the prompt.md file by appending the prompts used and update the PR
 
 ---
+## 2026-06-02 | hendrik.muller
+
+> fetch and pull
+
+---
+
+## 2026-06-02 | hendrik.muller
+
+> fetch and pull from main to branch
+
+---
+
+## 2026-06-02 | hendrik.muller
+
+> can you seed more data 20 more questions ,some group questions aswell, populate some candidates too, and assemsment check MG-72
+
+---
+
+## 2026-06-02 | hendrik.muller
+
+> ship it
+
+---
+
+## 2026-06-02 | hendrik.muller
+
+> check if this works with playwright
+
+---
+
+## 2026-06-02 | hendrik.muller
+
+> append to prompts.md , commit and make PR
+
+---
+
+## 2026-06-02 | hendrik.muller
+
+> should append to the end of md file
+
+---
+
+## 2026-06-02 | shaaira.mayet
+
+> connect to the musical goggles jira board and look for epic 13 in the current sprint. pull from git to update the project. move each story and the epic to in progress and assign them to me. create a new branch and implement the stories using the open spec workflow. run open spec when needed. append prompts used to prompt.md
+
+---
+
 ## 2026-06-02 13:49 | prashant.kessa
 
 > look at the tickets on the jira board Musical Goggles for Epic 12 - implement them using the openspec workflow, switch branches before starting
@@ -458,3 +506,8 @@ create a new branch before starting
 
 ---
 
+## 2026-06-02 14:52 | prashant.kessa
+
+> i have merge conflicts, resolve them. keep both for prompts.md, take the V12 fly migration file from main and resolve the last one
+
+---
