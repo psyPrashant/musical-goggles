@@ -63,6 +63,12 @@ type Tab = 'all' | 'active' | 'draft' | 'closed';
                   @if (a.status === 'DRAFT') {
                     <button class="btn btn-ghost btn-sm publish-btn" (click)="publish(a)">Publish</button>
                   }
+                  <a [routerLink]="['/assessments', a.id, 'preview']" class="btn btn-ghost btn-sm">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    Preview
+                  </a>
                   <a [routerLink]="['/assessments', a.id, 'edit']" class="btn btn-secondary btn-sm">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
