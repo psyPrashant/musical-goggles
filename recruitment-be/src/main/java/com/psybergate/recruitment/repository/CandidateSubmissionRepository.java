@@ -19,6 +19,8 @@ public interface CandidateSubmissionRepository extends JpaRepository<CandidateSu
 
     List<CandidateSubmission> findByCandidateId(UUID candidateId);
 
+    Optional<CandidateSubmission> findByInvitationId(UUID invitationId);
+
     List<CandidateSubmission> findAll();
 
     long countByStatus(SubmissionStatus status);

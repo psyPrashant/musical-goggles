@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Candidate, CandidateRequest, InviteRequest, InviteResponse } from './candidate.model';
+import { Candidate, CandidateHistoryItem, CandidateRequest, InviteRequest, InviteResponse } from './candidate.model';
 
 @Injectable({ providedIn: 'root' })
 export class CandidateService {
@@ -29,5 +29,9 @@ export class CandidateService {
 
   updateCandidate(id: string, req: CandidateRequest): Observable<Candidate> {
     return this.http.put<Candidate>(`/api/candidates/${id}`, req);
+  }
+
+  getHistory(candidateId: string): Observable<CandidateHistoryItem[]> {
+    return this.http.get<CandidateHistoryItem[]>(`/api/candidates/${candidateId}/history`);
   }
 }

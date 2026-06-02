@@ -470,3 +470,9 @@ create a new branch before starting
 > should append to the end of md file
 
 ---
+
+## 2026-06-02 | shaaira.mayet
+
+> connect to the musical goggles jira board and look for epic 13 in the current sprint. pull from git to update the project. move each story and the epic to in progress and assign them to me. create a new branch and implement the stories using the open spec workflow. run open spec when needed. append prompts used to prompt.md
+
+---

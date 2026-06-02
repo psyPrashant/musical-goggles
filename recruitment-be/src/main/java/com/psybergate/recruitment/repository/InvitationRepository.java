@@ -35,4 +35,12 @@ public interface InvitationRepository extends JpaRepository<CandidateInvitation,
             ORDER BY i.createdAt DESC
             """)
     List<CandidateInvitation> findRecentSent(Pageable pageable);
+
+    @Query("""
+            SELECT i FROM CandidateInvitation i
+            JOIN FETCH i.assessment
+            WHERE i.candidate.id = :candidateId
+            ORDER BY i.createdAt DESC
+            """)
+    List<CandidateInvitation> findByCandidateIdOrderByCreatedAtDesc(@Param("candidateId") UUID candidateId);
 }
