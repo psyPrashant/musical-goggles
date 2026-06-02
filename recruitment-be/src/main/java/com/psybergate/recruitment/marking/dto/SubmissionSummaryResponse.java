@@ -1,5 +1,6 @@
 package com.psybergate.recruitment.marking.dto;
 
+import com.psybergate.recruitment.domain.FlagStatus;
 import com.psybergate.recruitment.domain.SubmissionStatus;
 
 import java.time.Instant;
@@ -13,5 +14,6 @@ public record SubmissionSummaryResponse(
         Instant submittedAt,
         int answeredCount,
         int totalAnswers,
-        int markedCount
+        int markedCount,
+        FlagStatus flagStatus
 ) {}

@@ -5,6 +5,8 @@ import { Assessment } from '../../core/assessment/assessment.model';
 import { CandidateService } from '../../core/candidate/candidate.service';
 import { Candidate, CandidateRequest } from '../../core/candidate/candidate.model';
 import { ToastService } from '../../core/toast/toast.service';
+import { FlagService } from '../../core/flag/flag.service';
+import { FlagListItem } from '../../core/flag/flag.model';
 
 @Component({
   selector: 'app-candidates',
@@ -95,6 +97,12 @@ import { ToastService } from '../../core/toast/toast.service';
                         <polyline points="22,6 12,13 2,6"/>
                       </svg>
                     </button>
+                    <button class="action-btn" title="View flag history" (click)="openFlagHistory(c)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                        <line x1="4" y1="22" x2="4" y2="15"/>
+                      </svg>
+                    </button>
                   </div>
                 }
               </div>
@@ -103,6 +111,41 @@ import { ToastService } from '../../core/toast/toast.service';
         }
       </div>
     </div>
+
+    @if (showFlagHistory()) {
+      <div class="overlay" (click)="showFlagHistory.set(false)">
+        <div class="modal" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <span class="modal-title">Flag History — {{ fullName(flagHistoryCandidate()!) }}</span>
+            <button class="modal-close" (click)="showFlagHistory.set(false)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            @if (flagHistoryLoading()) {
+              <p class="invite-success">Loading…</p>
+            } @else if (candidateFlags().length === 0) {
+              <p class="invite-success">No flags recorded.</p>
+            } @else {
+              <div class="flag-history-list">
+                @for (f of candidateFlags(); track f.flagId) {
+                  <div class="flag-history-row">
+                    <div class="flag-history-main">
+                      <span class="flag-history-assessment">{{ f.assessmentName }}</span>
+                      <span class="flag-status-badge status-{{ f.status.toLowerCase().replace('_','-') }}">{{ f.status }}</span>
+                    </div>
+                    <div class="flag-history-meta">{{ reasonLabel(f.reason) }} · {{ formatFlagDate(f.createdAt) }}</div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-primary" (click)="showFlagHistory.set(false)">Close</button>
+          </div>
+        </div>
+      </div>
+    }
 
     @if (showInvite()) {
       <div class="overlay" (click)="closeInvite()">
@@ -339,6 +382,17 @@ import { ToastService } from '../../core/toast/toast.service';
     .draft-confirm svg { flex-shrink: 0; margin-top: 2px; }
     .draft-confirm-text { font-size: 13.5px; color: var(--text-1); line-height: 1.55; margin: 0; }
 
+    .flag-history-list { display: flex; flex-direction: column; gap: 8px; }
+    .flag-history-row { padding: 10px 12px; background: var(--bg-elevated); border-radius: var(--radius-sm); border: 1px solid var(--border); }
+    .flag-history-main { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .flag-history-assessment { font-size: 13px; font-weight: 500; color: var(--text-1); flex: 1; }
+    .flag-history-meta { font-size: 11.5px; color: var(--text-3); }
+    .flag-status-badge { display: inline-flex; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 500; }
+    .status-flagged { background: var(--danger-subtle); color: var(--danger); }
+    .status-under-review { background: var(--warning-subtle); color: var(--warning); }
+    .status-resolved { background: var(--success-subtle); color: var(--success); }
+    .status-dismissed { background: rgba(148,163,184,.12); color: var(--text-2); }
+
     /* Invite modal */
     .overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.6);
@@ -396,6 +450,7 @@ export class CandidatesComponent implements OnInit {
   private readonly assessmentSvc = inject(AssessmentService);
   private readonly candidateSvc = inject(CandidateService);
   private readonly toastSvc = inject(ToastService);
+  private readonly flagSvc = inject(FlagService);
 
   // ── List state ──────────────────────────────────────────────────────────────
   readonly candidates = signal<Candidate[]>([]);
@@ -427,6 +482,12 @@ export class CandidatesComponent implements OnInit {
   readonly editEmail = signal('');
   readonly editError = signal('');
   readonly editSaving = signal(false);
+
+  // ── Flag history state ───────────────────────────────────────────────────────
+  readonly showFlagHistory = signal(false);
+  readonly flagHistoryCandidate = signal<Candidate | null>(null);
+  readonly candidateFlags = signal<FlagListItem[]>([]);
+  readonly flagHistoryLoading = signal(false);
 
   // ── Computed ─────────────────────────────────────────────────────────────────
   readonly selectedAssessment = computed(() =>
@@ -614,6 +675,32 @@ export class CandidatesComponent implements OnInit {
   cancelEdit() {
     this.editingId.set(null);
     this.editError.set('');
+  }
+
+  // ── Flag history ──────────────────────────────────────────────────────────────
+
+  openFlagHistory(c: Candidate) {
+    this.flagHistoryCandidate.set(c);
+    this.showFlagHistory.set(true);
+    this.candidateFlags.set([]);
+    this.flagHistoryLoading.set(true);
+    this.flagSvc.getCandidateFlags(c.id).subscribe({
+      next: flags => { this.candidateFlags.set(flags); this.flagHistoryLoading.set(false); },
+      error: () => this.flagHistoryLoading.set(false),
+    });
+  }
+
+  reasonLabel(reason: string): string {
+    const map: Record<string, string> = {
+      COPIED_ANSWERS: 'Copied Answers', TIMING_ANOMALY: 'Timing Anomaly',
+      AI_GENERATED_CONTENT: 'AI-Generated', SUSPICIOUS_BEHAVIOUR: 'Suspicious', OTHER: 'Other',
+    };
+    return map[reason] ?? reason;
+  }
+
+  formatFlagDate(iso: string): string {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('en-ZA', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────────

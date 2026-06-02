@@ -60,6 +60,13 @@ import { ToastComponent } from '../core/toast/toast.component';
             </svg>
             Results
           </a>
+          <a routerLink="/flagged-submissions" routerLinkActive="nav-active" class="nav-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+              <line x1="4" y1="22" x2="4" y2="15"/>
+            </svg>
+            Flagged
+          </a>
         </nav>
 
         <div class="sidebar-user">

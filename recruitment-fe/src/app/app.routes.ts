@@ -73,6 +73,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/results/results.component').then(m => m.ResultsComponent),
       },
+      {
+        path: 'flagged-submissions',
+        loadComponent: () =>
+          import('./features/flags/flagged-submissions.component').then(
+            m => m.FlaggedSubmissionsComponent,
+          ),
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
   },
