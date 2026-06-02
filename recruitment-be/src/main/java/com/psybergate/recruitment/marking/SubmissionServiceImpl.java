@@ -3,6 +3,9 @@ package com.psybergate.recruitment.marking;
 import com.psybergate.recruitment.domain.*;
 import com.psybergate.recruitment.marking.dto.*;
 import com.psybergate.recruitment.repository.*;
+import com.psybergate.recruitment.repository.SubmissionFlagRepository;
+import com.psybergate.recruitment.domain.FlagStatus;
+import com.psybergate.recruitment.domain.SubmissionFlag;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -26,6 +29,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     @Autowired private AssessmentRepository assessmentRepository;
     @Autowired private AssessmentQuestionRepository assessmentQuestionRepository;
     @Autowired private QuestionRepository questionRepository;
+    @Autowired private com.psybergate.recruitment.repository.SubmissionFlagRepository submissionFlagRepository;
 
     @Override
     public List<SubmissionSummaryResponse> listSubmissions(UUID assessmentId) {
@@ -188,6 +192,13 @@ public class SubmissionServiceImpl implements SubmissionService {
                                 Collectors.counting()
                         ));
 
+        // Load open flags for all submissions
+        List<FlagStatus> openStatuses = List.of(FlagStatus.FLAGGED, FlagStatus.UNDER_REVIEW);
+        Map<UUID, FlagStatus> flagStatusBySubmission = submissionIds.stream()
+                .flatMap(sid -> submissionFlagRepository
+                        .findBySubmissionIdAndStatusIn(sid, openStatuses).stream())
+                .collect(Collectors.toMap(SubmissionFlag::getSubmissionId, SubmissionFlag::getStatus));
+
         return submissions.stream()
                 .sorted(Comparator
                         .comparing((CandidateSubmission s) -> s.getStatus() == SubmissionStatus.IN_PROGRESS ? 1 : 0)
@@ -200,9 +211,10 @@ public class SubmissionServiceImpl implements SubmissionService {
                     String name = c != null ? c.getFirstName() + " " + c.getLastName() : "Unknown";
                     int answered = answeredBySubmission.getOrDefault(s.getId(), 0L).intValue();
                     int marked = scoredBySubmission.getOrDefault(s.getId(), 0L).intValue();
+                    FlagStatus flagStatus = flagStatusBySubmission.get(s.getId());
                     return new SubmissionSummaryResponse(
                             s.getId(), s.getCandidateId(), name, s.getStatus(),
-                            s.getSubmittedAt(), answered, answered, marked
+                            s.getSubmittedAt(), answered, answered, marked, flagStatus
                     );
                 })
                 .toList();

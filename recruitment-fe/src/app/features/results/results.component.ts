@@ -1,6 +1,8 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { MarkingService } from '../../core/marking/marking.service';
 import { ResultQuestion, ResultSummary, SubmissionSummary } from '../../core/marking/marking.model';
+import { FlagService } from '../../core/flag/flag.service';
+import { FlagAuditEntry, FlagReason, FlagResponse, FlagStatus } from '../../core/flag/flag.model';
 
 @Component({
   selector: 'app-results',
@@ -36,6 +38,9 @@ import { ResultQuestion, ResultSummary, SubmissionSummary } from '../../core/mar
                   <div class="sub-name-row">
                     <span class="sub-name">{{ s.candidateName }}</span>
                     <span class="sub-status" [class]="statusClass(s)">{{ statusLabel(s) }}</span>
+                    @if (s.flagStatus === 'FLAGGED' || s.flagStatus === 'UNDER_REVIEW') {
+                      <span class="flag-badge">⚑ Flagged</span>
+                    }
                   </div>
                   <span class="sub-date">{{ formatDate(s.submittedAt) }}</span>
                   <span class="sub-progress">{{ s.markedCount }}/{{ s.totalAnswers }} marked</span>
@@ -75,8 +80,69 @@ import { ResultQuestion, ResultSummary, SubmissionSummary } from '../../core/mar
                   <span class="marking-badge" [class.badge-done]="result()!.markingStatus === 'FULLY_MARKED'" [class.badge-pending]="result()!.markingStatus === 'PENDING_REVIEW'">
                     {{ result()!.markingStatus === 'FULLY_MARKED' ? '✓ Fully Marked' : '⏳ Pending Review' }}
                   </span>
+                  @if (activeFlag()) {
+                    <span class="flag-badge-detail">⚑ {{ activeFlag()!.status === 'FLAGGED' ? 'Flagged' : 'Under Review' }}</span>
+                  }
                 </div>
               </div>
+
+              <!-- Flag controls -->
+              <div class="flag-section">
+                @if (!activeFlag()) {
+                  @if (!showFlagForm()) {
+                    <button class="btn-flag" (click)="showFlagForm.set(true)">⚑ Flag Submission</button>
+                  } @else {
+                    <div class="flag-form">
+                      <select class="field-select-sm" [value]="flagReason()" (change)="flagReason.set($any($event.target).value)">
+                        <option value="">Select reason…</option>
+                        <option value="COPIED_ANSWERS">Copied Answers</option>
+                        <option value="TIMING_ANOMALY">Timing Anomaly</option>
+                        <option value="AI_GENERATED_CONTENT">AI-Generated Content</option>
+                        <option value="SUSPICIOUS_BEHAVIOUR">Suspicious Behaviour</option>
+                        <option value="OTHER">Other</option>
+                      </select>
+                      <button class="save-btn" (click)="submitFlag()" [disabled]="!flagReason() || flagSaving()">Submit Flag</button>
+                      <button class="save-btn secondary" (click)="showFlagForm.set(false)">Cancel</button>
+                    </div>
+                  }
+                } @else {
+                  <div class="flag-transition">
+                    @if (activeFlag()!.status === 'FLAGGED') {
+                      <button class="btn-flag-action" (click)="transitionFlag('UNDER_REVIEW', null)">Mark Under Review</button>
+                    }
+                    @if (activeFlag()!.status === 'UNDER_REVIEW') {
+                      @if (!showResolveForm()) {
+                        <button class="btn-flag-action resolve" (click)="showResolveForm.set('RESOLVED')">Resolve</button>
+                        <button class="btn-flag-action dismiss" (click)="showResolveForm.set('DISMISSED')">Dismiss</button>
+                      } @else {
+                        <div class="flag-form">
+                          <input type="text" class="field-input-sm" [value]="resolveNotes()"
+                                 (input)="resolveNotes.set($any($event.target).value)"
+                                 placeholder="Resolution notes (required)…" />
+                          <button class="save-btn" (click)="transitionFlag(showResolveForm()!, resolveNotes())"
+                                  [disabled]="!resolveNotes().trim() || flagSaving()">
+                            Confirm {{ showResolveForm() }}
+                          </button>
+                          <button class="save-btn secondary" (click)="showResolveForm.set(null)">Cancel</button>
+                        </div>
+                      }
+                    }
+                  </div>
+                }
+              </div>
+
+              <!-- Flag audit trail -->
+              @if (auditTrail().length > 0) {
+                <div class="audit-section">
+                  <div class="audit-title">Flag History</div>
+                  @for (entry of auditTrail(); track entry.id) {
+                    <div class="audit-entry">
+                      <span class="audit-action">{{ entry.action === 'CREATED' ? 'Flagged' : entry.fromStatus + ' → ' + entry.toStatus }}</span>
+                      <span class="audit-meta">by {{ entry.actorUsername }} · {{ formatDate(entry.occurredAt) }}</span>
+                    </div>
+                  }
+                </div>
+              }
 
               <!-- Per-question answers -->
               <div class="answers-list">
@@ -314,10 +380,59 @@ import { ResultQuestion, ResultSummary, SubmissionSummary } from '../../core/mar
     .save-btn.secondary:hover:not(:disabled) { background: var(--bg-hover); }
 
     .empty-panel { padding: 40px; text-align: center; color: var(--text-3); font-size: 13px; }
+
+    .flag-badge { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--danger-subtle); color: var(--danger); font-weight: 600; flex-shrink: 0; }
+    .flag-badge-detail { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--danger-subtle); color: var(--danger); }
+
+    .flag-section {
+      margin: 0 20px 16px;
+      padding: 12px 14px; background: var(--bg-card);
+      border: 1px solid var(--border); border-radius: var(--radius-lg);
+    }
+
+    .btn-flag {
+      background: none; border: 1px solid var(--danger); color: var(--danger);
+      padding: 5px 12px; border-radius: var(--radius-sm); font-size: 12.5px; font-weight: 500;
+      cursor: pointer; font-family: var(--font); transition: all 120ms;
+    }
+    .btn-flag:hover { background: var(--danger-subtle); }
+
+    .flag-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .field-select-sm, .field-input-sm {
+      padding: 5px 10px; background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-1); font-size: 13px; outline: none;
+      font-family: var(--font);
+    }
+    .field-select-sm:focus, .field-input-sm:focus { border-color: var(--accent); }
+    .field-input-sm { flex: 1; min-width: 220px; }
+
+    .flag-transition { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    .btn-flag-action {
+      padding: 5px 12px; border-radius: var(--radius-sm); font-size: 12.5px; font-weight: 500;
+      cursor: pointer; font-family: var(--font); border: 1px solid var(--border);
+      background: var(--bg-elevated); color: var(--text-2); transition: all 120ms;
+    }
+    .btn-flag-action:hover { background: var(--bg-hover); color: var(--text-1); }
+    .btn-flag-action.resolve { border-color: var(--success); color: var(--success); }
+    .btn-flag-action.resolve:hover { background: var(--success-subtle); }
+    .btn-flag-action.dismiss { border-color: var(--text-3); }
+
+    .audit-section {
+      margin: 0 20px 16px; padding: 12px 14px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    }
+    .audit-title { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+    .audit-entry { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--border); }
+    .audit-entry:last-child { border-bottom: none; }
+    .audit-action { font-size: 12.5px; color: var(--text-1); font-weight: 500; }
+    .audit-meta { font-size: 11.5px; color: var(--text-3); }
   `],
 })
 export class ResultsComponent implements OnInit {
   private readonly markingSvc = inject(MarkingService);
+  private readonly flagSvc = inject(FlagService);
 
   readonly submissions = signal<SubmissionSummary[]>([]);
   readonly selectedSummary = signal<SubmissionSummary | null>(null);
@@ -326,6 +441,15 @@ export class ResultsComponent implements OnInit {
   readonly loadingResult = signal(false);
   readonly saving = signal(false);
   readonly statusFilter = signal('');
+
+  // Flag state
+  readonly activeFlag = signal<FlagResponse | null>(null);
+  readonly auditTrail = signal<FlagAuditEntry[]>([]);
+  readonly showFlagForm = signal(false);
+  readonly flagReason = signal<FlagReason | ''>('');
+  readonly flagSaving = signal(false);
+  readonly showResolveForm = signal<FlagStatus | null>(null);
+  readonly resolveNotes = signal('');
 
   readonly editScores = signal<Record<string, number | undefined>>({});
   readonly editFeedback = signal<Record<string, string | undefined>>({});
@@ -355,10 +479,79 @@ export class ResultsComponent implements OnInit {
     this.result.set(null);
     this.editScores.set({});
     this.editFeedback.set({});
+    this.activeFlag.set(null);
+    this.auditTrail.set([]);
+    this.showFlagForm.set(false);
+    this.flagReason.set('');
+    this.showResolveForm.set(null);
+    this.resolveNotes.set('');
     this.loadingResult.set(true);
     this.markingSvc.getResult(s.submissionId).subscribe({
       next: r => { this.result.set(r); this.loadingResult.set(false); },
       error: () => this.loadingResult.set(false),
+    });
+    // Load existing open flag if flagged
+    if (s.flagStatus === 'FLAGGED' || s.flagStatus === 'UNDER_REVIEW') {
+      this.loadActiveFlagForSubmission(s.submissionId, s.flagStatus as FlagStatus);
+    }
+  }
+
+  private loadActiveFlagForSubmission(submissionId: string, status: FlagStatus) {
+    // We'll load via the candidate flags endpoint to find the open flag
+    // Since we don't have a GET single flag endpoint, we store flag info from create/transition responses
+    // and seed activeFlag from submission list flagStatus
+    const stub: FlagResponse = {
+      flagId: '', submissionId, reason: 'OTHER', status,
+      resolutionNotes: null, createdBy: '', createdAt: ''
+    };
+    this.activeFlag.set(stub);
+  }
+
+  submitFlag() {
+    const s = this.selectedSummary();
+    const reason = this.flagReason();
+    if (!s || !reason) return;
+    this.flagSaving.set(true);
+    this.flagSvc.createFlag(s.submissionId, { reason }).subscribe({
+      next: flag => {
+        this.activeFlag.set(flag);
+        this.showFlagForm.set(false);
+        this.flagReason.set('');
+        this.flagSaving.set(false);
+        this.loadAuditTrail(s.submissionId, flag.flagId);
+        this.submissions.update(list => list.map(sub =>
+          sub.submissionId === s.submissionId ? { ...sub, flagStatus: 'FLAGGED' as any } : sub
+        ));
+      },
+      error: () => this.flagSaving.set(false),
+    });
+  }
+
+  transitionFlag(newStatus: FlagStatus, notes: string | null) {
+    const s = this.selectedSummary();
+    const flag = this.activeFlag();
+    if (!s || !flag?.flagId) return;
+    this.flagSaving.set(true);
+    this.flagSvc.transitionFlag(s.submissionId, flag.flagId, { status: newStatus, resolutionNotes: notes }).subscribe({
+      next: updated => {
+        this.activeFlag.set(updated);
+        this.showResolveForm.set(null);
+        this.resolveNotes.set('');
+        this.flagSaving.set(false);
+        this.loadAuditTrail(s.submissionId, updated.flagId);
+        const flagStatus = (newStatus === 'RESOLVED' || newStatus === 'DISMISSED') ? null : newStatus;
+        this.submissions.update(list => list.map(sub =>
+          sub.submissionId === s.submissionId ? { ...sub, flagStatus: flagStatus as any } : sub
+        ));
+      },
+      error: () => this.flagSaving.set(false),
+    });
+  }
+
+  private loadAuditTrail(submissionId: string, flagId: string) {
+    if (!flagId) return;
+    this.flagSvc.getAuditTrail(submissionId, flagId).subscribe({
+      next: entries => this.auditTrail.set(entries),
     });
   }
 

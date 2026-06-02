@@ -1,6 +1,7 @@
 export type SubmissionStatus = 'IN_PROGRESS' | 'SUBMITTED' | 'AUTO_SUBMITTED';
 export type MarkingStatus = 'FULLY_MARKED' | 'PENDING_REVIEW';
 export type QuestionType = 'MCQ' | 'TEXT' | 'CODE_SUBMISSION';
+export type FlagStatus = 'FLAGGED' | 'UNDER_REVIEW' | 'RESOLVED' | 'DISMISSED';
 
 export interface SubmissionSummary {
   submissionId: string;
@@ -11,6 +12,7 @@ export interface SubmissionSummary {
   answeredCount: number;
   totalAnswers: number;
   markedCount: number;
+  flagStatus: FlagStatus | null;
 }
 
 export interface ResultQuestion {

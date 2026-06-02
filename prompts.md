@@ -386,3 +386,45 @@ create a new branch before starting
 > update prompt.md commit push
 
 ---
+
+## 2026-06-02 | shaaira.mayet
+
+> connect to the musical goggles jira board and look for epic 11 in the current sprint. implement the stories using the open spec workflow and move each story to in progress
+
+---
+
+## 2026-06-02 | shaaira.mayet
+
+> try again
+
+---
+
+## 2026-06-02 | shaaira.mayet
+
+> run /opsx:apply
+
+---
+
+## 2026-06-02 | shaaira.mayet
+
+> put the changes into a new branch and create pull request
+
+---
+
+## 2026-06-02 | shaaira.mayet
+
+> fix the conflicts in the code
+
+---
+
+## 2026-06-02 | shaaira.mayet
+
+> check PR, failed both backend and front end tests
+
+---
+
+## 2026-06-02 | shaaira.mayet
+
+> update the prompt.md file by appending the prompts used and update the PR
+
+---

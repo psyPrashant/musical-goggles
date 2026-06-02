@@ -13,6 +13,7 @@ const mockSummary: SubmissionSummary = {
   answeredCount: 2,
   totalAnswers: 2,
   markedCount: 1,
+  flagStatus: null,
 };
 
 const mockResult: ResultSummary = {
