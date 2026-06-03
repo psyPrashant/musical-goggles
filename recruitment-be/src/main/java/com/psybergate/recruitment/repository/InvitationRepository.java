@@ -20,6 +20,9 @@ public interface InvitationRepository extends JpaRepository<CandidateInvitation,
     @Query("SELECT COUNT(i) FROM CandidateInvitation i WHERE i.status IN :statuses AND i.expiresAt > :now")
     long countByStatusInAndExpiresAtAfter(@Param("statuses") List<InvitationStatus> statuses, @Param("now") Instant now);
 
+    @Query("SELECT COUNT(i) FROM CandidateInvitation i WHERE i.candidate.id = :candidateId AND i.status IN ('PENDING', 'SENT')")
+    long countActiveInvitationsByCandidate(@Param("candidateId") UUID candidateId);
+
     @Query("""
             SELECT COUNT(i) FROM CandidateInvitation i
             WHERE i.status = 'SENT'

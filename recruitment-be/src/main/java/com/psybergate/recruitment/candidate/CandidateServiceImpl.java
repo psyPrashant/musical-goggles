@@ -116,7 +116,11 @@ public class CandidateServiceImpl implements CandidateService {
             String markingStatus = null;
 
             if (sub == null) {
-                status = inv.getExpiresAt().isBefore(now) ? "EXPIRED" : "PENDING";
+                if (inv.getStatus() == com.psybergate.recruitment.domain.InvitationStatus.CANCELLED) {
+                    status = "CANCELLED";
+                } else {
+                    status = inv.getExpiresAt().isBefore(now) ? "EXPIRED" : "PENDING";
+                }
             } else {
                 status = sub.getStatus().name();
                 submittedAt = sub.getSubmittedAt();
@@ -143,6 +147,7 @@ public class CandidateServiceImpl implements CandidateService {
             }
 
             return new CandidateHistoryItemResponse(
+                    inv.getId(),
                     inv.getAssessment().getId(),
                     inv.getAssessment().getTitle(),
                     inv.getCreatedAt(),

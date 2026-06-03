@@ -554,3 +554,21 @@ create a new branch before starting
 > i have merge conflicts, resolve them. keep both for prompts.md, take the V12 fly migration file from main and resolve the last one
 
 ---
+## 2026-06-03 11:45 | prashant.kessa
+
+> look at the jira board and rename the current epics with the numbering (like how it was previously)
+
+---
+
+## 2026-06-03 11:45 | prashant.kessa
+
+> look at the jira board Musical Goggles and rename the current epics with the numbering (like how it was previously)
+
+---
+
+## 2026-06-03 11:48 | prashant.kessa
+
+> look at the jira board and start implementing epic 17 using the openspec workflow. create a new branch before starting. update the tickets as you progress
+
+---
+

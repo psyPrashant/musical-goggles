@@ -20,7 +20,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -34,10 +36,18 @@ public class InvitationServiceImpl implements InvitationService {
     @Autowired private JwtService jwtService;
     @Autowired private EmailService emailService;
 
+    private static final List<InvitationStatus> CANCELLABLE_STATUSES =
+            List.of(InvitationStatus.PENDING, InvitationStatus.SENT);
+
     @Override
     public InviteResponse invite(InviteRequest request, String baseUrl) {
         Candidate candidate = candidateRepository.findById(request.candidateId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Candidate not found"));
+
+        // Global one-active-invite constraint: block if candidate already has any PENDING or SENT invite
+        if (invitationRepository.countActiveInvitationsByCandidate(candidate.getId()) > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "ACTIVE_INVITE_EXISTS");
+        }
 
         Assessment assessment = assessmentRepository.findById(request.assessmentId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assessment not found"));
@@ -77,5 +87,19 @@ public class InvitationServiceImpl implements InvitationService {
         invitationRepository.save(invitation);
 
         return new InviteResponse(invitation.getId(), link, token, expiresAt);
+    }
+
+    @Override
+    public void cancelInvitation(UUID invitationId) {
+        CandidateInvitation invitation = invitationRepository.findById(invitationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invitation not found"));
+
+        if (!CANCELLABLE_STATUSES.contains(invitation.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Only PENDING or SENT invitations can be cancelled");
+        }
+
+        invitation.setStatus(InvitationStatus.CANCELLED);
+        invitationRepository.save(invitation);
     }
 }

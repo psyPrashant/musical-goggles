@@ -27,10 +27,11 @@ export interface InviteResponse {
   expiresAt: string;
 }
 
-export type HistoryStatus = 'PENDING' | 'EXPIRED' | 'IN_PROGRESS' | 'SUBMITTED' | 'AUTO_SUBMITTED';
+export type HistoryStatus = 'PENDING' | 'EXPIRED' | 'CANCELLED' | 'IN_PROGRESS' | 'SUBMITTED' | 'AUTO_SUBMITTED';
 export type HistoryMarkingStatus = 'FULLY_MARKED' | 'PENDING_REVIEW';
 
 export interface CandidateHistoryItem {
+  invitationId: string;
   assessmentId: string;
   assessmentName: string;
   invitedAt: string;

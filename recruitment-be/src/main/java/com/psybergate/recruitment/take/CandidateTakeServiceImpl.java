@@ -51,6 +51,10 @@ public class CandidateTakeServiceImpl implements CandidateTakeService {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
                             "No invitation found for this candidate and assessment"));
 
+            if (invitation.getStatus() == InvitationStatus.CANCELLED) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This invitation has been cancelled");
+            }
+
             submission = new CandidateSubmission();
             submission.setCandidateId(candidateId);
             submission.setAssessmentId(assessmentId);
