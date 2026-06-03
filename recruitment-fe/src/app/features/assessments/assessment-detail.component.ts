@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AssessmentService } from '../../core/assessment/assessment.service';
 import { QuestionService } from '../../core/question/question.service';
 import { AssessmentDetail, AssessmentQuestion } from '../../core/assessment/assessment.model';
-import { Question, QuestionType } from '../../core/question/question.model';
+import { Difficulty, Question, QuestionType } from '../../core/question/question.model';
 
 @Component({
   selector: 'app-assessment-detail',
@@ -44,6 +44,7 @@ import { Question, QuestionType } from '../../core/question/question.model';
                   <th>Order</th>
                   <th>Title</th>
                   <th>Type</th>
+                  <th>Difficulty</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -54,6 +55,11 @@ import { Question, QuestionType } from '../../core/question/question.model';
                     <td>{{ item.title }}</td>
                     <td>
                       <span class="type-badge type-{{ item.type.toLowerCase() }}">{{ typeLabel(item.type) }}</span>
+                    </td>
+                    <td>
+                      @if (item.difficulty) {
+                        <span class="diff-badge diff-{{ item.difficulty.toLowerCase() }}">{{ diffLabel(item.difficulty) }}</span>
+                      }
                     </td>
                     <td>
                       <button class="btn-sm danger" (click)="removeQuestion(item)">Remove</button>
@@ -77,23 +83,26 @@ import { Question, QuestionType } from '../../core/question/question.model';
               <option value="TEXT">Text</option>
               <option value="CODE_SUBMISSION">Code Submission</option>
             </select>
+            <select [(ngModel)]="filterDifficulty" (ngModelChange)="filterQuestions()">
+              <option value="">All difficulties</option>
+              <option value="EASY">Easy</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HARD">Hard</option>
+            </select>
           </div>
-
-          @if (codeSubmissionLimitReached()) {
-            <p class="limit-warning">⚠ Code submission limit reached (max 1 per assessment).</p>
-          }
 
           @if (filteredAvailable().length > 0) {
             <div class="available-list">
               @for (q of filteredAvailable(); track q.id) {
-                @let isCodeAndLimited = q.type === 'CODE_SUBMISSION' && codeSubmissionLimitReached();
-                <div class="available-item" [class.disabled]="isCodeAndLimited">
+                <div class="available-item">
                   <span class="type-badge type-{{ q.type.toLowerCase() }} small">{{ typeLabel(q.type) }}</span>
+                  @if (q.difficulty) {
+                    <span class="diff-badge diff-{{ q.difficulty.toLowerCase() }} small">{{ diffLabel(q.difficulty) }}</span>
+                  }
                   <span class="avail-title">{{ q.title }}</span>
                   <input type="number" class="order-input" [(ngModel)]="newOrder[q.id]"
                          placeholder="Order" min="1" />
-                  <button class="btn-sm" (click)="addQuestion(q)"
-                          [disabled]="isCodeAndLimited">Add</button>
+                  <button class="btn-sm" (click)="addQuestion(q)">Add</button>
                 </div>
               }
             </div>
@@ -140,7 +149,11 @@ import { Question, QuestionType } from '../../core/question/question.model';
     select { padding: 0.4rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; }
     .available-list { display: flex; flex-direction: column; gap: 0.4rem; max-height: 320px; overflow-y: auto; }
     .available-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; }
-    .available-item.disabled { opacity: 0.45; }
+    .diff-badge { font-size: 0.72rem; padding: 0.2rem 0.5rem; border-radius: 10px; font-weight: 600; }
+    .diff-badge.small { font-size: 0.68rem; }
+    .diff-easy { background: #d1fae5; color: #065f46; }
+    .diff-medium { background: #fef3c7; color: #92400e; }
+    .diff-hard { background: #fee2e2; color: #b91c1c; }
     .avail-title { flex: 1; font-size: 0.9rem; }
     .order-input { width: 70px; padding: 0.3rem; border: 1px solid #d1d5db; border-radius: 4px; text-align: center; }
     .type-badge.small { font-size: 0.68rem; }
@@ -159,10 +172,10 @@ export class AssessmentDetailComponent implements OnInit {
   readonly filteredAvailable = signal<Question[]>([]);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
-  readonly codeSubmissionLimitReached = signal(false);
 
   searchTerm = '';
   filterType = '';
+  filterDifficulty: Difficulty | '' = '';
   newOrder: Record<string, number | null> = {};
 
   private assessmentId = '';
@@ -181,7 +194,6 @@ export class AssessmentDetailComponent implements OnInit {
       next: a => {
         this.assessment.set(a);
         this.loading.set(false);
-        this.updateCodeLimit(a);
         this.filterQuestions();
       },
       error: () => { this.error.set('Failed to load assessment.'); this.loading.set(false); },
@@ -195,9 +207,15 @@ export class AssessmentDetailComponent implements OnInit {
       this.allQuestions().filter(q =>
         !memberIds.has(q.id) &&
         (!term || q.title.toLowerCase().includes(term)) &&
-        (!this.filterType || q.type === this.filterType)
+        (!this.filterType || q.type === this.filterType) &&
+        (!this.filterDifficulty || q.difficulty === this.filterDifficulty)
       )
     );
+  }
+
+  diffLabel(difficulty: Difficulty | null): string {
+    if (!difficulty) return '';
+    return { EASY: 'Easy', MEDIUM: 'Medium', HARD: 'Hard' }[difficulty] ?? '';
   }
 
   addQuestion(q: Question) {
@@ -210,7 +228,6 @@ export class AssessmentDetailComponent implements OnInit {
     this.svc.addQuestion(this.assessmentId, { questionId: q.id, displayOrder: order }).subscribe({
       next: updated => {
         this.assessment.set(updated);
-        this.updateCodeLimit(updated);
         this.filterQuestions();
         delete this.newOrder[q.id];
       },
@@ -230,8 +247,4 @@ export class AssessmentDetailComponent implements OnInit {
     return ({ MCQ: 'MCQ', TEXT: 'Text', CODE_SUBMISSION: 'Code', GROUP: 'Group' } as Record<string, string>)[type] ?? type;
   }
 
-  private updateCodeLimit(a: AssessmentDetail) {
-    const hasCode = a.questions.some(q => q.type === 'CODE_SUBMISSION');
-    this.codeSubmissionLimitReached.set(hasCode);
-  }
 }

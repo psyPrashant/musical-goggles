@@ -192,6 +192,47 @@ class QuestionControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void updateQuestion_setsDifficultyOnExistingQuestion() throws Exception {
+        // Create without difficulty
+        String body = mockMvc.perform(post("/api/questions")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createTextQuestionRequest())))
+                .andReturn().getResponse().getContentAsString();
+        String id = objectMapper.readTree(body).get("id").asText();
+
+        // Update: add difficulty HARD
+        QuestionRequest withDifficulty = new QuestionRequest(QuestionType.TEXT, "Sample", "body",
+                null, null, null, null, Difficulty.HARD);
+        mockMvc.perform(put("/api/questions/" + id)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(withDifficulty)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.difficulty").value("HARD"));
+
+        // Update again: change difficulty to EASY
+        QuestionRequest changeDifficulty = new QuestionRequest(QuestionType.TEXT, "Sample", "body",
+                null, null, null, null, Difficulty.EASY);
+        mockMvc.perform(put("/api/questions/" + id)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(changeDifficulty)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.difficulty").value("EASY"));
+
+        // Update: clear difficulty (null)
+        QuestionRequest clearDifficulty = new QuestionRequest(QuestionType.TEXT, "Sample", "body",
+                null, null, null, null, null);
+        mockMvc.perform(put("/api/questions/" + id)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(clearDifficulty)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.difficulty").doesNotExist());
+    }
+
+    @Test
     void deleteQuestion_returns204() throws Exception {
         String body = mockMvc.perform(post("/api/questions")
                         .header("Authorization", "Bearer " + token)

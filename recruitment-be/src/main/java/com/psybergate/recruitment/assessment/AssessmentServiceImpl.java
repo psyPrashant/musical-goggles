@@ -170,7 +170,7 @@ public class AssessmentServiceImpl implements AssessmentService {
                     Question q = (Question) Hibernate.unproxy(aq.getQuestion());
                     int subCount = (q instanceof GroupQuestion gq) ? gq.getMembers().size() : 0;
                     return new AssessmentQuestionItemResponse(
-                            q.getId(), q.getTitle(), q.getType(), aq.getDisplayOrder(), subCount
+                            q.getId(), q.getTitle(), q.getType(), aq.getDisplayOrder(), subCount, q.getDifficulty()
                     );
                 })
                 .toList();

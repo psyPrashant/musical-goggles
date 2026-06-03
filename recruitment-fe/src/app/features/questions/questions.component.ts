@@ -1,7 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { QuestionService } from '../../core/question/question.service';
-import { Question, QuestionType } from '../../core/question/question.model';
+import { Difficulty, Question, QuestionType } from '../../core/question/question.model';
 
 @Component({
   selector: 'app-questions',
@@ -30,6 +30,11 @@ import { Question, QuestionType } from '../../core/question/question.model';
           <div class="type-filters">
             @for (f of typeFilters; track f.value) {
               <button class="filter-chip" [class.active]="selectedType() === f.value" (click)="setType(f.value)">{{ f.label }}</button>
+            }
+          </div>
+          <div class="type-filters">
+            @for (d of difficultyFilters; track d.value) {
+              <button class="filter-chip" [class.active]="selectedDifficulty() === d.value" (click)="setDifficulty(d.value)">{{ d.label }}</button>
             }
           </div>
         </div>
@@ -379,6 +384,7 @@ export class QuestionsComponent implements OnInit {
   readonly search = signal('');
   readonly selectedType = signal('');
   readonly selectedTag = signal('');
+  readonly selectedDifficulty = signal<Difficulty | ''>('');
   readonly previewedId = signal<string | null>(null);
 
   readonly typeFilters = [
@@ -389,9 +395,20 @@ export class QuestionsComponent implements OnInit {
     { value: 'GROUP', label: 'Group' },
   ];
 
+  readonly difficultyFilters: { value: Difficulty | ''; label: string }[] = [
+    { value: '', label: 'All' },
+    { value: 'EASY', label: 'Easy' },
+    { value: 'MEDIUM', label: 'Medium' },
+    { value: 'HARD', label: 'Hard' },
+  ];
+
   readonly filtered = computed(() => {
     const s = this.search().toLowerCase();
-    return this.questions().filter(q => !s || q.title.toLowerCase().includes(s));
+    const d = this.selectedDifficulty();
+    return this.questions().filter(q =>
+      (!s || q.title.toLowerCase().includes(s)) &&
+      (!d || q.difficulty === d)
+    );
   });
 
   ngOnInit() {
@@ -422,6 +439,10 @@ export class QuestionsComponent implements OnInit {
   toggleTag(tag: string) {
     this.selectedTag.set(this.selectedTag() === tag ? '' : tag);
     this.load();
+  }
+
+  setDifficulty(d: Difficulty | '') {
+    this.selectedDifficulty.set(d);
   }
 
   togglePreview(id: string) {

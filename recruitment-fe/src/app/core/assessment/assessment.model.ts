@@ -1,4 +1,4 @@
-import { QuestionType } from '../question/question.model';
+import { Difficulty, QuestionType } from '../question/question.model';
 
 export type AssessmentStatus = 'DRAFT' | 'PUBLISHED';
 
@@ -20,6 +20,7 @@ export interface AssessmentQuestion {
   type: QuestionType;
   displayOrder: number;
   subQuestionCount: number;
+  difficulty: Difficulty | null;
 }
 
 export interface AssessmentDetail {

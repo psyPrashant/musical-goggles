@@ -594,14 +594,14 @@ export class QuestionFormComponent implements OnInit {
       this.memberError.set(null);
     }
 
-    const difficulty = this.form.get('difficulty')!.value ?? undefined;
+    const difficulty = this.form.get('difficulty')!.value ?? null;
 
     const payload = {
       type,
       title: this.form.get('title')!.value!,
       body: this.form.get('body')!.value!,
       tags,
-      ...(difficulty != null && { difficulty }),
+      difficulty,
       ...(type === 'MCQ' && { options: this.options.value }),
       ...(type === 'CODE_SUBMISSION' && {
         languageHint: this.form.get('languageHint')!.value ?? undefined,

@@ -602,3 +602,9 @@ create a new branch before starting
 
 ---
 
+## 2026-06-03 | shaaira.mayet
+
+> edit the code: unable to update the difficulty on questions that are already created. create a new story under epic 20 on jira to add a search filter for difficulty both in question bank and when editing or creating a new assessment, also display the difficulty on each question in assessment edit/create. follow the process as before to implement the new story. do not push
+
+---
+
