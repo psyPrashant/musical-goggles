@@ -27,6 +27,7 @@ public class CandidateTakeServiceImpl implements CandidateTakeService {
     @Autowired private QuestionRepository questionRepository;
     @Autowired private CandidateSubmissionRepository submissionRepository;
     @Autowired private CandidateAnswerRepository answerRepository;
+    @Autowired private AnswerScoreRepository answerScoreRepository;
     @Autowired private InvitationRepository invitationRepository;
     @Autowired private com.psybergate.recruitment.marking.MarkingService markingService;
     @Autowired private ObjectMapper objectMapper;
@@ -169,6 +170,9 @@ public class CandidateTakeServiceImpl implements CandidateTakeService {
         // Auto-mark MCQ answers within the same transaction
         markingService.autoMarkMcq(submission.getId());
 
+        // Zero-score any questions the candidate left unanswered
+        scoreUnansweredQuestions(submission.getId(), assessmentId);
+
         return buildSubmitResponse(submission, assessment);
     }
 
@@ -288,6 +292,46 @@ public class CandidateTakeServiceImpl implements CandidateTakeService {
                 answer.getTextContent(),
                 answer.getSavedAt()
         );
+    }
+
+    private void scoreUnansweredQuestions(UUID submissionId, UUID assessmentId) {
+        Set<UUID> answeredIds = answerRepository.findQuestionIdsBySubmissionId(submissionId);
+
+        for (AssessmentQuestion aq : assessmentQuestionRepository.findByAssessmentIdOrderByDisplayOrder(assessmentId)) {
+            Question q = (Question) Hibernate.unproxy(aq.getQuestion());
+            if (q instanceof GroupQuestion gq) {
+                for (GroupQuestionMember m : gq.getMembers()) {
+                    scoreIfUnanswered(submissionId, m.getQuestion().getId(), answeredIds);
+                }
+            } else {
+                scoreIfUnanswered(submissionId, q.getId(), answeredIds);
+            }
+        }
+    }
+
+    private void scoreIfUnanswered(UUID submissionId, UUID questionId, Set<UUID> answeredIds) {
+        if (answeredIds.contains(questionId)) return;
+
+        CandidateAnswer answer = answerRepository
+                .findBySubmissionIdAndQuestionId(submissionId, questionId)
+                .orElseGet(() -> {
+                    CandidateAnswer a = new CandidateAnswer();
+                    a.setSubmissionId(submissionId);
+                    a.setQuestionId(questionId);
+                    a.setSavedAt(Instant.now());
+                    a.setDraft(false);
+                    return answerRepository.save(a);
+                });
+
+        if (answerScoreRepository.findByCandidateAnswerId(answer.getId()).isEmpty()) {
+            AnswerScore score = new AnswerScore();
+            score.setCandidateAnswerId(answer.getId());
+            score.setScore(0);
+            score.setFeedback("Not answered");
+            score.setAutoMarked(true);
+            score.setMarkedAt(Instant.now());
+            answerScoreRepository.save(score);
+        }
     }
 
     private SubmitResponse buildSubmitResponse(CandidateSubmission submission, Assessment assessment) {

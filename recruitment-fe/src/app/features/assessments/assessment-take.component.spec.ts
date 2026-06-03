@@ -16,7 +16,7 @@ const mockTakeResponse: AssessmentTakeResponse = {
   title: 'Test Assessment',
   description: null,
   totalQuestionCount: 1,
-  startedAt: new Date(NOW - 5000).toISOString(),
+  startedAt: new Date(NOW - 5000).toISOString(),   // 5s ago → new session, shows guide
   deadline: new Date(NOW + 3600 * 1000).toISOString(),
   questions: [
     { id: 'q1', displayOrder: 1, type: 'MCQ', title: 'Q1', body: 'What is 2+2?', options: [{ id: 'o1', optionText: '4' }] },
@@ -24,6 +24,12 @@ const mockTakeResponse: AssessmentTakeResponse = {
   answers: [
     { questionId: 'q1', selectedOptionIds: ['o1'], textContent: null, savedAt: new Date().toISOString() },
   ],
+};
+
+const mockReturningTakeResponse: AssessmentTakeResponse = {
+  ...mockTakeResponse,
+  startedAt: new Date(NOW - 30_000).toISOString(),  // 30s ago → returning, skips guide
+  deadline: new Date(NOW + (3600 - 30) * 1000).toISOString(),
 };
 
 const mockSubmitResponse: SubmitResponse = {
@@ -35,7 +41,7 @@ const mockSubmitResponse: SubmitResponse = {
   totalQuestionCount: 1,
 };
 
-function createComponent() {
+function createComponent(takeResponse = mockTakeResponse) {
   const authSvc = {
     validateCandidateToken: vi.fn().mockReturnValue(of({ token: MOCK_TOKEN })),
   };
@@ -47,7 +53,7 @@ function createComponent() {
     verifyPassword: vi.fn().mockReturnValue(of({ valid: true })),
   };
   const takeSvc = {
-    loadAssessment: vi.fn().mockReturnValue(of(mockTakeResponse)),
+    loadAssessment: vi.fn().mockReturnValue(of(takeResponse)),
     saveAnswers: vi.fn().mockReturnValue(of({ answers: [] })),
     submit: vi.fn().mockReturnValue(of(mockSubmitResponse)),
   };
@@ -79,24 +85,128 @@ describe('AssessmentTakeComponent', () => {
 
   it('loads assessment on init and pre-populates answers from saved state', () => {
     const { fixture, component, takeSvc } = createComponent();
-    // of() emits synchronously, so detectChanges is enough
     fixture.detectChanges();
 
     expect(takeSvc.loadAssessment).toHaveBeenCalledWith(MOCK_TOKEN);
     expect(component.preview()).not.toBeNull();
     expect(component.preview()!.title).toBe('Test Assessment');
-    // Pre-populated from saved answer
     expect(component.answers()['q1']).toBe('o1');
   });
 
-  it('initialises timer from server deadline, not full timeLimitMinutes', () => {
+  it('initialises timeLeft from server deadline, not full timeLimitMinutes', () => {
     const { fixture, component } = createComponent();
     fixture.detectChanges();
 
     const t = component.timeLeft();
-    // deadline is ~1 hour away from NOW
     expect(t).toBeGreaterThan(3500);
     expect(t).toBeLessThanOrEqual(3601);
+  });
+
+  // ── 8.1: Guide screen shown for new session; Start transitions to in-progress ──
+
+  it('shows guide screen on init when session is new (startedAt < 10s ago)', () => {
+    const { fixture, component } = createComponent();
+    fixture.detectChanges();
+
+    expect(component.phase()).toBe('guide');
+  });
+
+  it('beginAssessment() transitions phase to in-progress', () => {
+    const { fixture, component } = createComponent();
+    fixture.detectChanges();
+
+    component.beginAssessment();
+
+    expect(component.phase()).toBe('in-progress');
+  });
+
+  // ── 8.2: Returning candidate skips guide ──
+
+  it('skips guide screen for returning candidate (startedAt > 10s ago)', () => {
+    const { fixture, component } = createComponent(mockReturningTakeResponse);
+    fixture.detectChanges();
+
+    expect(component.phase()).toBe('in-progress');
+  });
+
+  // ── 8.3: beforeunload listener added on in-progress and removed on submit ──
+
+  it('adds beforeunload listener when beginAssessment() is called', () => {
+    const { fixture, component } = createComponent();
+    fixture.detectChanges();
+
+    const addSpy = vi.spyOn(window, 'addEventListener');
+    component.beginAssessment();
+
+    expect(addSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
+    addSpy.mockRestore();
+  });
+
+  it('removes beforeunload listener after submission', () => {
+    const { fixture, component } = createComponent();
+    fixture.detectChanges();
+    component.beginAssessment();
+
+    const removeSpy = vi.spyOn(window, 'removeEventListener');
+    component['doSubmit'](false);
+
+    expect(removeSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
+    removeSpy.mockRestore();
+  });
+
+  // ── 8.4: Give Up modal ──
+
+  it('openGiveUpModal() sets showGiveUpModal to true', () => {
+    const { fixture, component } = createComponent();
+    fixture.detectChanges();
+
+    component.openGiveUpModal();
+
+    expect(component.showGiveUpModal()).toBe(true);
+  });
+
+  it('confirmGiveUp() calls submit service with autoSubmitted=true', () => {
+    const { fixture, component, takeSvc } = createComponent();
+    fixture.detectChanges();
+
+    component.confirmGiveUp();
+
+    expect(takeSvc.submit).toHaveBeenCalledWith(MOCK_TOKEN, { autoSubmitted: true });
+    expect(component.submitted()).toBe(true);
+  });
+
+  it('cancelGiveUp() closes modal without submitting', () => {
+    const { fixture, component, takeSvc } = createComponent();
+    fixture.detectChanges();
+
+    component.openGiveUpModal();
+    component.cancelGiveUp();
+
+    expect(component.showGiveUpModal()).toBe(false);
+    expect(takeSvc.submit).not.toHaveBeenCalled();
+  });
+
+  // ── 8.5: Zero-answer submit guard ──
+
+  it('confirmSubmit() sets zeroAnswerWarning when answeredCount is 0', () => {
+    const noAnswerResponse: AssessmentTakeResponse = { ...mockTakeResponse, answers: [] };
+    const { fixture, component } = createComponent(noAnswerResponse);
+    fixture.detectChanges();
+
+    component.confirmSubmit();
+
+    expect(component.zeroAnswerWarning()).toBe(true);
+    expect(component.showSubmitModal()).toBe(true);
+  });
+
+  it('confirmSubmit() does not set zeroAnswerWarning when at least one answer exists', () => {
+    const { fixture, component } = createComponent();
+    fixture.detectChanges();
+
+    component.confirmSubmit();
+
+    expect(component.zeroAnswerWarning()).toBe(false);
+    expect(component.showSubmitModal()).toBe(true);
   });
 
   it('doSubmit with autoSubmitted:false calls service and sets submitted state', () => {

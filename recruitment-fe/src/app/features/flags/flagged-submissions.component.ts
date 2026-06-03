@@ -1,4 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { switchMap } from 'rxjs';
 import { FlagService } from '../../core/flag/flag.service';
 import { FlagListItem, FlagReason } from '../../core/flag/flag.model';
 import { AssessmentService } from '../../core/assessment/assessment.service';
@@ -6,7 +8,7 @@ import { Assessment } from '../../core/assessment/assessment.model';
 
 @Component({
   selector: 'app-flagged-submissions',
-  imports: [],
+  imports: [RouterLink],
   template: `
     <div class="page">
       <div class="page-header">
@@ -55,15 +57,30 @@ import { Assessment } from '../../core/assessment/assessment.model';
               <span>Reason</span>
               <span>Date Flagged</span>
               <span>Status</span>
+              <span>Actions</span>
             </div>
             @for (f of filtered(); track f.flagId) {
-              <div class="table-row">
+              <div class="table-row"
+                   [routerLink]="['/results']"
+                   [queryParams]="{submission: f.submissionId}">
                 <div class="cell-name">{{ f.candidateName }}</div>
                 <div class="cell">{{ f.assessmentName }}</div>
                 <div class="cell">{{ reasonLabel(f.reason) }}</div>
                 <div class="cell-date">{{ formatDate(f.createdAt) }}</div>
                 <div class="cell">
                   <span class="status-badge" [class]="statusClass(f.status)">{{ f.status }}</span>
+                </div>
+                <div class="cell-actions" (click)="$event.stopPropagation()">
+                  @if (f.status === 'FLAGGED' || f.status === 'UNDER_REVIEW') {
+                    <button class="btn-dismiss"
+                            [disabled]="dismissingFlagId() === f.flagId"
+                            (click)="dismissFlag(f)">
+                      {{ dismissingFlagId() === f.flagId ? '…' : 'Dismiss' }}
+                    </button>
+                  }
+                  @if (dismissError()?.flagId === f.flagId) {
+                    <span class="dismiss-error">{{ dismissError()!.message }}</span>
+                  }
                 </div>
               </div>
             }
@@ -110,16 +127,17 @@ import { Assessment } from '../../core/assessment/assessment.model';
     }
 
     .table-header {
-      display: grid; grid-template-columns: 2fr 2fr 1.5fr 1fr 1fr;
+      display: grid; grid-template-columns: 2fr 2fr 1.5fr 1fr 1fr 0.8fr;
       gap: 12px; padding: 10px 16px;
       background: var(--bg-elevated); border-bottom: 1px solid var(--border);
       font-size: 11.5px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em;
     }
 
     .table-row {
-      display: grid; grid-template-columns: 2fr 2fr 1.5fr 1fr 1fr;
+      display: grid; grid-template-columns: 2fr 2fr 1.5fr 1fr 1fr 0.8fr;
       gap: 12px; padding: 12px 16px; align-items: center;
       border-bottom: 1px solid var(--border); transition: background 120ms;
+      cursor: pointer; text-decoration: none;
     }
     .table-row:last-child { border-bottom: none; }
     .table-row:hover { background: var(--bg-hover); }
@@ -127,6 +145,7 @@ import { Assessment } from '../../core/assessment/assessment.model';
     .cell-name { font-size: 13px; font-weight: 600; color: var(--text-1); }
     .cell { font-size: 13px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .cell-date { font-size: 12px; color: var(--text-3); }
+    .cell-actions { display: flex; align-items: center; gap: 6px; }
 
     .status-badge {
       display: inline-flex; padding: 2px 8px; border-radius: 999px;
@@ -136,6 +155,17 @@ import { Assessment } from '../../core/assessment/assessment.model';
     .status-under-review { background: var(--warning-subtle); color: var(--warning); }
     .status-resolved { background: var(--success-subtle); color: var(--success); }
     .status-dismissed { background: rgba(148,163,184,.12); color: var(--text-2); }
+
+    .btn-dismiss {
+      padding: 3px 10px; background: transparent;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text-2); font-size: 12px; cursor: pointer;
+      font-family: var(--font); transition: all 120ms; white-space: nowrap;
+    }
+    .btn-dismiss:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); background: var(--danger-subtle); }
+    .btn-dismiss:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .dismiss-error { font-size: 11.5px; color: var(--danger); }
 
     .empty-state { text-align: center; padding: 60px; color: var(--text-3); font-size: 13px; }
   `],
@@ -147,6 +177,8 @@ export class FlaggedSubmissionsComponent implements OnInit {
   readonly flags = signal<FlagListItem[]>([]);
   readonly assessments = signal<Assessment[]>([]);
   readonly loading = signal(false);
+  readonly dismissingFlagId = signal<string | null>(null);
+  readonly dismissError = signal<{ flagId: string; message: string } | null>(null);
 
   readonly filterReason = signal<FlagReason | ''>('');
   readonly filterAssessmentId = signal('');
@@ -174,6 +206,32 @@ export class FlaggedSubmissionsComponent implements OnInit {
       error: () => this.loading.set(false),
     });
     this.assessmentSvc.listAssessments().subscribe({ next: list => this.assessments.set(list) });
+  }
+
+  dismissFlag(flag: FlagListItem) {
+    this.dismissingFlagId.set(flag.flagId);
+    this.dismissError.set(null);
+
+    const dismiss$ = flag.status === 'FLAGGED'
+      ? this.flagSvc.transitionFlag(flag.submissionId, flag.flagId, { status: 'UNDER_REVIEW' }).pipe(
+          switchMap(() => this.flagSvc.transitionFlag(flag.submissionId, flag.flagId, {
+            status: 'DISMISSED', resolutionNotes: 'Dismissed from flagged list',
+          }))
+        )
+      : this.flagSvc.transitionFlag(flag.submissionId, flag.flagId, {
+          status: 'DISMISSED', resolutionNotes: 'Dismissed from flagged list',
+        });
+
+    dismiss$.subscribe({
+      next: () => {
+        this.dismissingFlagId.set(null);
+        this.flags.update(list => list.filter(f => f.flagId !== flag.flagId));
+      },
+      error: () => {
+        this.dismissingFlagId.set(null);
+        this.dismissError.set({ flagId: flag.flagId, message: 'Dismiss failed. Try again.' });
+      },
+    });
   }
 
   clearFilters() {

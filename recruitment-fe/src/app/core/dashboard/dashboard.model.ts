@@ -3,6 +3,7 @@ export interface PipelineStats {
   inProgress: number;
   pendingReview: number;
   completed: number;
+  flagged: number;
 }
 
 export interface ActivityEvent {
