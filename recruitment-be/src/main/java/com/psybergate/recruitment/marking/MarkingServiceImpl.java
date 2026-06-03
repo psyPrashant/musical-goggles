@@ -64,8 +64,7 @@ public class MarkingServiceImpl implements MarkingService {
 
         Set<UUID> selectedIds = parseSelectedOptionIds(answer.getSelectedOptionIds());
 
-        // Score 1 only if selected set exactly matches correct set
-        return selectedIds.equals(correctIds) ? 1 : 0;
+        return selectedIds.equals(correctIds) ? mcq.getMaxScore() : 0;
     }
 
     private Set<UUID> parseSelectedOptionIds(String json) {

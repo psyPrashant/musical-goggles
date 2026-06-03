@@ -59,7 +59,7 @@ import { Question, QuestionType } from '../../core/question/question.model';
                   @if (q.tags[0]) {
                     <span class="tag-pill">{{ q.tags[0] }}</span>
                   }
-                  <span class="pts-label">10 pts</span>
+                  <span class="pts-label">{{ q.maxScore === 1 ? '1 pt' : q.maxScore + ' pts' }}</span>
                 </div>
                 <div class="q-actions">
                   <button class="action-btn" (click)="togglePreview(q.id)">

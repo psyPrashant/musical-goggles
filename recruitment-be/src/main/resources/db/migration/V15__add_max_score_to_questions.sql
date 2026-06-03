@@ -1,0 +1,1 @@
+ALTER TABLE questions ADD COLUMN max_score INT NOT NULL DEFAULT 1;

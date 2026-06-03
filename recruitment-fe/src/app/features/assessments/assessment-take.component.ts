@@ -197,7 +197,7 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
                     <span class="q-total">of {{ preview()!.questions.length }}</span>
                   </div>
                   <span class="type-badge type-{{ q.type.toLowerCase() }}">{{ typeLabel(q.type) }}</span>
-                  <span class="pts-badge">10 pts</span>
+                  <span class="pts-badge">{{ q.maxScore === 1 ? '1 pt' : q.maxScore + ' pts' }}</span>
                   <button class="flag-btn" [class.flagged]="flagged().has(q.id)" (click)="toggleFlag(q.id)" title="Flag for review">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
@@ -880,6 +880,7 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
         id: q.id,
         type: q.type as any,
         body: q.body,
+        maxScore: q.maxScore ?? 1,
         options: q.options
           ? q.options.map(o => ({ id: o.id, text: o.optionText }))
           : null,
@@ -889,6 +890,7 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
               id: sub.id,
               type: sub.type as any,
               body: sub.body,
+              maxScore: sub.maxScore ?? 1,
               options: sub.options
                 ? sub.options.map(o => ({ id: o.id, text: o.optionText }))
                 : null,

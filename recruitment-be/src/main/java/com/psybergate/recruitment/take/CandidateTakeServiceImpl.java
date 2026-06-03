@@ -284,6 +284,7 @@ public class CandidateTakeServiceImpl implements CandidateTakeService {
                 q.getType(),
                 q.getTitle(),
                 q.getBody(),
+                q.getMaxScore(),
                 options,
                 subQuestions
         );

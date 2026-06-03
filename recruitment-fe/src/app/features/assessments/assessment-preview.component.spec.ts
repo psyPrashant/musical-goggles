@@ -16,6 +16,7 @@ const mockPreview: AssessmentPreview = {
       id: 'q1',
       type: 'MCQ',
       body: 'What is polymorphism?',
+      maxScore: 1,
       options: [
         { id: 'o1', text: 'Method overriding' },
         { id: 'o2', text: 'Variables' },
@@ -26,6 +27,7 @@ const mockPreview: AssessmentPreview = {
       id: 'q2',
       type: 'TEXT',
       body: 'Describe OOP principles.',
+      maxScore: 2,
       options: null,
       languageHint: null,
     },
@@ -33,6 +35,7 @@ const mockPreview: AssessmentPreview = {
       id: 'q3',
       type: 'CODE_SUBMISSION',
       body: 'Write a binary search.',
+      maxScore: 5,
       options: null,
       languageHint: 'java',
     },

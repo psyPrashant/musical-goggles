@@ -13,7 +13,7 @@ const mockTakeResponse: AssessmentTakeResponse = {
   totalQuestionCount: 1,
   startedAt: '2026-05-29T10:00:00Z',
   deadline: '2026-05-29T11:00:00Z',
-  questions: [{ id: 'q1', displayOrder: 1, type: 'MCQ', title: 'Q1', body: 'What is 2+2?', options: [{ id: 'o1', optionText: '4' }] }],
+  questions: [{ id: 'q1', displayOrder: 1, type: 'MCQ', title: 'Q1', body: 'What is 2+2?', maxScore: 1, options: [{ id: 'o1', optionText: '4' }] }],
   answers: [],
 };
 

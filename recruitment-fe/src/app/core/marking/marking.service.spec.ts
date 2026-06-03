@@ -14,6 +14,8 @@ const mockSummary: SubmissionSummary = {
   answeredCount: 2,
   totalAnswers: 2,
   markedCount: 1,
+  totalScore: 7,
+  maxScore: 2,
   flagStatus: null,
 };
 
@@ -23,6 +25,8 @@ const mockResult: ResultSummary = {
   assessmentTitle: 'Test Assessment',
   submittedAt: '2026-05-29T10:00:00Z',
   totalScore: 7,
+  maxScore: 2,
+  answeredCount: 2,
   markingStatus: 'FULLY_MARKED',
   questions: [],
 };

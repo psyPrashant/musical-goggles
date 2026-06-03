@@ -15,6 +15,7 @@ export interface Question {
   options: QuestionOption[] | null;
   languageHint: string | null;
   memberQuestions?: Question[];
+  maxScore: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -27,4 +28,5 @@ export interface QuestionRequest {
   options?: { text: string; correct: boolean }[];
   languageHint?: string;
   memberQuestionIds?: string[];
+  maxScore?: number;
 }
