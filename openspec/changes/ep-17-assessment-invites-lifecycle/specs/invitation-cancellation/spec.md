@@ -42,6 +42,17 @@ The `InvitationStatus` enum SHALL include `CANCELLED` as a valid status alongsid
 - **WHEN** an invitation is cancelled
 - **THEN** the `status` column in `candidate_invitations` stores the value `CANCELLED`
 
+### Requirement: Candidate receives a cancellation email
+When an invitation is cancelled, the system SHALL send a plain-text notification email to the candidate informing them that their invitation has been cancelled and they should contact the recruiter if this was in error.
+
+#### Scenario: Cancellation email sent on cancel
+- **WHEN** a staff member successfully cancels a PENDING or SENT invitation
+- **THEN** the system sends an email to the candidate's registered address with subject "Assessment Invitation Cancelled: {assessment title}" and a message identifying the assessment
+
+#### Scenario: No email sent for non-cancellable statuses
+- **WHEN** a cancel request is rejected (invitation is COMPLETED, EXPIRED, or already CANCELLED)
+- **THEN** no cancellation email is sent
+
 ### Requirement: Frontend displays a cancel action for active invitations
 The invitation list or candidate view SHALL display a cancel button for each invitation with status PENDING or SENT.
 

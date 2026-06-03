@@ -39,6 +39,21 @@ public class EmailServiceImpl implements EmailService {
         mailSender.send(message);
     }
 
+    @Override
+    public void sendCancellation(Candidate candidate, Assessment assessment) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(candidate.getEmail());
+        message.setSubject("Assessment Invitation Cancelled: " + assessment.getTitle());
+        message.setText(
+                "Hi " + candidate.getFirstName() + ",\n\n"
+                + "Your invitation to complete the following assessment has been cancelled:\n"
+                + "  " + assessment.getTitle() + "\n\n"
+                + "If you believe this was done in error, please contact the recruiting team.\n\n"
+                + "The Psybergate Recruitment Team"
+        );
+        mailSender.send(message);
+    }
+
     private String buildReminderBody(Candidate candidate, Assessment assessment,
                                       String invitationLink, Instant expiresAt) {
         return "Hi " + candidate.getFirstName() + ",\n\n"

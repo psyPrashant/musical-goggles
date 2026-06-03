@@ -101,5 +101,7 @@ public class InvitationServiceImpl implements InvitationService {
 
         invitation.setStatus(InvitationStatus.CANCELLED);
         invitationRepository.save(invitation);
+
+        emailService.sendCancellation(invitation.getCandidate(), invitation.getAssessment());
     }
 }

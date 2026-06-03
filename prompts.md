@@ -572,3 +572,21 @@ create a new branch before starting
 
 ---
 
+## 2026-06-03 12:24 | prashant.kessa
+
+> push and make a pr
+
+---
+
+## 2026-06-03 12:26 | prashant.kessa
+
+> <ci-monitor-event>CI check "Frontend — Type-check & Test" failed on psyPrashant/musical-goggles PR #26. Run `gh pr checks 26 --repo psyPrashant/musical-goggles` to see details, then fix the failing check.</ci-monitor-event>
+
+---
+
+## 2026-06-03 12:31 | prashant.kessa
+
+> compact, then add another story to epic 17 for sending a cancellation email to the candidate. then implement it and update the specs respectively
+
+---
+
