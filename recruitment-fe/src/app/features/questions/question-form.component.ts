@@ -494,6 +494,11 @@ export class QuestionFormComponent implements OnInit {
           if (q.type === 'MCQ' && q.options) {
             this.options.clear();
             q.options.forEach(o => this.options.push(this.makeOption(o.text, o.correct)));
+          } else {
+            // TEXT / CODE_SUBMISSION / GROUP: clear the two empty MCQ rows the
+            // form initialises with — they carry Validators.required and would
+            // make the form permanently invalid for non-MCQ edit mode.
+            this.options.clear();
           }
         },
         error: () => this.error.set('Failed to load question.'),
