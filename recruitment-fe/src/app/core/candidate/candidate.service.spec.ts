@@ -6,6 +6,7 @@ import { CandidateHistoryItem } from './candidate.model';
 import { throwError } from 'rxjs';
 
 const mockHistoryItem: CandidateHistoryItem = {
+  invitationId: 'inv-1',
   assessmentId: 'a-1',
   assessmentName: 'Java Assessment',
   invitedAt: '2026-05-01T10:00:00Z',
