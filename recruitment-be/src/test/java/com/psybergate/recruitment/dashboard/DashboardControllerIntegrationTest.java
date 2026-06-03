@@ -29,27 +29,16 @@ class DashboardControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired JwtService jwtService;
 
-    private String recruiterSessionCookie;
+    private String token;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         User recruiter = new User();
         recruiter.setEmail("dashboard-test@integration.dev");
         recruiter.setPasswordHash(passwordEncoder.encode("pass"));
         recruiter.setRole(Role.RECRUITER);
-        userRepository.save(recruiter);
-
-        String loginBody = """
-                {"email":"dashboard-test@integration.dev","password":"pass"}
-                """;
-        var loginResult = mockMvc.perform(
-                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-                                .post("/api/auth/login")
-                                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
-                                .content(loginBody))
-                .andExpect(status().isOk())
-                .andReturn();
-        recruiterSessionCookie = loginResult.getResponse().getHeader("Set-Cookie");
+        recruiter = userRepository.save(recruiter);
+        token = jwtService.generateToken(recruiter.getId().toString(), Role.RECRUITER, 1L);
     }
 
     @AfterEach
@@ -60,7 +49,7 @@ class DashboardControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     void getDashboardStats_includesPipelineFlaggedField() throws Exception {
         mockMvc.perform(get("/api/dashboard/stats")
-                        .header("Cookie", recruiterSessionCookie != null ? recruiterSessionCookie : ""))
+                        .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.pipeline.flagged").value(0))
                 .andExpect(jsonPath("$.pipeline.invited").isNumber())
