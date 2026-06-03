@@ -460,7 +460,7 @@ export class QuestionFormComponent implements OnInit {
     { value: 'GROUP', label: 'Group / Scenario' },
   ];
 
-  readonly difficultyOptions = [
+  readonly difficultyOptions: { value: Difficulty | null; label: string }[] = [
     { value: null, label: 'None' },
     { value: 'EASY', label: 'Easy' },
     { value: 'MEDIUM', label: 'Medium' },
