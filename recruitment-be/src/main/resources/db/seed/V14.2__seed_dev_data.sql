@@ -1,5 +1,5 @@
 -- ============================================================
--- V11: Dev seed data
+-- V14.2: Dev seed data
 -- Idempotent — all inserts use ON CONFLICT (id) DO NOTHING
 -- ============================================================
 

@@ -1,5 +1,5 @@
--- V12: Add cell phone numbers to seed candidates
--- Targets the 8 candidates seeded in V11 (mg-72 seed data).
+-- V14.3: Add cell phone numbers to seed candidates
+-- Targets the 8 candidates seeded in V14.2 (mg-72 seed data).
 -- Safe to run before those candidates exist — UPDATE with no matching rows is a no-op.
 UPDATE candidates SET cell_phone = '+27 82 100 0001' WHERE id = '00000000-0000-0000-000a-000000000001';
 UPDATE candidates SET cell_phone = '+27 83 200 0002' WHERE id = '00000000-0000-0000-000a-000000000002';
