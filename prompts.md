@@ -554,3 +554,45 @@ create a new branch before starting
 > i have merge conflicts, resolve them. keep both for prompts.md, take the V12 fly migration file from main and resolve the last one
 
 ---
+## 2026-06-03 11:45 | prashant.kessa
+
+> look at the jira board and rename the current epics with the numbering (like how it was previously)
+
+---
+
+## 2026-06-03 11:45 | prashant.kessa
+
+> look at the jira board Musical Goggles and rename the current epics with the numbering (like how it was previously)
+
+---
+
+## 2026-06-03 11:48 | prashant.kessa
+
+> look at the jira board and start implementing epic 17 using the openspec workflow. create a new branch before starting. update the tickets as you progress
+
+---
+
+## 2026-06-03 12:24 | prashant.kessa
+
+> push and make a pr
+
+---
+
+## 2026-06-03 12:26 | prashant.kessa
+
+> <ci-monitor-event>CI check "Frontend — Type-check & Test" failed on psyPrashant/musical-goggles PR #26. Run `gh pr checks 26 --repo psyPrashant/musical-goggles` to see details, then fix the failing check.</ci-monitor-event>
+
+---
+
+## 2026-06-03 12:31 | prashant.kessa
+
+> compact, then add another story to epic 17 for sending a cancellation email to the candidate. then implement it and update the specs respectively
+
+---
+
+## 2026-06-03 12:49 | prashant.kessa
+
+> archive ep-13 and 17, commit and push
+
+---
+

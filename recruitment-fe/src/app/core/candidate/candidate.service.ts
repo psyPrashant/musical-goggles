@@ -34,4 +34,8 @@ export class CandidateService {
   getHistory(candidateId: string): Observable<CandidateHistoryItem[]> {
     return this.http.get<CandidateHistoryItem[]>(`/api/candidates/${candidateId}/history`);
   }
+
+  cancelInvitation(invitationId: string): Observable<void> {
+    return this.http.delete<void>(`/api/invitations/${invitationId}`);
+  }
 }

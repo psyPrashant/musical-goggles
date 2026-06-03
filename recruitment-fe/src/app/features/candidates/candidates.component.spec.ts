@@ -25,19 +25,19 @@ const mockCandidate: Candidate = {
 
 const mockHistory: CandidateHistoryItem[] = [
   {
-    assessmentId: 'a-1', assessmentName: 'Java Assessment',
+    invitationId: 'inv-1', assessmentId: 'a-1', assessmentName: 'Java Assessment',
     invitedAt: '2026-05-01T10:00:00Z', submissionId: 's-1',
     status: 'SUBMITTED', submittedAt: '2026-05-02T10:00:00Z',
     totalScore: 15, markingStatus: 'FULLY_MARKED', linkedRole: null,
   },
   {
-    assessmentId: 'a-2', assessmentName: 'Python Assessment',
+    invitationId: 'inv-2', assessmentId: 'a-2', assessmentName: 'Python Assessment',
     invitedAt: '2026-04-01T10:00:00Z', submissionId: null,
     status: 'PENDING', submittedAt: null,
     totalScore: null, markingStatus: null, linkedRole: null,
   },
   {
-    assessmentId: 'a-3', assessmentName: 'Old Assessment',
+    invitationId: 'inv-3', assessmentId: 'a-3', assessmentName: 'Old Assessment',
     invitedAt: '2026-03-01T10:00:00Z', submissionId: null,
     status: 'EXPIRED', submittedAt: null,
     totalScore: null, markingStatus: null, linkedRole: null,

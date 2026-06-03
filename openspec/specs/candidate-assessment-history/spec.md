@@ -1,5 +1,8 @@
-## ADDED Requirements
+# candidate-assessment-history Specification
 
+## Purpose
+TBD - created by archiving change ep-13-candidate-assessment-history. Update Purpose after archive.
+## Requirements
 ### Requirement: Candidate history endpoint
 The system SHALL expose `GET /api/candidates/{candidateId}/history` returning an ordered list of all assessment invitations for that candidate, each enriched with submission status, total score, and marking state. Results SHALL be ordered by invitation creation date descending (newest first). The endpoint SHALL be accessible only to users with ADMIN or RECRUITER role.
 
@@ -78,3 +81,5 @@ The system SHALL display a linked job/role name on each history entry. When no j
 #### Scenario: Assessment with no linked role
 - **WHEN** an assessment has no associated job role
 - **THEN** the history entry SHALL display "No linked role" as the role context field
+
+
