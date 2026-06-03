@@ -1,7 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { QuestionService } from '../../core/question/question.service';
-import { Question, QuestionType } from '../../core/question/question.model';
+import { Difficulty, Question, QuestionType } from '../../core/question/question.model';
 
 @Component({
   selector: 'app-questions',
@@ -27,11 +27,16 @@ import { Question, QuestionType } from '../../core/question/question.model';
             </svg>
             <input class="search-input" [value]="search()" (input)="search.set($any($event.target).value)" placeholder="Search questions…"/>
           </div>
-          <div class="type-filters">
+          <select class="filter-select" [value]="selectedType()" (change)="setType($any($event.target).value)">
             @for (f of typeFilters; track f.value) {
-              <button class="filter-chip" [class.active]="selectedType() === f.value" (click)="setType(f.value)">{{ f.label }}</button>
+              <option [value]="f.value">{{ f.label }}</option>
             }
-          </div>
+          </select>
+          <select class="filter-select" [value]="selectedDifficulty()" (change)="setDifficulty($any($event.target).value)">
+            @for (d of difficultyFilters; track d.value) {
+              <option [value]="d.value">{{ d.label }}</option>
+            }
+          </select>
         </div>
 
         @if (availableTags().length > 0) {
@@ -52,7 +57,9 @@ import { Question, QuestionType } from '../../core/question/question.model';
               <div class="q-card">
                 <div class="q-card-top">
                   <span class="type-badge type-{{ q.type.toLowerCase() }}">{{ typeLabel(q.type) }}</span>
-                  <span class="diff-badge diff-{{ diffLabel(q).toLowerCase() }}">{{ diffLabel(q) }}</span>
+                  @if (q.difficulty) {
+                    <span class="diff-badge diff-{{ q.difficulty.toLowerCase() }}">{{ diffLabel(q) }}</span>
+                  }
                 </div>
                 <p class="q-title">{{ q.title }}</p>
                 <div class="q-card-footer">
@@ -214,17 +221,13 @@ import { Question, QuestionType } from '../../core/question/question.model';
     .search-input:focus { border-color: var(--accent); }
     .search-input::placeholder { color: var(--text-3); }
 
-    .type-filters { display: flex; gap: 5px; }
-
-    .filter-chip {
-      padding: 5px 12px; border-radius: 999px; cursor: pointer;
-      font-family: var(--font); font-size: 12.5px; font-weight: 400;
-      background: transparent; color: var(--text-2); border: 1px solid var(--border);
-      transition: all 120ms; display: flex; align-items: center; gap: 5px;
+    .filter-select {
+      padding: 6px 10px; border-radius: var(--radius-sm);
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      color: var(--text-1); font-size: 13px; font-family: var(--font);
+      outline: none; cursor: pointer; transition: border-color 150ms;
     }
-
-    .filter-chip:hover { background: var(--bg-hover); color: var(--text-1); }
-    .filter-chip.active { background: var(--accent-subtle); color: var(--accent); border-color: var(--accent); font-weight: 600; }
+    .filter-select:focus { border-color: var(--accent); }
 
     .tag-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 18px; }
 
@@ -377,6 +380,7 @@ export class QuestionsComponent implements OnInit {
   readonly search = signal('');
   readonly selectedType = signal('');
   readonly selectedTag = signal('');
+  readonly selectedDifficulty = signal<Difficulty | ''>('');
   readonly previewedId = signal<string | null>(null);
 
   readonly typeFilters = [
@@ -387,9 +391,20 @@ export class QuestionsComponent implements OnInit {
     { value: 'GROUP', label: 'Group' },
   ];
 
+  readonly difficultyFilters: { value: Difficulty | ''; label: string }[] = [
+    { value: '', label: 'All' },
+    { value: 'EASY', label: 'Easy' },
+    { value: 'MEDIUM', label: 'Medium' },
+    { value: 'HARD', label: 'Hard' },
+  ];
+
   readonly filtered = computed(() => {
     const s = this.search().toLowerCase();
-    return this.questions().filter(q => !s || q.title.toLowerCase().includes(s));
+    const d = this.selectedDifficulty();
+    return this.questions().filter(q =>
+      (!s || q.title.toLowerCase().includes(s)) &&
+      (!d || q.difficulty === d)
+    );
   });
 
   ngOnInit() {
@@ -422,6 +437,10 @@ export class QuestionsComponent implements OnInit {
     this.load();
   }
 
+  setDifficulty(d: Difficulty | '') {
+    this.selectedDifficulty.set(d);
+  }
+
   togglePreview(id: string) {
     this.previewedId.update(cur => cur === id ? null : id);
   }
@@ -443,9 +462,7 @@ export class QuestionsComponent implements OnInit {
   }
 
   diffLabel(q: Question): string {
-    const n = q.tags.length;
-    if (n >= 3) return 'Hard';
-    if (n === 2) return 'Medium';
-    return 'Easy';
+    if (!q.difficulty) return '';
+    return { EASY: 'Easy', MEDIUM: 'Medium', HARD: 'Hard' }[q.difficulty] ?? '';
   }
 }

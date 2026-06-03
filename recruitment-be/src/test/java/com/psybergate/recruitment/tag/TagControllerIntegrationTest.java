@@ -60,7 +60,7 @@ class TagControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     void listTags_returnsInUseTags() throws Exception {
         QuestionRequest req = new QuestionRequest(QuestionType.TEXT, "Tagged Question", "body",
-                List.of("java", "sql"), null, null, null, null);
+                List.of("java", "sql"), null, null, null, null, null);
 
         mockMvc.perform(post("/api/questions")
                         .header("Authorization", "Bearer " + token)
@@ -76,7 +76,7 @@ class TagControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     void listTags_normalizedToLowercase() throws Exception {
         QuestionRequest req = new QuestionRequest(QuestionType.TEXT, "Q", "body",
-                List.of("JAVA", "Sql"), null, null, null, null);
+                List.of("JAVA", "Sql"), null, null, null, null, null);
 
         mockMvc.perform(post("/api/questions")
                         .header("Authorization", "Bearer " + token)
@@ -93,7 +93,7 @@ class TagControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     void listTags_orphansCleanedUpOnDelete() throws Exception {
         QuestionRequest req = new QuestionRequest(QuestionType.TEXT, "Orphan Q", "body",
-                List.of("orphantag999"), null, null, null, null);
+                List.of("orphantag999"), null, null, null, null, null);
 
         String body = mockMvc.perform(post("/api/questions")
                         .header("Authorization", "Bearer " + token)

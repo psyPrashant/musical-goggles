@@ -16,9 +16,6 @@ public interface AssessmentQuestionRepository extends JpaRepository<AssessmentQu
 
     List<AssessmentQuestion> findByAssessmentIdOrderByDisplayOrder(UUID assessmentId);
 
-    @Query("SELECT COUNT(aq) FROM AssessmentQuestion aq WHERE aq.assessment.id = :assessmentId AND TYPE(aq.question) = CodeSubmissionQuestion")
-    long countCodeSubmissionInAssessment(@Param("assessmentId") UUID assessmentId);
-
     @Query("SELECT aq.assessment.id, SUM(aq.question.maxScore) FROM AssessmentQuestion aq WHERE aq.assessment.id IN :ids GROUP BY aq.assessment.id")
     List<Object[]> sumMaxScoreGroupByAssessmentId(@Param("ids") Collection<UUID> ids);
 }

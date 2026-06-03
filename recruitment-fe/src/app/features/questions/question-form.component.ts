@@ -2,7 +2,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { QuestionService } from '../../core/question/question.service';
-import { Question, QuestionType } from '../../core/question/question.model';
+import { Difficulty, Question, QuestionType } from '../../core/question/question.model';
 
 @Component({
   selector: 'app-question-form',
@@ -78,6 +78,17 @@ import { Question, QuestionType } from '../../core/question/question.model';
               @if (form.get('maxScore')?.invalid && form.get('maxScore')?.touched) {
                 <span class="field-err">Must be at least 1</span>
               }
+            </div>
+
+            <div class="field">
+              <label class="field-label">Difficulty</label>
+              <div class="type-selector">
+                @for (d of difficultyOptions; track d.value) {
+                  <button type="button" class="type-btn"
+                    [class.active]="form.get('difficulty')?.value === d.value"
+                    (click)="setDifficulty(d.value)">{{ d.label }}</button>
+                }
+              </div>
             </div>
 
             <!-- CODE_SUBMISSION: language hint -->
@@ -447,6 +458,7 @@ export class QuestionFormComponent implements OnInit {
     tagsRaw: [''],
     languageHint: [''],
     maxScore: [1, [Validators.required, Validators.min(1)]],
+    difficulty: [null as Difficulty | null],
     options: this.fb.array([this.makeOption('', true), this.makeOption('', false)]),
   });
 
@@ -455,6 +467,13 @@ export class QuestionFormComponent implements OnInit {
     { value: 'TEXT', label: 'Text Response' },
     { value: 'CODE_SUBMISSION', label: 'Code Submission' },
     { value: 'GROUP', label: 'Group / Scenario' },
+  ];
+
+  readonly difficultyOptions: { value: Difficulty | null; label: string }[] = [
+    { value: null, label: 'None' },
+    { value: 'EASY', label: 'Easy' },
+    { value: 'MEDIUM', label: 'Medium' },
+    { value: 'HARD', label: 'Hard' },
   ];
 
   get options(): FormArray {
@@ -480,10 +499,16 @@ export class QuestionFormComponent implements OnInit {
             tagsRaw: q.tags.join(', '),
             languageHint: q.languageHint ?? '',
             maxScore: q.maxScore ?? 1,
+            difficulty: q.difficulty ?? null,
           });
           if (q.type === 'MCQ' && q.options) {
             this.options.clear();
             q.options.forEach(o => this.options.push(this.makeOption(o.text, o.correct)));
+          } else {
+            // TEXT / CODE_SUBMISSION / GROUP: clear the two empty MCQ rows the
+            // form initialises with — they carry Validators.required and would
+            // make the form permanently invalid for non-MCQ edit mode.
+            this.options.clear();
           }
         },
         error: () => this.error.set('Failed to load question.'),
@@ -519,6 +544,10 @@ export class QuestionFormComponent implements OnInit {
         },
       });
     }
+  }
+
+  setDifficulty(value: Difficulty | null) {
+    this.form.patchValue({ difficulty: value });
   }
 
   // ── GROUP member management ─────────────────────────────────────────────
@@ -580,12 +609,15 @@ export class QuestionFormComponent implements OnInit {
       this.memberError.set(null);
     }
 
+    const difficulty = this.form.get('difficulty')!.value ?? null;
+
     const payload = {
       type,
       title: this.form.get('title')!.value!,
       body: this.form.get('body')!.value!,
       tags,
       maxScore: this.form.get('maxScore')!.value ?? 1,
+      difficulty,
       ...(type === 'MCQ' && { options: this.options.value }),
       ...(type === 'CODE_SUBMISSION' && {
         languageHint: this.form.get('languageHint')!.value ?? undefined,

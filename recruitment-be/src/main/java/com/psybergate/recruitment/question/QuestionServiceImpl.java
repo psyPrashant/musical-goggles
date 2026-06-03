@@ -32,6 +32,7 @@ public class QuestionServiceImpl implements QuestionService {
         question.setMaxScore(req.maxScore() != null ? req.maxScore() : 1);
         question.setCreatedBy(creator);
         question.setTags(tagService.resolveTagNames(req.tags()));
+        question.setDifficulty(req.difficulty());
 
         return toResponse(questionRepository.save(question));
     }
@@ -67,6 +68,7 @@ public class QuestionServiceImpl implements QuestionService {
         question.setTitle(req.title());
         question.setBody(req.body());
         question.setMaxScore(req.maxScore() != null ? req.maxScore() : 1);
+        question.setDifficulty(req.difficulty());
         question.getTags().clear();
         question.getTags().addAll(tagService.resolveTagNames(req.tags()));
 
@@ -212,7 +214,7 @@ public class QuestionServiceImpl implements QuestionService {
 
         return new QuestionResponse(
                 q.getId(), q.getType(), q.getTitle(), q.getBody(),
-                tags, options, languageHint, memberQuestions, q.getMaxScore(), q.getCreatedAt(), q.getUpdatedAt()
+                tags, options, languageHint, memberQuestions, q.getMaxScore(), q.getDifficulty(), q.getCreatedAt(), q.getUpdatedAt()
         );
     }
 }

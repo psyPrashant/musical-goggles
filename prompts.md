@@ -596,6 +596,18 @@ create a new branch before starting
 
 ---
 
+## 2026-06-03 | shaaira.mayet
+
+> connect to the musical goggles jira board and look for epic 20 in the current sprint. pull main. move the epic to in progress and assign it to me. create a new branch and implement the stories using the open spec workflow. move each story as you progress, and assign it to me. run open spec when needed. append prompts used to prompt.md. give a review of changes made for me to approve. don't push until I approve the review
+
+---
+
+## 2026-06-03 | shaaira.mayet
+
+> edit the code: unable to update the difficulty on questions that are already created. create a new story under epic 20 on jira to add a search filter for difficulty both in question bank and when editing or creating a new assessment, also display the difficulty on each question in assessment edit/create. follow the process as before to implement the new story. do not push
+
+---
+
 ## 2026-06-03 12:49 | hendrik.muller
 
 > help me plan ep-18 (MG-115 to Mg-117) together with openspec
@@ -604,13 +616,11 @@ create a new branch before starting
 
 ## 2026-06-03 15:08:42 | hendrik.muller
 
-
-> Test that these changes are in effect with docker and playwright, add local hook when i use playwright to keep 
-> track of problem it run into streamline testing in future
+> Test that these changes are in effect with docker and playwright, add local hook when i use playwright to keep track of problem it run into streamline testing in future
 
 ---
-## 2026-06-03 15:08:42 | hendrik.muller
 
+## 2026-06-03 15:08:42 | hendrik.muller
 
 > update jira and prompts.md and commit push to new branch and make PR
 
@@ -618,54 +628,42 @@ create a new branch before starting
 
 ## 2026-06-03 15:15:28 | hendrik.muller
 
-
 > check PR failed frontend test
 
 ---
 
-
 ## 2026-06-03 15:17:40 | hendrik.muller
-
 
 > archive ep18 opsx
 
 ---
 
-
 ## 2026-06-03 15:28:38 | hendrik.muller
-
 
 > help me make this ticket with jira and openspec:i need to make a new ticket for adding scores when making questions and editing questions, which is reflected when doing the questions and marking them
 
 ---
 
-
 ## 2026-06-03 15:33:45 | hendrik.muller
-
 
 > make new branch and run opsx apply
 
 ---
 
-
 ## 2026-06-03 16:04:07 | hendrik.muller
 
-> test this feature work with docker and palywrighyt
+> test this feature work with docker and playwright
 
 ---
 
-
 ## 2026-06-03 16:04:07 | hendrik.muller
 
-> can you also and the question max points to each question and limit max points given on the results and evaluation page
+> can you also add the question max points to each question and limit max points given on the results and evaluation page
 
 ---
-
 
 ## 2026-06-03 16:13:53 | hendrik.muller
 
 > commit and make PR
 
 ---
-
-

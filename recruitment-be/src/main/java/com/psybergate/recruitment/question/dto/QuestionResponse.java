@@ -1,5 +1,6 @@
 package com.psybergate.recruitment.question.dto;
 
+import com.psybergate.recruitment.domain.Difficulty;
 import com.psybergate.recruitment.domain.QuestionType;
 
 import java.time.Instant;
@@ -16,6 +17,7 @@ public record QuestionResponse(
         String languageHint,
         List<QuestionResponse> memberQuestions,
         int maxScore,
+        Difficulty difficulty,
         Instant createdAt,
         Instant updatedAt
 ) {}
