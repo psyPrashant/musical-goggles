@@ -13,6 +13,8 @@ export interface SubmissionSummary {
   answeredCount: number;
   totalAnswers: number;
   markedCount: number;
+  totalScore: number;
+  maxScore: number;
   flagStatus: FlagStatus | null;
 }
 
@@ -23,6 +25,7 @@ export interface ResultQuestion {
   questionType: QuestionType;
   candidateAnswer: string | null;
   score: number | null;
+  maxScore: number;
   feedback: string | null;
   autoMarked: boolean;
   markedBy: string | null;
@@ -35,6 +38,8 @@ export interface ResultSummary {
   assessmentTitle: string;
   submittedAt: string | null;
   totalScore: number;
+  maxScore: number;
+  answeredCount: number;
   markingStatus: MarkingStatus;
   questions: ResultQuestion[];
 }

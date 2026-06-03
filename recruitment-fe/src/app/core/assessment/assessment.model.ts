@@ -56,6 +56,7 @@ export interface PreviewQuestion {
   id: string;
   type: QuestionType;
   body: string;
+  maxScore: number;
   options: PreviewOption[] | null;
   languageHint: string | null;
   subQuestions?: PreviewQuestion[];

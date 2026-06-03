@@ -16,6 +16,7 @@ public record QuestionResponse(
         List<QuestionOptionResponse> options,
         String languageHint,
         List<QuestionResponse> memberQuestions,
+        int maxScore,
         Difficulty difficulty,
         Instant createdAt,
         Instant updatedAt

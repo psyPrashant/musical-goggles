@@ -72,6 +72,14 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
               <input formControlName="tagsRaw" class="field-input" placeholder="e.g. algorithms, java, sql"/>
             </div>
 
+            <div class="field" style="max-width: 160px;">
+              <label class="field-label">Points <span class="field-hint-inline">(max score)</span></label>
+              <input type="number" formControlName="maxScore" class="field-input" min="1" step="1"/>
+              @if (form.get('maxScore')?.invalid && form.get('maxScore')?.touched) {
+                <span class="field-err">Must be at least 1</span>
+              }
+            </div>
+
             <div class="field">
               <label class="field-label">Difficulty</label>
               <div class="type-selector">
@@ -449,6 +457,7 @@ export class QuestionFormComponent implements OnInit {
     body: ['', Validators.required],
     tagsRaw: [''],
     languageHint: [''],
+    maxScore: [1, [Validators.required, Validators.min(1)]],
     difficulty: [null as Difficulty | null],
     options: this.fb.array([this.makeOption('', true), this.makeOption('', false)]),
   });
@@ -489,6 +498,7 @@ export class QuestionFormComponent implements OnInit {
             body: q.body,
             tagsRaw: q.tags.join(', '),
             languageHint: q.languageHint ?? '',
+            maxScore: q.maxScore ?? 1,
             difficulty: q.difficulty ?? null,
           });
           if (q.type === 'MCQ' && q.options) {
@@ -606,6 +616,7 @@ export class QuestionFormComponent implements OnInit {
       title: this.form.get('title')!.value!,
       body: this.form.get('body')!.value!,
       tags,
+      maxScore: this.form.get('maxScore')!.value ?? 1,
       difficulty,
       ...(type === 'MCQ' && { options: this.options.value }),
       ...(type === 'CODE_SUBMISSION' && {

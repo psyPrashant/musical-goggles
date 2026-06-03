@@ -11,6 +11,7 @@ public record TakeQuestionDto(
         QuestionType type,
         String title,
         String body,
+        int maxScore,
         List<TakeOptionDto> options,
         List<TakeQuestionDto> subQuestions
 ) {}

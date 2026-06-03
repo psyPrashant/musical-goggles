@@ -16,5 +16,7 @@ public record SubmissionSummaryResponse(
         int answeredCount,
         int totalAnswers,
         int markedCount,
+        int totalScore,
+        int maxScore,
         FlagStatus flagStatus
 ) {}

@@ -9,11 +9,11 @@ import { ReminderService } from '../../core/reminder/reminder.service';
 
 const mockSubmissions: SubmissionSummary[] = [
   { submissionId: 's1', invitationId: 'inv1', candidateId: 'c1', candidateName: 'Alice Smith', status: 'SUBMITTED',
-    submittedAt: '2026-05-29T10:00:00Z', answeredCount: 2, totalAnswers: 2, markedCount: 0, flagStatus: null },
+    submittedAt: '2026-05-29T10:00:00Z', answeredCount: 2, totalAnswers: 2, markedCount: 0, totalScore: 0, maxScore: 2, flagStatus: null },
   { submissionId: 's2', invitationId: 'inv2', candidateId: 'c2', candidateName: 'Bob Jones', status: 'IN_PROGRESS',
-    submittedAt: null, answeredCount: 1, totalAnswers: 3, markedCount: 0, flagStatus: 'FLAGGED' },
+    submittedAt: null, answeredCount: 1, totalAnswers: 3, markedCount: 0, totalScore: 0, maxScore: 3, flagStatus: 'FLAGGED' },
   { submissionId: null, invitationId: 'inv3', candidateId: 'c3', candidateName: 'Carol White', status: 'NOT_STARTED',
-    submittedAt: null, answeredCount: 0, totalAnswers: 0, markedCount: 0, flagStatus: null },
+    submittedAt: null, answeredCount: 0, totalAnswers: 0, markedCount: 0, totalScore: 0, maxScore: 0, flagStatus: null },
 ];
 
 const mockResult: ResultSummary = {
@@ -22,10 +22,12 @@ const mockResult: ResultSummary = {
   assessmentTitle: 'Test Assessment',
   submittedAt: '2026-05-29T10:00:00Z',
   totalScore: 5,
+  maxScore: 1,
+  answeredCount: 1,
   markingStatus: 'PENDING_REVIEW',
   questions: [
     { questionId: 'q1', answerId: 'a1', questionTitle: 'What is OOP?', questionType: 'TEXT',
-      candidateAnswer: 'Objects and classes', score: null, feedback: null,
+      candidateAnswer: 'Objects and classes', score: null, maxScore: 1, feedback: null,
       autoMarked: false, markedBy: null, markedAt: null },
   ],
 };
