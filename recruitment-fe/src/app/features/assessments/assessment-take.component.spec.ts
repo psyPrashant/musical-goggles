@@ -19,7 +19,7 @@ const mockTakeResponse: AssessmentTakeResponse = {
   startedAt: new Date(NOW - 5000).toISOString(),   // 5s ago → new session, shows guide
   deadline: new Date(NOW + 3600 * 1000).toISOString(),
   questions: [
-    { id: 'q1', displayOrder: 1, type: 'MCQ', title: 'Q1', body: 'What is 2+2?', options: [{ id: 'o1', optionText: '4' }] },
+    { id: 'q1', displayOrder: 1, type: 'MCQ', title: 'Q1', body: 'What is 2+2?', maxScore: 1, options: [{ id: 'o1', optionText: '4' }] },
   ],
   answers: [
     { questionId: 'q1', selectedOptionIds: ['o1'], textContent: null, savedAt: new Date().toISOString() },

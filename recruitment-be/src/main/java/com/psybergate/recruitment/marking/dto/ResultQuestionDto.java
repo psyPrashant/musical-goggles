@@ -12,6 +12,7 @@ public record ResultQuestionDto(
         QuestionType questionType,
         String candidateAnswer,
         Integer score,
+        int maxScore,
         String feedback,
         boolean autoMarked,
         UUID markedBy,

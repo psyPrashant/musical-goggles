@@ -247,8 +247,9 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                       @if (q.autoMarked) {
                         <span class="auto-badge">Auto-scored</span>
                       }
+                      <span class="q-max-score">/ {{ q.maxScore }} pt{{ q.maxScore !== 1 ? 's' : '' }}</span>
                       @if (q.score !== null) {
-                        <span class="score-display">{{ q.score }} pt{{ q.score !== 1 ? 's' : '' }}</span>
+                        <span class="score-display">{{ q.score }}/{{ q.maxScore }}</span>
                       }
                     </div>
 
@@ -261,10 +262,10 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                     <!-- Score input for text/code or override for MCQ -->
                     @if (!q.autoMarked || q.questionType !== 'MCQ') {
                       <div class="mark-row">
-                        <input type="number" class="score-input" [min]="0"
+                        <input type="number" class="score-input" [min]="0" [max]="q.maxScore"
                                [value]="editScores()[q.questionId] ?? q.score ?? ''"
                                (input)="onScoreInput(q.questionId, $event)"
-                               placeholder="Score" />
+                               placeholder="Score (max {{ q.maxScore }})" />
                         <input type="text" class="feedback-input-inline"
                                [value]="editFeedback()[q.questionId] ?? q.feedback ?? ''"
                                (input)="onFeedbackInput(q.questionId, $event)"
@@ -275,7 +276,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                       <!-- MCQ auto-scored — allow override -->
                       <div class="mark-row">
                         <span class="override-hint">Override auto-score:</span>
-                        <input type="number" class="score-input" [min]="0"
+                        <input type="number" class="score-input" [min]="0" [max]="q.maxScore"
                                [value]="editScores()[q.questionId] ?? ''"
                                (input)="onScoreInput(q.questionId, $event)"
                                placeholder="{{ q.score }}" />
@@ -420,6 +421,10 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
     .auto-badge {
       font-size: 10.5px; padding: 2px 7px; border-radius: 999px;
       background: var(--success-subtle); color: var(--success); font-weight: 500;
+    }
+
+    .q-max-score {
+      font-size: 11px; color: var(--text-3); margin-left: auto; white-space: nowrap;
     }
 
     .score-display {

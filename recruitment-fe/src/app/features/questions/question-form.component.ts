@@ -72,6 +72,14 @@ import { Question, QuestionType } from '../../core/question/question.model';
               <input formControlName="tagsRaw" class="field-input" placeholder="e.g. algorithms, java, sql"/>
             </div>
 
+            <div class="field" style="max-width: 160px;">
+              <label class="field-label">Points <span class="field-hint-inline">(max score)</span></label>
+              <input type="number" formControlName="maxScore" class="field-input" min="1" step="1"/>
+              @if (form.get('maxScore')?.invalid && form.get('maxScore')?.touched) {
+                <span class="field-err">Must be at least 1</span>
+              }
+            </div>
+
             <!-- CODE_SUBMISSION: language hint -->
             @if (form.get('type')?.value === 'CODE_SUBMISSION') {
               <div class="field">
@@ -438,6 +446,7 @@ export class QuestionFormComponent implements OnInit {
     body: ['', Validators.required],
     tagsRaw: [''],
     languageHint: [''],
+    maxScore: [1, [Validators.required, Validators.min(1)]],
     options: this.fb.array([this.makeOption('', true), this.makeOption('', false)]),
   });
 
@@ -470,6 +479,7 @@ export class QuestionFormComponent implements OnInit {
             body: q.body,
             tagsRaw: q.tags.join(', '),
             languageHint: q.languageHint ?? '',
+            maxScore: q.maxScore ?? 1,
           });
           if (q.type === 'MCQ' && q.options) {
             this.options.clear();
@@ -575,6 +585,7 @@ export class QuestionFormComponent implements OnInit {
       title: this.form.get('title')!.value!,
       body: this.form.get('body')!.value!,
       tags,
+      maxScore: this.form.get('maxScore')!.value ?? 1,
       ...(type === 'MCQ' && { options: this.options.value }),
       ...(type === 'CODE_SUBMISSION' && {
         languageHint: this.form.get('languageHint')!.value ?? undefined,

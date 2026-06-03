@@ -11,6 +11,7 @@ Thumbs.db
 # Personal Claude Code local settings (not for team)
 .claude/settings.local.json
 .claude/pw-pending.txt
+.claude/playwright-issues.md
 
 # Ad-hoc Playwright screenshots (use .playwright-mcp/ for named captures)
 *.png

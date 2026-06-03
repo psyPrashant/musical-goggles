@@ -25,6 +25,9 @@ public abstract class Question {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Column(name = "max_score", nullable = false)
+    private int maxScore = 1;
+
     @Column(nullable = false, length = 500)
     private String title;
 

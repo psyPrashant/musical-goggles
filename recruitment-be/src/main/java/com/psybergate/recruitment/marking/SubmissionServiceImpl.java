@@ -151,11 +151,15 @@ public class SubmissionServiceImpl implements SubmissionService {
                     rawQ.getId(),
                     answer != null ? answer.getId() : null,
                     rawQ.getTitle(), rawQ.getType(),
-                    candidateAnswerText, score, feedback, autoMarked, markedBy, markedAt
+                    candidateAnswerText, score, rawQ.getMaxScore(), feedback, autoMarked, markedBy, markedAt
             ));
         }
 
         String markingStatus = fullyMarked && !aqList.isEmpty() ? "FULLY_MARKED" : "PENDING_REVIEW";
+
+        int maxScore = aqList.stream()
+                .mapToInt(aq -> ((Question) Hibernate.unproxy(aq.getQuestion())).getMaxScore())
+                .sum();
 
         return new ResultSummaryResponse(
                 submissionId,
@@ -163,7 +167,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                 assessment.getTitle(),
                 submission.getSubmittedAt(),
                 totalScore,
-                aqList.size(),
+                maxScore,
                 answeredCount,
                 markingStatus,
                 questionDtos
@@ -211,7 +215,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         Set<UUID> assessmentIds = submissions.stream()
                 .map(CandidateSubmission::getAssessmentId).collect(Collectors.toSet());
         Map<UUID, Integer> questionCountByAssessment = assessmentIds.isEmpty() ? Map.of() :
-                assessmentQuestionRepository.countGroupByAssessmentId(assessmentIds).stream()
+                assessmentQuestionRepository.sumMaxScoreGroupByAssessmentId(assessmentIds).stream()
                         .collect(Collectors.toMap(
                                 row -> (UUID) row[0],
                                 row -> ((Long) row[1]).intValue()

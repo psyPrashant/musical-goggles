@@ -25,6 +25,7 @@ export interface ResultQuestion {
   questionType: QuestionType;
   candidateAnswer: string | null;
   score: number | null;
+  maxScore: number;
   feedback: string | null;
   autoMarked: boolean;
   markedBy: string | null;

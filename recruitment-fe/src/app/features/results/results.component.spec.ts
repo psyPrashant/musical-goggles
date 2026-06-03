@@ -27,7 +27,7 @@ const mockResult: ResultSummary = {
   markingStatus: 'PENDING_REVIEW',
   questions: [
     { questionId: 'q1', answerId: 'a1', questionTitle: 'What is OOP?', questionType: 'TEXT',
-      candidateAnswer: 'Objects and classes', score: null, feedback: null,
+      candidateAnswer: 'Objects and classes', score: null, maxScore: 1, feedback: null,
       autoMarked: false, markedBy: null, markedAt: null },
   ],
 };

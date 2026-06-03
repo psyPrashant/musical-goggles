@@ -12,6 +12,7 @@ export interface TakeQuestion {
   type: QuestionType;
   title: string;
   body: string;
+  maxScore: number;
   options: TakeOption[] | null;
   subQuestions?: TakeQuestion[];
 }
