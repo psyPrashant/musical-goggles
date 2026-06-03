@@ -46,6 +46,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                   </div>
                   <span class="sub-date">{{ formatDate(s.submittedAt) }}</span>
                   <span class="sub-progress">{{ s.markedCount }}/{{ s.totalAnswers }} marked</span>
+                  <span class="sub-score">{{ scorePercent(s) }}</span>
                 </div>
               </div>
             }
@@ -123,11 +124,12 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                   <span class="detail-submitted">Submitted: {{ formatDate(result()!.submittedAt) }}</span>
                 </div>
                 <div class="detail-score-block">
-                  <div class="total-score">{{ result()!.totalScore }}</div>
+                  <div class="total-score">{{ result()!.totalScore }}/{{ result()!.maxScore }}</div>
                   <div class="total-max">pts</div>
                   <span class="marking-badge" [class.badge-done]="result()!.markingStatus === 'FULLY_MARKED'" [class.badge-pending]="result()!.markingStatus === 'PENDING_REVIEW'">
                     {{ result()!.markingStatus === 'FULLY_MARKED' ? '✓ Fully Marked' : '⏳ Pending Review' }}
                   </span>
+                  <div class="answered-stat">{{ result()!.answeredCount }}/{{ result()!.maxScore }} answered</div>
                   @if (activeFlag()) {
                     <span class="flag-badge-detail">⚑ {{ activeFlag()!.status === 'FLAGGED' ? 'Flagged' : 'Under Review' }}</span>
                   }
@@ -346,6 +348,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
 
     .sub-date { display: block; font-size: 11px; color: var(--text-3); }
     .sub-progress { display: block; font-size: 11px; color: var(--text-2); margin-top: 1px; }
+    .sub-score { display: block; font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 1px; }
 
     .detail-panel { overflow-y: auto; }
 
@@ -382,6 +385,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
       display: inline-block; margin-top: 6px; padding: 2px 8px;
       border-radius: 999px; font-size: 11px; font-weight: 500;
     }
+    .answered-stat { font-size: 11px; color: var(--text-3); margin-top: 4px; }
     .badge-done { background: var(--success-subtle); color: var(--success); }
     .badge-pending { background: var(--warning-subtle); color: var(--warning); }
 
@@ -771,6 +775,11 @@ export class ResultsComponent implements OnInit {
   formatDate(iso: string | null): string {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('en-ZA', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  scorePercent(s: SubmissionSummary): string {
+    if (s.maxScore <= 0 || s.markedCount < s.totalAnswers || s.totalAnswers === 0) return '—';
+    return Math.round((s.totalScore / s.maxScore) * 100) + '%';
   }
 
   typeLabel(type: string): string {

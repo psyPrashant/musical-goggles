@@ -596,3 +596,21 @@ create a new branch before starting
 
 ---
 
+## 2026-06-03 12:49 | hendrik.muller
+
+> help me plan ep-18 (MG-115 to Mg-117) together with openspec
+
+---
+
+## 2026-06-03 15:08:42
+
+Test that these changes are in effect with docker and playwright, add local hook when i use playwright to keep track of problem it run into streamline testing in future
+
+---
+## 2026-06-03 15:08:42
+
+update jira and prompts.md and commit push to new branch and make PR
+
+---
+
+

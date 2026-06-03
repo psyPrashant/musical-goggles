@@ -114,6 +114,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         // Build per-question DTOs
         List<ResultQuestionDto> questionDtos = new ArrayList<>();
         int totalScore = 0;
+        int answeredCount = 0;
         boolean fullyMarked = true;
 
         for (AssessmentQuestion aq : aqList) {
@@ -128,6 +129,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             Instant markedAt = null;
 
             if (answer != null) {
+                answeredCount++;
                 candidateAnswerText = resolveCandidateAnswer(answer, rawQ);
 
                 AnswerScore answerScore = scoreByAnswerId.get(answer.getId());
@@ -161,6 +163,8 @@ public class SubmissionServiceImpl implements SubmissionService {
                 assessment.getTitle(),
                 submission.getSubmittedAt(),
                 totalScore,
+                aqList.size(),
+                answeredCount,
                 markingStatus,
                 questionDtos
         );
@@ -190,11 +194,27 @@ public class SubmissionServiceImpl implements SubmissionService {
         Set<UUID> allAnswerIds = allAnswers.stream().map(CandidateAnswer::getId).collect(Collectors.toSet());
         Map<UUID, UUID> submissionByAnswerId = allAnswers.stream()
                 .collect(Collectors.toMap(CandidateAnswer::getId, CandidateAnswer::getSubmissionId));
-        Map<UUID, Long> scoredBySubmission = allAnswerIds.isEmpty() ? Map.of() :
-                scoreRepository.findByCandidateAnswerIdIn(allAnswerIds).stream()
-                        .collect(Collectors.groupingBy(
-                                as -> submissionByAnswerId.get(as.getCandidateAnswerId()),
-                                Collectors.counting()
+        List<AnswerScore> allScores = allAnswerIds.isEmpty() ? List.of() :
+                scoreRepository.findByCandidateAnswerIdIn(allAnswerIds);
+        Map<UUID, Long> scoredBySubmission = allScores.stream()
+                .collect(Collectors.groupingBy(
+                        as -> submissionByAnswerId.get(as.getCandidateAnswerId()),
+                        Collectors.counting()
+                ));
+        Map<UUID, Integer> totalScoreBySubmission = allScores.stream()
+                .collect(Collectors.groupingBy(
+                        as -> submissionByAnswerId.get(as.getCandidateAnswerId()),
+                        Collectors.summingInt(AnswerScore::getScore)
+                ));
+
+        // Batch-load question counts per assessment
+        Set<UUID> assessmentIds = submissions.stream()
+                .map(CandidateSubmission::getAssessmentId).collect(Collectors.toSet());
+        Map<UUID, Integer> questionCountByAssessment = assessmentIds.isEmpty() ? Map.of() :
+                assessmentQuestionRepository.countGroupByAssessmentId(assessmentIds).stream()
+                        .collect(Collectors.toMap(
+                                row -> (UUID) row[0],
+                                row -> ((Long) row[1]).intValue()
                         ));
 
         // Load open flags for all submissions
@@ -216,10 +236,12 @@ public class SubmissionServiceImpl implements SubmissionService {
                     String name = c != null ? c.getFirstName() + " " + c.getLastName() : "Unknown";
                     int answered = answeredBySubmission.getOrDefault(s.getId(), 0L).intValue();
                     int marked = scoredBySubmission.getOrDefault(s.getId(), 0L).intValue();
+                    int score = totalScoreBySubmission.getOrDefault(s.getId(), 0);
+                    int maxScore = questionCountByAssessment.getOrDefault(s.getAssessmentId(), 0);
                     FlagStatus flagStatus = flagStatusBySubmission.get(s.getId());
                     return new SubmissionSummaryResponse(
                             s.getId(), s.getInvitationId(), s.getCandidateId(), name, s.getStatus(),
-                            s.getSubmittedAt(), answered, answered, marked, flagStatus
+                            s.getSubmittedAt(), answered, answered, marked, score, maxScore, flagStatus
                     );
                 })
                 .toList();
@@ -233,7 +255,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                     String name = c.getFirstName() + " " + c.getLastName();
                     return new SubmissionSummaryResponse(
                             null, inv.getId(), c.getId(), name, SubmissionStatus.NOT_STARTED,
-                            null, 0, 0, 0, null
+                            null, 0, 0, 0, 0, 0, null
                     );
                 })
                 .toList();

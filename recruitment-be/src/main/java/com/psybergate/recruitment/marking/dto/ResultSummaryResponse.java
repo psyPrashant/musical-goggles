@@ -10,6 +10,8 @@ public record ResultSummaryResponse(
         String assessmentTitle,
         Instant submittedAt,
         int totalScore,
+        int maxScore,
+        int answeredCount,
         String markingStatus,
         List<ResultQuestionDto> questions
 ) {}
