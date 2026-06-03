@@ -52,7 +52,9 @@ import { Question, QuestionType } from '../../core/question/question.model';
               <div class="q-card">
                 <div class="q-card-top">
                   <span class="type-badge type-{{ q.type.toLowerCase() }}">{{ typeLabel(q.type) }}</span>
-                  <span class="diff-badge diff-{{ diffLabel(q).toLowerCase() }}">{{ diffLabel(q) }}</span>
+                  @if (q.difficulty) {
+                    <span class="diff-badge diff-{{ q.difficulty.toLowerCase() }}">{{ diffLabel(q) }}</span>
+                  }
                 </div>
                 <p class="q-title">{{ q.title }}</p>
                 <div class="q-card-footer">
@@ -443,9 +445,7 @@ export class QuestionsComponent implements OnInit {
   }
 
   diffLabel(q: Question): string {
-    const n = q.tags.length;
-    if (n >= 3) return 'Hard';
-    if (n === 2) return 'Medium';
-    return 'Easy';
+    if (!q.difficulty) return '';
+    return { EASY: 'Easy', MEDIUM: 'Medium', HARD: 'Hard' }[q.difficulty] ?? '';
   }
 }

@@ -596,3 +596,9 @@ create a new branch before starting
 
 ---
 
+## 2026-06-03 | shaaira.mayet
+
+> connect to the musical goggles jira board and look for epic 20 in the current sprint. pull main. move the epic to in progress and assign it to me. create a new branch and implement the stories using the open spec workflow. move each story as you progress, and assign it to me. run open spec when needed. append prompts used to prompt.md. give a review of changes made for me to approve. don't push until I approve the review
+
+---
+

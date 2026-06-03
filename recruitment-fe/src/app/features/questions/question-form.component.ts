@@ -2,7 +2,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { QuestionService } from '../../core/question/question.service';
-import { Question, QuestionType } from '../../core/question/question.model';
+import { Difficulty, Question, QuestionType } from '../../core/question/question.model';
 
 @Component({
   selector: 'app-question-form',
@@ -70,6 +70,17 @@ import { Question, QuestionType } from '../../core/question/question.model';
             <div class="field">
               <label class="field-label">Tags <span class="field-hint-inline">(comma-separated)</span></label>
               <input formControlName="tagsRaw" class="field-input" placeholder="e.g. algorithms, java, sql"/>
+            </div>
+
+            <div class="field">
+              <label class="field-label">Difficulty</label>
+              <div class="type-selector">
+                @for (d of difficultyOptions; track d.value) {
+                  <button type="button" class="type-btn"
+                    [class.active]="form.get('difficulty')?.value === d.value"
+                    (click)="setDifficulty(d.value)">{{ d.label }}</button>
+                }
+              </div>
             </div>
 
             <!-- CODE_SUBMISSION: language hint -->
@@ -438,6 +449,7 @@ export class QuestionFormComponent implements OnInit {
     body: ['', Validators.required],
     tagsRaw: [''],
     languageHint: [''],
+    difficulty: [null as Difficulty | null],
     options: this.fb.array([this.makeOption('', true), this.makeOption('', false)]),
   });
 
@@ -446,6 +458,13 @@ export class QuestionFormComponent implements OnInit {
     { value: 'TEXT', label: 'Text Response' },
     { value: 'CODE_SUBMISSION', label: 'Code Submission' },
     { value: 'GROUP', label: 'Group / Scenario' },
+  ];
+
+  readonly difficultyOptions = [
+    { value: null, label: 'None' },
+    { value: 'EASY', label: 'Easy' },
+    { value: 'MEDIUM', label: 'Medium' },
+    { value: 'HARD', label: 'Hard' },
   ];
 
   get options(): FormArray {
@@ -470,6 +489,7 @@ export class QuestionFormComponent implements OnInit {
             body: q.body,
             tagsRaw: q.tags.join(', '),
             languageHint: q.languageHint ?? '',
+            difficulty: q.difficulty ?? null,
           });
           if (q.type === 'MCQ' && q.options) {
             this.options.clear();
@@ -509,6 +529,10 @@ export class QuestionFormComponent implements OnInit {
         },
       });
     }
+  }
+
+  setDifficulty(value: Difficulty | null) {
+    this.form.patchValue({ difficulty: value });
   }
 
   // ── GROUP member management ─────────────────────────────────────────────
@@ -570,11 +594,14 @@ export class QuestionFormComponent implements OnInit {
       this.memberError.set(null);
     }
 
+    const difficulty = this.form.get('difficulty')!.value ?? undefined;
+
     const payload = {
       type,
       title: this.form.get('title')!.value!,
       body: this.form.get('body')!.value!,
       tags,
+      ...(difficulty != null && { difficulty }),
       ...(type === 'MCQ' && { options: this.options.value }),
       ...(type === 'CODE_SUBMISSION' && {
         languageHint: this.form.get('languageHint')!.value ?? undefined,

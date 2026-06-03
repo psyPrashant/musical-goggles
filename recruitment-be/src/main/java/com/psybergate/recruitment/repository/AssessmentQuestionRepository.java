@@ -15,6 +15,4 @@ public interface AssessmentQuestionRepository extends JpaRepository<AssessmentQu
 
     List<AssessmentQuestion> findByAssessmentIdOrderByDisplayOrder(UUID assessmentId);
 
-    @Query("SELECT COUNT(aq) FROM AssessmentQuestion aq WHERE aq.assessment.id = :assessmentId AND TYPE(aq.question) = CodeSubmissionQuestion")
-    long countCodeSubmissionInAssessment(@Param("assessmentId") UUID assessmentId);
 }

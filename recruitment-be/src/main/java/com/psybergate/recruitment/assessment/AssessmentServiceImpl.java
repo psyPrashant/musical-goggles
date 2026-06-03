@@ -89,21 +89,6 @@ public class AssessmentServiceImpl implements AssessmentService {
         Question question = questionRepository.findById(req.questionId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found"));
 
-        // Enforce max-one CODE_SUBMISSION rule (skip check if idempotent update of existing item).
-        // Decision (EP-10): this limit applies to TOP-LEVEL questions only. A GROUP question that
-        // contains a CODE_SUBMISSION sub-question does NOT count toward this limit, because the
-        // JPQL query checks TYPE(aq.question) = CodeSubmissionQuestion at the top-level join.
-        boolean alreadyLinked = assessmentQuestionRepository
-                .findByAssessmentIdAndQuestionId(assessmentId, req.questionId()).isPresent();
-
-        if (!alreadyLinked && question.getType() == QuestionType.CODE_SUBMISSION) {
-            long existingCount = assessmentQuestionRepository.countCodeSubmissionInAssessment(assessmentId);
-            if (existingCount >= 1) {
-                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                        "An assessment may contain at most one code submission question");
-            }
-        }
-
         boolean[] created = {false};
         assessmentQuestionRepository.findByAssessmentIdAndQuestionId(assessmentId, req.questionId())
                 .ifPresentOrElse(

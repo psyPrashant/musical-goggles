@@ -7,6 +7,7 @@ import com.psybergate.recruitment.domain.Role;
 import com.psybergate.recruitment.domain.User;
 import com.psybergate.recruitment.question.dto.QuestionOptionRequest;
 import com.psybergate.recruitment.question.dto.QuestionRequest;
+import com.psybergate.recruitment.domain.Difficulty;
 import com.psybergate.recruitment.domain.QuestionType;
 import com.psybergate.recruitment.repository.QuestionRepository;
 import com.psybergate.recruitment.repository.UserRepository;
@@ -64,7 +65,7 @@ class QuestionControllerIntegrationTest extends AbstractIntegrationTest {
                 List.of("java", "oop"),
                 List.of(new QuestionOptionRequest("Encapsulation", true),
                         new QuestionOptionRequest("Functions", false)),
-                null, null);
+                null, null, null);
 
         mockMvc.perform(post("/api/questions")
                         .header("Authorization", "Bearer " + token)
@@ -80,7 +81,7 @@ class QuestionControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     void createMcqQuestion_tooFewOptions_returns400() throws Exception {
         QuestionRequest req = new QuestionRequest(QuestionType.MCQ, "Bad MCQ", "body", null,
-                List.of(new QuestionOptionRequest("Only one", true)), null, null);
+                List.of(new QuestionOptionRequest("Only one", true)), null, null, null);
 
         mockMvc.perform(post("/api/questions")
                         .header("Authorization", "Bearer " + token)
@@ -92,7 +93,7 @@ class QuestionControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     void createMcqQuestion_noCorrectOption_returns400() throws Exception {
         QuestionRequest req = new QuestionRequest(QuestionType.MCQ, "Bad MCQ", "body", null,
-                List.of(new QuestionOptionRequest("A", false), new QuestionOptionRequest("B", false)), null, null);
+                List.of(new QuestionOptionRequest("A", false), new QuestionOptionRequest("B", false)), null, null, null);
 
         mockMvc.perform(post("/api/questions")
                         .header("Authorization", "Bearer " + token)
@@ -104,7 +105,7 @@ class QuestionControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     void createTextQuestion_returns201() throws Exception {
         QuestionRequest req = new QuestionRequest(QuestionType.TEXT, "Describe yourself", "body",
-                List.of("hr"), null, null, null);
+                List.of("hr"), null, null, null, null);
 
         mockMvc.perform(post("/api/questions")
                         .header("Authorization", "Bearer " + token)
@@ -117,7 +118,7 @@ class QuestionControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     void createCodeSubmissionQuestion_returns201() throws Exception {
         QuestionRequest req = new QuestionRequest(QuestionType.CODE_SUBMISSION,
-                "Write a sort", "Implement merge sort", List.of("algorithms"), null, "java", null);
+                "Write a sort", "Implement merge sort", List.of("algorithms"), null, "java", null, null);
 
         mockMvc.perform(post("/api/questions")
                         .header("Authorization", "Bearer " + token)
@@ -140,7 +141,7 @@ class QuestionControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     void listQuestions_filterByTag_returnsCorrectSubset() throws Exception {
         QuestionRequest req = new QuestionRequest(QuestionType.TEXT, "Tagged Q", "body",
-                List.of("uniquetag123"), null, null, null);
+                List.of("uniquetag123"), null, null, null, null);
         mockMvc.perform(post("/api/questions")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -180,7 +181,7 @@ class QuestionControllerIntegrationTest extends AbstractIntegrationTest {
         String id = objectMapper.readTree(body).get("id").asText();
 
         QuestionRequest update = new QuestionRequest(QuestionType.TEXT, "Updated Title", "Updated body",
-                List.of("updated"), null, null, null);
+                List.of("updated"), null, null, null, null);
 
         mockMvc.perform(put("/api/questions/" + id)
                         .header("Authorization", "Bearer " + token)
@@ -216,7 +217,31 @@ class QuestionControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     private QuestionRequest createTextQuestionRequest() {
-        return new QuestionRequest(QuestionType.TEXT, "Sample", "body", null, null, null, null);
+        return new QuestionRequest(QuestionType.TEXT, "Sample", "body", null, null, null, null, null);
+    }
+
+    @Test
+    void createQuestion_withDifficulty_returnsCorrectDifficulty() throws Exception {
+        QuestionRequest req = new QuestionRequest(QuestionType.TEXT, "Hard Q", "body", null, null, null, null, Difficulty.HARD);
+
+        mockMvc.perform(post("/api/questions")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.difficulty").value("HARD"));
+    }
+
+    @Test
+    void createQuestion_withoutDifficulty_returnsNullDifficulty() throws Exception {
+        QuestionRequest req = new QuestionRequest(QuestionType.TEXT, "Unrated Q", "body", null, null, null, null, null);
+
+        mockMvc.perform(post("/api/questions")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.difficulty").doesNotExist());
     }
 
     private void createTextQuestionDirect() throws Exception {

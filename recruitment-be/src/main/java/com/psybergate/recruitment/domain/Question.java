@@ -35,6 +35,10 @@ public abstract class Question {
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private Difficulty difficulty;
+
     @ManyToMany
     @JoinTable(
             name = "question_tags",
