@@ -4,7 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AssessmentService } from '../../core/assessment/assessment.service';
 import { QuestionService } from '../../core/question/question.service';
 import { AssessmentDetail } from '../../core/assessment/assessment.model';
-import { Question } from '../../core/question/question.model';
+import { Difficulty, Question } from '../../core/question/question.model';
 
 @Component({
   selector: 'app-assessment-builder',
@@ -162,6 +162,9 @@ import { Question } from '../../core/question/question.model';
                     </svg>
                     <span class="q-num">{{ i + 1 }}</span>
                     <span class="type-badge type-{{ q.type.toLowerCase() }}">{{ typeLabelMap[q.type] }}</span>
+                    @if (q.difficulty) {
+                      <span class="diff-badge diff-{{ q.difficulty.toLowerCase() }}">{{ diffLabelMap[q.difficulty] }}</span>
+                    }
                     <span class="q-title">{{ q.title }}</span>
                     @if (q.type === 'GROUP' && q.subQuestionCount > 0) {
                       <span class="sub-q-hint">{{ q.subQuestionCount }} sub-questions</span>
@@ -180,10 +183,17 @@ import { Question } from '../../core/question/question.model';
               <div class="bank-panel">
                 <div class="bank-header">
                   <span class="bank-title">Question Bank</span>
-                  <div class="bank-filters">
-                    @for (f of bankFilters; track f.value) {
-                      <button class="filter-chip" [class.active]="bankType() === f.value" (click)="bankType.set(f.value)">{{ f.label }}</button>
-                    }
+                  <div class="bank-dropdowns">
+                    <select class="bank-select" [value]="bankType()" (change)="bankType.set($any($event.target).value)">
+                      @for (f of bankFilters; track f.value) {
+                        <option [value]="f.value">{{ f.label }}</option>
+                      }
+                    </select>
+                    <select class="bank-select" [value]="bankDifficulty()" (change)="bankDifficulty.set($any($event.target).value)">
+                      @for (d of bankDifficultyFilters; track d.value) {
+                        <option [value]="d.value">{{ d.label }}</option>
+                      }
+                    </select>
                   </div>
                   <input class="bank-search" [value]="bankSearch()" (input)="bankSearch.set($any($event.target).value)" placeholder="Search…"/>
                 </div>
@@ -193,6 +203,9 @@ import { Question } from '../../core/question/question.model';
                       <div class="bank-item-body">
                         <div class="bank-item-badges">
                           <span class="type-badge type-{{ q.type.toLowerCase() }}">{{ typeLabelMap[q.type] }}</span>
+                          @if (q.difficulty) {
+                            <span class="diff-badge diff-{{ q.difficulty.toLowerCase() }}">{{ diffLabelMap[q.difficulty] }}</span>
+                          }
                         </div>
                         <p class="bank-item-title">{{ q.title }}</p>
                         @if (q.tags[0]) { <span class="bank-item-tag">{{ q.tags[0] }}</span> }
@@ -642,21 +655,23 @@ import { Question } from '../../core/question/question.model';
 
     .bank-title { font-size: 13.5px; font-weight: 600; color: var(--text-1); display: block; margin-bottom: 10px; }
 
-    .bank-filters { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+    .bank-dropdowns { display: flex; gap: 6px; margin-bottom: 8px; }
 
-    .filter-chip {
-      padding: 3px 10px;
-      background: transparent;
-      color: var(--text-3);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      font-size: 11.5px;
-      cursor: pointer;
-      font-family: var(--font);
-      transition: all 100ms;
+    .bank-select {
+      flex: 1; padding: 5px 8px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-1);
+      font-size: 12px; font-family: var(--font); outline: none; cursor: pointer;
     }
+    .bank-select:focus { border-color: var(--accent); }
 
-    .filter-chip.active { background: var(--accent-subtle); color: var(--accent); border-color: var(--accent); }
+    .diff-badge {
+      display: inline-flex; padding: 2px 7px; border-radius: 999px;
+      font-size: 11px; font-weight: 500; flex-shrink: 0;
+    }
+    .diff-easy { background: var(--success-subtle); color: var(--success); }
+    .diff-medium { background: rgba(245,158,11,0.12); color: #d97706; }
+    .diff-hard { background: var(--danger-subtle); color: var(--danger); }
 
     .bank-search {
       width: 100%;
@@ -785,6 +800,7 @@ export class AssessmentBuilderComponent implements OnInit {
   readonly allQuestions = signal<Question[]>([]);
   readonly bankOpen = signal(false);
   readonly bankType = signal('');
+  readonly bankDifficulty = signal<Difficulty | ''>('');
   readonly bankSearch = signal('');
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
@@ -811,9 +827,11 @@ export class AssessmentBuilderComponent implements OnInit {
 
   readonly filteredBank = computed(() => {
     const type = this.bankType();
+    const diff = this.bankDifficulty();
     const search = this.bankSearch().toLowerCase();
     return this.allQuestions().filter(q => {
       if (type && q.type !== type) return false;
+      if (diff && q.difficulty !== diff) return false;
       if (search && !q.title.toLowerCase().includes(search)) return false;
       return true;
     });
@@ -826,11 +844,18 @@ export class AssessmentBuilderComponent implements OnInit {
   ];
 
   readonly bankFilters = [
-    { value: '', label: 'All' },
+    { value: '', label: 'All types' },
     { value: 'MCQ', label: 'MCQ' },
     { value: 'TEXT', label: 'Text' },
     { value: 'CODE_SUBMISSION', label: 'Code' },
     { value: 'GROUP', label: 'Group' },
+  ];
+
+  readonly bankDifficultyFilters: { value: Difficulty | ''; label: string }[] = [
+    { value: '', label: 'All difficulties' },
+    { value: 'EASY', label: 'Easy' },
+    { value: 'MEDIUM', label: 'Medium' },
+    { value: 'HARD', label: 'Hard' },
   ];
 
   readonly typeLabelMap: Record<string, string> = {
@@ -838,6 +863,12 @@ export class AssessmentBuilderComponent implements OnInit {
     TEXT: 'Text',
     CODE_SUBMISSION: 'Code',
     GROUP: 'Group',
+  };
+
+  readonly diffLabelMap: Record<string, string> = {
+    EASY: 'Easy',
+    MEDIUM: 'Medium',
+    HARD: 'Hard',
   };
 
   readonly accessOptions = [

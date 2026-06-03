@@ -27,16 +27,16 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
             </svg>
             <input class="search-input" [value]="search()" (input)="search.set($any($event.target).value)" placeholder="Search questions…"/>
           </div>
-          <div class="type-filters">
+          <select class="filter-select" [value]="selectedType()" (change)="setType($any($event.target).value)">
             @for (f of typeFilters; track f.value) {
-              <button class="filter-chip" [class.active]="selectedType() === f.value" (click)="setType(f.value)">{{ f.label }}</button>
+              <option [value]="f.value">{{ f.label }}</option>
             }
-          </div>
-          <div class="type-filters">
+          </select>
+          <select class="filter-select" [value]="selectedDifficulty()" (change)="setDifficulty($any($event.target).value)">
             @for (d of difficultyFilters; track d.value) {
-              <button class="filter-chip" [class.active]="selectedDifficulty() === d.value" (click)="setDifficulty(d.value)">{{ d.label }}</button>
+              <option [value]="d.value">{{ d.label }}</option>
             }
-          </div>
+          </select>
         </div>
 
         @if (availableTags().length > 0) {
@@ -221,17 +221,13 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
     .search-input:focus { border-color: var(--accent); }
     .search-input::placeholder { color: var(--text-3); }
 
-    .type-filters { display: flex; gap: 5px; }
-
-    .filter-chip {
-      padding: 5px 12px; border-radius: 999px; cursor: pointer;
-      font-family: var(--font); font-size: 12.5px; font-weight: 400;
-      background: transparent; color: var(--text-2); border: 1px solid var(--border);
-      transition: all 120ms; display: flex; align-items: center; gap: 5px;
+    .filter-select {
+      padding: 6px 10px; border-radius: var(--radius-sm);
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      color: var(--text-1); font-size: 13px; font-family: var(--font);
+      outline: none; cursor: pointer; transition: border-color 150ms;
     }
-
-    .filter-chip:hover { background: var(--bg-hover); color: var(--text-1); }
-    .filter-chip.active { background: var(--accent-subtle); color: var(--accent); border-color: var(--accent); font-weight: 600; }
+    .filter-select:focus { border-color: var(--accent); }
 
     .tag-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 18px; }
 
