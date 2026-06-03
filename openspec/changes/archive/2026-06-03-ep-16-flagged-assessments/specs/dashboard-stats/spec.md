@@ -1,10 +1,4 @@
-# dashboard-stats Specification
-
-## Purpose
-
-Provides a single API endpoint that returns live aggregated dashboard statistics, and wires the dashboard UI to display those values instead of hardcoded mock data.
-
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Dashboard stats endpoint returns live aggregated data
 The system SHALL expose `GET /api/dashboard/stats` accessible to ADMIN and RECRUITER roles. The response SHALL include active candidate count, pending review count, average score (last 30 days), pipeline stage counts, and a recent activity list.

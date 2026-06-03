@@ -32,6 +32,10 @@ public class DashboardServiceImpl implements DashboardService {
     @Autowired private CandidateSubmissionRepository submissionRepository;
     @Autowired private AnswerScoreRepository answerScoreRepository;
     @Autowired private CandidateRepository candidateRepository;
+    @Autowired private SubmissionFlagRepository flagRepository;
+
+    private static final List<FlagStatus> OPEN_FLAG_STATUSES =
+            List.of(FlagStatus.FLAGGED, FlagStatus.UNDER_REVIEW);
 
     @Override
     public DashboardStats getStats() {
@@ -57,7 +61,8 @@ public class DashboardServiceImpl implements DashboardService {
         int inProgress = (int) submissionRepository.countByStatus(SubmissionStatus.IN_PROGRESS);
         int pendingReview = (int) submissionRepository.countPendingReviews(SUBMITTED_STATUSES);
         int completed = (int) submissionRepository.countCompleted(SUBMITTED_STATUSES);
-        return new PipelineStats(invited, inProgress, pendingReview, completed);
+        int flagged = (int) flagRepository.countDistinctSubmissionIdByStatusIn(OPEN_FLAG_STATUSES);
+        return new PipelineStats(invited, inProgress, pendingReview, completed, flagged);
     }
 
     private List<ActivityEvent> buildRecentActivity() {

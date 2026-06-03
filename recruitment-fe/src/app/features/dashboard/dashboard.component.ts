@@ -362,7 +362,7 @@ import { DashboardStats } from '../../core/dashboard/dashboard.model';
       color: var(--text-3);
     }
 
-    .pipeline { display: grid; grid-template-columns: repeat(4, 1fr); }
+    .pipeline { display: grid; grid-template-columns: repeat(5, 1fr); }
 
     .pipeline-stage {
       padding: 16px 20px;
@@ -402,6 +402,7 @@ export class DashboardComponent implements OnInit {
       { label: 'In Progress', count: p.inProgress, color: 'var(--info)' },
       { label: 'Pending Review', count: p.pendingReview, color: 'var(--warning)' },
       { label: 'Completed', count: p.completed, color: 'var(--success)' },
+      { label: 'Flagged', count: p.flagged, color: 'var(--danger)' },
     ];
   });
 

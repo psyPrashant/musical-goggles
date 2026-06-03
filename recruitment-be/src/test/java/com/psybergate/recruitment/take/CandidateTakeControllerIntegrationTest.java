@@ -5,6 +5,7 @@ import com.psybergate.recruitment.AbstractIntegrationTest;
 import com.psybergate.recruitment.TestDatasourceInitializer;
 import com.psybergate.recruitment.domain.*;
 import com.psybergate.recruitment.repository.*;
+
 import com.psybergate.recruitment.security.JwtService;
 import com.psybergate.recruitment.take.dto.AnswerInput;
 import com.psybergate.recruitment.take.dto.SaveAnswersRequest;
@@ -41,6 +42,7 @@ class CandidateTakeControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired InvitationRepository invitationRepository;
     @Autowired CandidateSubmissionRepository submissionRepository;
     @Autowired CandidateAnswerRepository answerRepository;
+    @Autowired AnswerScoreRepository answerScoreRepository;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired JwtService jwtService;
 
@@ -300,6 +302,36 @@ class CandidateTakeControllerIntegrationTest extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(new SubmitRequest(true))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("AUTO_SUBMITTED"));
+    }
+
+    // ── unanswered question zero-scoring ─────────────────────────────────────
+
+    @Test
+    void submit_withNoAnswers_createsZeroScoreForUnansweredQuestion() throws Exception {
+        mockMvc.perform(get("/api/take/assessment")
+                        .header("Authorization", "Bearer " + candidateSessionToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/take/submit")
+                        .header("Authorization", "Bearer " + candidateSessionToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new SubmitRequest(false))))
+                .andExpect(status().isOk());
+
+        CandidateSubmission sub = submissionRepository
+                .findByCandidateIdAndAssessmentId(candidate.getId(), assessment.getId())
+                .orElseThrow();
+
+        List<CandidateAnswer> answers = answerRepository.findBySubmissionId(sub.getId());
+        org.junit.jupiter.api.Assertions.assertEquals(1, answers.size(),
+                "Expected one auto-created answer record for the unanswered question");
+
+        List<AnswerScore> scores = answerScoreRepository
+                .findByCandidateAnswerIdIn(List.of(answers.get(0).getId()));
+        org.junit.jupiter.api.Assertions.assertEquals(1, scores.size());
+        org.junit.jupiter.api.Assertions.assertEquals(0, scores.get(0).getScore());
+        org.junit.jupiter.api.Assertions.assertTrue(scores.get(0).isAutoMarked());
+        org.junit.jupiter.api.Assertions.assertEquals("Not answered", scores.get(0).getFeedback());
     }
 
     // ── integration: full flow ────────────────────────────────────────────────

@@ -21,7 +21,7 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
         <div class="error-screen">
           <p>{{ error() }}</p>
         </div>
-      } @else if (submitted()) {
+      } @else if (phase() === 'submitted') {
         <div class="submitted-screen">
           <div class="submitted-card">
             <div class="submitted-icon">
@@ -61,7 +61,79 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
             </button>
           </div>
         </div>
-      } @else if (preview()) {
+      } @else if (phase() === 'guide') {
+        <div class="guide-screen">
+          <div class="guide-card">
+            <div class="guide-header">
+              <h2 class="guide-title">{{ preview()?.title }}</h2>
+              <div class="guide-meta">
+                <span class="guide-meta-item">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                  {{ preview()?.timeLimitMinutes }} minutes
+                </span>
+                <span class="guide-meta-item">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                  {{ preview()?.questions?.length ?? 0 }} questions
+                </span>
+              </div>
+            </div>
+            <div class="guide-rules">
+              <p class="guide-rules-heading">Before you begin</p>
+              <ul class="guide-rules-list">
+                <li>The timer starts when you click <strong>Start Assessment</strong> and cannot be paused.</li>
+                <li>Closing or refreshing the tab does not pause the timer.</li>
+                <li>Submit your answers before time runs out — the assessment auto-submits when the timer expires.</li>
+                <li>You may end the attempt early at any time using the <strong>Give Up</strong> button.</li>
+              </ul>
+            </div>
+            <button class="guide-start-btn" (click)="beginAssessment()">Start Assessment →</button>
+          </div>
+        </div>
+      } @else if (phase() === 'in-progress') {
+        <!-- Submit confirmation modal -->
+        @if (showSubmitModal()) {
+          <div class="modal-overlay" (click)="cancelSubmit()">
+            <div class="modal-card" (click)="$event.stopPropagation()">
+              <h3 class="modal-title">Submit assessment?</h3>
+              @if (zeroAnswerWarning()) {
+                <div class="modal-zero-warning">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  You have not answered any questions. Are you sure you want to submit?
+                </div>
+              } @else {
+                <p class="modal-body">
+                  You have answered {{ answeredCount() }} of {{ preview()!.questions.length }} questions.
+                  @if (preview()!.questions.length - answeredCount() > 0) {
+                    <br><span class="modal-unanswered">{{ preview()!.questions.length - answeredCount() }} question{{ preview()!.questions.length - answeredCount() === 1 ? '' : 's' }} left unanswered.</span>
+                  }
+                </p>
+              }
+              <div class="modal-actions">
+                <button class="modal-btn-cancel" (click)="cancelSubmit()">Cancel</button>
+                <button class="modal-btn-confirm" (click)="doSubmitFromModal()" [disabled]="submitting()">
+                  {{ submitting() ? 'Submitting…' : 'Submit' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Give Up confirmation modal -->
+        @if (showGiveUpModal()) {
+          <div class="modal-overlay" (click)="cancelGiveUp()">
+            <div class="modal-card" (click)="$event.stopPropagation()">
+              <h3 class="modal-title">Give up this attempt?</h3>
+              <p class="modal-body">Your current answers will be saved, but the attempt will be marked as incomplete. This cannot be undone.</p>
+              <div class="modal-actions">
+                <button class="modal-btn-cancel" (click)="cancelGiveUp()">Cancel</button>
+                <button class="modal-btn-danger" (click)="confirmGiveUp()" [disabled]="submitting()">
+                  {{ submitting() ? 'Ending…' : 'Give Up' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
         <!-- Top bar -->
         <div class="topbar">
           <div class="topbar-logo">
@@ -82,6 +154,7 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
           </div>
           <div class="topbar-right">
             <span class="answered-count">{{ answeredCount() }} / {{ preview()!.questions.length }} answered</span>
+            <button class="give-up-btn" (click)="openGiveUpModal()" [disabled]="submitting()">Give Up</button>
             <button class="submit-btn" (click)="confirmSubmit()" [disabled]="submitting()">
               {{ submitting() ? 'Submitting…' : 'Submit Assessment' }}
             </button>
@@ -277,6 +350,104 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
 
     .submitted-body { font-size: 13.5px; color: var(--text-2); line-height: 1.6; margin: 0; }
 
+    /* Guide screen */
+    .guide-screen {
+      flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px;
+    }
+
+    .guide-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 40px 44px;
+      width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 24px;
+    }
+
+    .guide-header { display: flex; flex-direction: column; gap: 12px; }
+
+    .guide-title { font-size: 22px; font-weight: 700; color: var(--text-1); margin: 0; }
+
+    .guide-meta { display: flex; gap: 20px; }
+
+    .guide-meta-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13.5px; color: var(--text-2);
+    }
+
+    .guide-rules {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 16px 20px;
+    }
+
+    .guide-rules-heading {
+      font-size: 12px; font-weight: 600; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px;
+    }
+
+    .guide-rules-list {
+      margin: 0; padding-left: 18px;
+      display: flex; flex-direction: column; gap: 7px;
+    }
+
+    .guide-rules-list li { font-size: 13.5px; color: var(--text-2); line-height: 1.5; }
+
+    .guide-start-btn {
+      padding: 12px 24px; background: var(--accent); color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      font-family: var(--font); transition: background 150ms; align-self: flex-start;
+    }
+    .guide-start-btn:hover { background: var(--accent-hover); }
+
+    /* Modal overlay */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; padding: 20px;
+    }
+
+    .modal-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 28px 32px;
+      width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 16px;
+    }
+
+    .modal-title { font-size: 17px; font-weight: 700; color: var(--text-1); margin: 0; }
+
+    .modal-body { font-size: 13.5px; color: var(--text-2); line-height: 1.6; margin: 0; }
+
+    .modal-unanswered { color: var(--warning); }
+
+    .modal-zero-warning {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 12px 14px; background: var(--danger-subtle);
+      border: 1px solid rgba(239,68,68,.3); border-radius: var(--radius-sm);
+      font-size: 13.5px; color: var(--danger); line-height: 1.5;
+    }
+
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+    .modal-btn-cancel {
+      padding: 8px 18px; background: var(--bg-elevated); color: var(--text-2);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 500; cursor: pointer; font-family: var(--font);
+    }
+    .modal-btn-cancel:hover { background: var(--bg-hover); color: var(--text-1); }
+
+    .modal-btn-confirm {
+      padding: 8px 18px; background: var(--accent); color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font);
+    }
+    .modal-btn-confirm:hover:not(:disabled) { background: var(--accent-hover); }
+    .modal-btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .modal-btn-danger {
+      padding: 8px 18px; background: var(--danger); color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font);
+    }
+    .modal-btn-danger:hover:not(:disabled) { background: #dc2626; }
+    .modal-btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+
     /* Topbar */
     .topbar {
       height: 54px; background: var(--bg-card); border-bottom: 1px solid var(--border);
@@ -306,9 +477,18 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
     .timer-amber { background: var(--warning-subtle); color: var(--warning); }
     .timer-red { background: var(--danger-subtle); color: var(--danger); }
 
-    .topbar-right { display: flex; align-items: center; gap: 14px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
 
     .answered-count { font-size: 12.5px; color: var(--text-3); white-space: nowrap; }
+
+    .give-up-btn {
+      padding: 7px 14px; background: transparent; color: var(--text-2);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      font-family: var(--font); transition: all 120ms; white-space: nowrap;
+    }
+    .give-up-btn:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); background: var(--danger-subtle); }
+    .give-up-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .submit-btn {
       padding: 7px 16px; background: var(--accent); color: #fff;
@@ -545,11 +725,13 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
   private readonly authSvc = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
 
+  readonly phase = signal<'guide' | 'in-progress' | 'submitted'>('guide');
+  readonly submitted = computed(() => this.phase() === 'submitted');
+
   readonly preview = signal<AssessmentPreview | null>(null);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly submitting = signal(false);
-  readonly submitted = signal(false);
   readonly submitResult = signal<SubmitResponse | null>(null);
 
   readonly sessionToken = signal<string | null>(null);
@@ -558,6 +740,10 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
   readonly passwordInput = signal('');
   readonly passwordError = signal('');
   readonly checkingPassword = signal(false);
+
+  readonly showSubmitModal = signal(false);
+  readonly showGiveUpModal = signal(false);
+  readonly zeroAnswerWarning = signal(false);
 
   readonly currentIndex = signal(0);
   readonly answers = signal<Record<string, string | undefined>>({});
@@ -568,6 +754,10 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
   private deadlineMs: number | null = null;
   private autosaveTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private assessmentId = '';
+  private readonly beforeUnloadHandler = (e: BeforeUnloadEvent) => {
+    e.preventDefault();
+    e.returnValue = '';
+  };
 
   readonly currentQuestion = computed(() => {
     const p = this.preview();
@@ -617,7 +807,6 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
     this.authSvc.validateCandidateToken(token).subscribe({
       next: res => {
         this.sessionToken.set(res.token);
-        // Check if password-protected before loading
         this.svc.getPreview(this.assessmentId, res.token).subscribe({
           next: p => {
             this.loading.set(false);
@@ -625,7 +814,7 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
               this.preview.set(p);
               this.awaitingPassword.set(true);
             } else {
-              this.startAssessment(res.token);
+              this.loadAssessmentData(res.token);
             }
           },
           error: () => { this.error.set('Failed to load assessment.'); this.loading.set(false); },
@@ -650,7 +839,7 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
         this.checkingPassword.set(false);
         if (res.valid) {
           this.awaitingPassword.set(false);
-          this.startAssessment(sessionTok);
+          this.loadAssessmentData(sessionTok);
         } else {
           this.passwordError.set('Incorrect password. Please try again.');
         }
@@ -662,7 +851,7 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
     });
   }
 
-  private startAssessment(sessionToken: string) {
+  private loadAssessmentData(sessionToken: string) {
     this.loading.set(true);
     this.takeSvc.loadAssessment(sessionToken).subscribe({
       next: takeData => {
@@ -672,7 +861,7 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
       error: err => {
         this.loading.set(false);
         if (err.status === 409) {
-          this.submitted.set(true);
+          this.phase.set('submitted');
         } else {
           this.error.set('Failed to load assessment.');
         }
@@ -681,12 +870,11 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
   }
 
   private applyTakeResponse(data: AssessmentTakeResponse) {
-    // Map take response → AssessmentPreview for template compatibility
     this.preview.set({
       id: data.assessmentId,
       title: data.title,
       description: data.description,
-      timeLimitMinutes: 0, // not used for timer — we use deadline
+      timeLimitMinutes: 0,
       passwordRequired: false,
       questions: data.questions.map(q => ({
         id: q.id,
@@ -710,7 +898,6 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
       })),
     });
 
-    // Pre-populate saved answers (task 7.3)
     const preloaded: Record<string, string> = {};
     for (const ans of data.answers) {
       if (ans.selectedOptionIds && ans.selectedOptionIds.length > 0) {
@@ -721,22 +908,43 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
     }
     this.answers.set(preloaded);
 
-    // Init timer from server deadline (task 6.3)
     this.deadlineMs = new Date(data.deadline).getTime();
-    const secsLeft = Math.max(0, Math.round((this.deadlineMs - Date.now()) / 1000));
-    // Override timeLimitMinutes-based percent using actual seconds
     const totalSecs = Math.round(
       (new Date(data.deadline).getTime() - new Date(data.startedAt).getTime()) / 1000
     );
-    // Patch preview timeLimitMinutes so timePercent() works
+    const secsLeft = Math.max(0, Math.round((this.deadlineMs - Date.now()) / 1000));
     this.preview.update(p => p ? { ...p, timeLimitMinutes: Math.ceil(totalSecs / 60) } : p);
     this.timeLeft.set(secsLeft);
+
+    // Returning candidate: >10 seconds have already elapsed → skip guide
+    const isReturning = secsLeft < totalSecs - 10;
+    if (isReturning) {
+      this.phase.set('in-progress');
+      this.startTimer();
+      this.addBeforeUnloadListener();
+    } else {
+      this.phase.set('guide');
+    }
+  }
+
+  beginAssessment() {
+    this.phase.set('in-progress');
     this.startTimer();
+    this.addBeforeUnloadListener();
   }
 
   ngOnDestroy() {
     this.stopTimer();
+    this.removeBeforeUnloadListener();
     this.autosaveTimers.forEach(t => clearTimeout(t));
+  }
+
+  private addBeforeUnloadListener() {
+    window.addEventListener('beforeunload', this.beforeUnloadHandler);
+  }
+
+  private removeBeforeUnloadListener() {
+    window.removeEventListener('beforeunload', this.beforeUnloadHandler);
   }
 
   private startTimer() {
@@ -759,6 +967,57 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
     }
   }
 
+  confirmSubmit() {
+    if (!this.preview()) return;
+    this.zeroAnswerWarning.set(this.answeredCount() === 0);
+    this.showSubmitModal.set(true);
+  }
+
+  cancelSubmit() {
+    this.showSubmitModal.set(false);
+    this.zeroAnswerWarning.set(false);
+  }
+
+  doSubmitFromModal() {
+    this.showSubmitModal.set(false);
+    this.doSubmit(false);
+  }
+
+  openGiveUpModal() {
+    this.showGiveUpModal.set(true);
+  }
+
+  confirmGiveUp() {
+    this.showGiveUpModal.set(false);
+    this.doSubmit(true);
+  }
+
+  cancelGiveUp() {
+    this.showGiveUpModal.set(false);
+  }
+
+  private doSubmit(autoSubmitted: boolean) {
+    const token = this.sessionToken();
+    if (!token) return;
+    this.stopTimer();
+    this.removeBeforeUnloadListener();
+    this.autosaveTimers.forEach(t => clearTimeout(t));
+    this.autosaveTimers.clear();
+    this.submitting.set(true);
+
+    this.takeSvc.submit(token, { autoSubmitted }).subscribe({
+      next: result => {
+        this.submitting.set(false);
+        this.submitResult.set(result);
+        this.phase.set('submitted');
+      },
+      error: () => {
+        this.submitting.set(false);
+        this.phase.set('submitted');
+      },
+    });
+  }
+
   setAnswer(questionId: string, value: string) {
     this.answers.update(a => ({ ...a, [questionId]: value }));
     this.scheduleAutosave(questionId);
@@ -779,7 +1038,6 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
     this.autosaveTimers.set(questionId, timer);
   }
 
-  /** Find a question by id, searching both top-level and sub-questions inside GROUP questions. */
   private findQuestion(questionId: string): any | undefined {
     const questions = this.preview()?.questions ?? [];
     for (const q of questions) {
@@ -807,7 +1065,7 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
     this.takeSvc.saveAnswers(token, { answers: [input] }).subscribe({
       error: err => {
         if (err.status === 409) {
-          this.submitted.set(true);
+          this.phase.set('submitted');
         }
       },
     });
@@ -822,7 +1080,6 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
   private isQuestionAnswered(q: any, a: Record<string, string | undefined>): boolean {
     if (!q) return false;
     if (q.type === 'GROUP' && q.subQuestions?.length) {
-      // GROUP is answered only when every sub-question has a non-empty answer
       return q.subQuestions.every((sub: any) => !!(a[sub.id]?.trim()));
     }
     return !!(a[q.id]?.trim());
@@ -844,38 +1101,6 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
   next() {
     const p = this.preview();
     if (p && this.currentIndex() < p.questions.length - 1) this.currentIndex.update(i => i + 1);
-  }
-
-  confirmSubmit() {
-    const p = this.preview();
-    if (!p) return;
-    const unanswered = p.questions.length - this.answeredCount();
-    if (unanswered > 0) {
-      if (!confirm(`You have ${unanswered} unanswered question${unanswered > 1 ? 's' : ''}. Submit anyway?`)) return;
-    }
-    this.doSubmit(false);
-  }
-
-  private doSubmit(autoSubmitted: boolean) {
-    const token = this.sessionToken();
-    if (!token) return;
-    this.stopTimer();
-    // Cancel pending autosaves before submitting
-    this.autosaveTimers.forEach(t => clearTimeout(t));
-    this.autosaveTimers.clear();
-    this.submitting.set(true);
-
-    this.takeSvc.submit(token, { autoSubmitted }).subscribe({
-      next: result => {
-        this.submitting.set(false);
-        this.submitResult.set(result);
-        this.submitted.set(true);
-      },
-      error: () => {
-        this.submitting.set(false);
-        this.submitted.set(true);
-      },
-    });
   }
 
   optionLetter(index: number): string {
