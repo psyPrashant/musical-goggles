@@ -158,8 +158,9 @@ import { FlagListItem } from '../../core/flag/flag.model';
                   <span>Status</span>
                   <span>Score</span>
                   <span>Role</span>
+                  <span></span>
                 </div>
-                @for (entry of historyFiltered(); track entry.assessmentId + (entry.submissionId ?? '')) {
+                @for (entry of historyFiltered(); track entry.invitationId) {
                   <div class="history-table-row">
                     <div class="history-name">
                       @if (entry.submissionId && (entry.status === 'SUBMITTED' || entry.status === 'AUTO_SUBMITTED')) {
@@ -190,6 +191,16 @@ import { FlagListItem } from '../../core/flag/flag.model';
                       }
                     </div>
                     <div class="history-role">{{ entry.linkedRole ?? 'No linked role' }}</div>
+                    <div class="history-actions">
+                      @if (entry.status === 'PENDING') {
+                        <button class="btn-cancel-invite"
+                                [disabled]="cancellingInvitationId() === entry.invitationId"
+                                (click)="cancelInvite(entry.invitationId)"
+                                title="Cancel invite">
+                          {{ cancellingInvitationId() === entry.invitationId ? '…' : 'Cancel' }}
+                        </button>
+                      }
+                    </div>
                   </div>
                 }
               </div>
@@ -526,7 +537,12 @@ import { FlagListItem } from '../../core/flag/flag.model';
     .h-status-submitted { background: var(--success-subtle); color: var(--success); }
     .h-status-pending { background: var(--info-subtle); color: var(--info); }
     .h-status-expired { background: rgba(148,163,184,.12); color: var(--text-2); }
+    .h-status-cancelled { background: var(--danger-subtle, rgba(239,68,68,.12)); color: var(--danger, #ef4444); }
     .h-status-in-progress { background: var(--warning-subtle); color: var(--warning); }
+    .history-actions { display: flex; align-items: center; }
+    .btn-cancel-invite { font-size: 11px; padding: 2px 8px; border-radius: var(--radius-sm); border: 1px solid var(--danger, #ef4444); color: var(--danger, #ef4444); background: transparent; cursor: pointer; }
+    .btn-cancel-invite:hover { background: var(--danger-subtle, rgba(239,68,68,.08)); }
+    .btn-cancel-invite:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* Invite modal */
     .overlay {
@@ -626,6 +642,7 @@ export class CandidatesComponent implements OnInit {
   readonly historyLoading = signal(false);
   readonly historyStatusFilter = signal<HistoryStatus | ''>('');
   readonly historySortAsc = signal(false);
+  readonly cancellingInvitationId = signal<string | null>(null);
 
   readonly historyFilters = [
     { value: '' as const, label: 'All' },
@@ -744,13 +761,11 @@ export class CandidatesComponent implements OnInit {
           },
           error: err => {
             this.inviteSending.set(false);
-            const isDuplicate = err.status === 409 && (
-              err.error?.detail === 'DUPLICATE_INVITE' ||
-              err.error?.message === 'DUPLICATE_INVITE' ||
-              err.error === 'DUPLICATE_INVITE'
-            );
-            if (isDuplicate) {
+            const errCode = err.error?.detail ?? err.error?.message ?? err.error;
+            if (err.status === 409 && errCode === 'DUPLICATE_INVITE') {
               this.toastSvc.show('This candidate already has a pending invitation for this assessment.', 'warning');
+            } else if (err.status === 409 && errCode === 'ACTIVE_INVITE_EXISTS') {
+              this.inviteError.set('This candidate already has an active assessment link. Cancel it before sending a new one.');
             } else {
               this.inviteError.set('Failed to send invitation. Please try again.');
             }
@@ -858,9 +873,27 @@ export class CandidatesComponent implements OnInit {
     });
   }
 
+  cancelInvite(invitationId: string) {
+    if (!confirm('Cancel this assessment invite? The candidate will no longer be able to use the link.')) return;
+    this.cancellingInvitationId.set(invitationId);
+    this.candidateSvc.cancelInvitation(invitationId).subscribe({
+      next: () => {
+        this.cancellingInvitationId.set(null);
+        this.historyItems.update(items =>
+          items.map(i => i.invitationId === invitationId ? { ...i, status: 'CANCELLED' as const } : i)
+        );
+        this.toastSvc.show('Invitation cancelled.', 'success');
+      },
+      error: () => {
+        this.cancellingInvitationId.set(null);
+        this.toastSvc.show('Failed to cancel invitation.', 'error');
+      },
+    });
+  }
+
   historyStatusLabel(status: HistoryStatus): string {
     const map: Record<HistoryStatus, string> = {
-      PENDING: 'Pending', EXPIRED: 'Expired',
+      PENDING: 'Pending', EXPIRED: 'Expired', CANCELLED: 'Cancelled',
       IN_PROGRESS: 'In Progress', SUBMITTED: 'Submitted', AUTO_SUBMITTED: 'Auto-submitted',
     };
     return map[status] ?? status;
@@ -870,6 +903,7 @@ export class CandidatesComponent implements OnInit {
     if (status === 'SUBMITTED' || status === 'AUTO_SUBMITTED') return 'history-status-badge h-status-submitted';
     if (status === 'PENDING') return 'history-status-badge h-status-pending';
     if (status === 'EXPIRED') return 'history-status-badge h-status-expired';
+    if (status === 'CANCELLED') return 'history-status-badge h-status-cancelled';
     return 'history-status-badge h-status-in-progress';
   }
 
