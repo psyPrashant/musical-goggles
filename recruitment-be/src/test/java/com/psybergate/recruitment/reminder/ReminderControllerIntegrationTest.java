@@ -52,6 +52,8 @@ class ReminderControllerIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void setUp() {
         recruiter = new User();
+        recruiter.setFirstName("Test");
+        recruiter.setLastName("Recruiter");
         recruiter.setEmail("reminder-recruiter@integration.dev");
         recruiter.setPasswordHash(passwordEncoder.encode("pass"));
         recruiter.setRole(Role.RECRUITER);

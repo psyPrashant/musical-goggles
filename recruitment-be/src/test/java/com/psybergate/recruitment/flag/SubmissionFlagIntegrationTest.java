@@ -51,6 +51,8 @@ class SubmissionFlagIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void setUp() {
         recruiter = new User();
+        recruiter.setFirstName("Test");
+        recruiter.setLastName("Recruiter");
         recruiter.setEmail("flag-recruiter@integration.dev");
         recruiter.setPasswordHash(passwordEncoder.encode("pass"));
         recruiter.setRole(Role.RECRUITER);
