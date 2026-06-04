@@ -125,11 +125,15 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
                         @if (!q.memberQuestions || q.memberQuestions.length === 0) {
                           <span class="sub-q-empty">No sub-questions available.</span>
                         } @else {
+                          <div class="group-pts-header">
+                            <span class="pts-label">{{ q.maxScore === 1 ? '1 pt total' : q.maxScore + ' pts total' }}</span>
+                          </div>
                           @for (sub of q.memberQuestions; track sub.id; let i = $index) {
                             <div class="sub-q-item">
                               <div class="sub-q-header">
                                 <span class="sub-q-pos">{{ i + 1 }}</span>
                                 <span class="type-badge type-{{ sub.type.toLowerCase() }}">{{ typeLabel(sub.type) }}</span>
+                                <span class="pts-label">{{ sub.maxScore === 1 ? '1 pt' : sub.maxScore + ' pts' }}</span>
                               </div>
                               <p class="sub-q-body">{{ sub.body }}</p>
                               @if (sub.type === 'MCQ' && sub.options) {
@@ -355,6 +359,11 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
     .preview-code-textarea { font-family: var(--font-mono) !important; }
 
     .sub-q-stack { display: flex; flex-direction: column; gap: 10px; }
+
+    .group-pts-header {
+      display: flex; justify-content: flex-end;
+      padding-bottom: 6px; border-bottom: 1px solid var(--border);
+    }
 
     .sub-q-item {
       background: var(--bg-elevated); border-radius: var(--radius-sm); padding: 10px 12px;
