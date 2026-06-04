@@ -257,6 +257,7 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
                         <div class="sub-q-header">
                           <span class="sub-q-num">{{ si + 1 }}.</span>
                           <span class="type-badge type-{{ sub.type.toLowerCase() }}">{{ typeLabel(sub.type) }}</span>
+                          <span class="pts-badge">{{ sub.maxScore === 1 ? '1 pt' : sub.maxScore + ' pts' }}</span>
                           <span class="sub-q-title">{{ sub.body }}</span>
                         </div>
                         @if (sub.type === 'MCQ' && sub.options) {
