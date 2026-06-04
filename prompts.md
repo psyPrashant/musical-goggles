@@ -721,3 +721,38 @@ create a new branch before starting
 ---
 
 
+## 2026-06-04 10:28:15 | hendrik.muller
+
+> help me plan ep-23 with openspec
+
+---
+
+
+## 2026-06-04 10:35:23 | hendrik.muller
+
+> run opsx apply
+
+---
+
+
+## 2026-06-04 10:47:05 | hendrik.muller
+
+> /opsx:archive
+
+---
+
+
+## 2026-06-04 10:49:10 | hendrik.muller
+
+> look into this pre-existing issue when testing with palywright -The backend was returning 500 during login attempt
+
+---
+
+
+## 2026-06-04 10:52:03 | hendrik.muller
+
+> ship this
+
+---
+
+
