@@ -2,11 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change ep-02-question-bank. Update Purpose after archive.
-
 ## Requirements
-
 ### Requirement: Admin and Recruiter can create questions of four types
-The system SHALL support creating questions of type `MCQ`, `TEXT`, `CODE_SUBMISSION`, and `GROUP` via both the API and the question creation UI. Every question SHALL have a `title` (short label) and a `body` (the question text presented to the candidate). MCQ questions SHALL additionally require at least two answer options and exactly one correct option marked. GROUP questions SHALL require a `memberQuestionIds` list of at least two existing question ids. The `QuestionFormComponent` SHALL present a "Group / Scenario" option in the type selector and, when selected, render a member picker that allows the recruiter to search the question bank and add ≥ 2 sub-questions before saving.
+The system SHALL support creating questions of type `MCQ`, `TEXT`, `CODE_SUBMISSION`, and `GROUP` via both the API and the question creation UI. Every question SHALL have a `title` (short label) and a `body` (the question text presented to the candidate). MCQ questions SHALL additionally require at least two answer options and exactly one correct option marked. GROUP questions SHALL require a `memberQuestionIds` list of at least two existing question ids. The `QuestionFormComponent` SHALL present a "Group / Scenario" option in the type selector and, when selected, render a member picker that allows the recruiter to search the question bank and add ≥ 2 sub-questions before saving. There is no limit on the number of CODE_SUBMISSION questions that may be added to a single assessment.
 
 #### Scenario: Create MCQ question with options
 - **WHEN** an Admin or Recruiter submits a valid `POST /api/questions` with `type=MCQ` and at least two options (one marked correct)
@@ -23,6 +21,10 @@ The system SHALL support creating questions of type `MCQ`, `TEXT`, `CODE_SUBMISS
 #### Scenario: Create Code Submission question
 - **WHEN** an Admin or Recruiter submits a valid `POST /api/questions` with `type=CODE_SUBMISSION`
 - **THEN** the question is persisted with an optional `languageHint` field (e.g., "Java", "Python")
+
+#### Scenario: Multiple CODE_SUBMISSION questions can be added to one assessment
+- **WHEN** an Admin or Recruiter adds a second CODE_SUBMISSION question to an assessment that already contains one
+- **THEN** the question is added successfully and the response is HTTP 200 or 201 (no 422 error)
 
 #### Scenario: Create GROUP question via the UI
 - **WHEN** a Recruiter selects "Group / Scenario" in the question form, searches the bank, adds at least 2 sub-questions, fills in the title and preamble body, and clicks "Create Question"
@@ -115,3 +117,4 @@ The question bank view SHALL support filtering by all four question types includ
 #### Scenario: GROUP card with no loaded sub-questions shows empty state
 - **WHEN** a GROUP question's `memberQuestions` list is empty or absent
 - **THEN** the expansion shows a message indicating no sub-questions are available
+

@@ -23,6 +23,8 @@ public class DevDataSeeder implements ApplicationRunner {
         var existing = userRepository.findByEmail("admin@recruitment.dev");
         if (existing.isEmpty()) {
             User admin = new User();
+            admin.setFirstName("Admin");
+            admin.setLastName("User");
             admin.setEmail("admin@recruitment.dev");
             admin.setPasswordHash(passwordEncoder.encode("admin123"));
             admin.setRole(Role.ADMIN);
