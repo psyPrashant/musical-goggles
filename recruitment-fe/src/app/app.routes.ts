@@ -80,6 +80,11 @@ export const routes: Routes = [
             m => m.FlaggedSubmissionsComponent,
           ),
       },
+      {
+        path: 'staff',
+        loadComponent: () =>
+          import('./features/staff/staff.component').then(m => m.StaffComponent),
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
   },

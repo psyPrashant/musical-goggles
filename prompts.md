@@ -667,6 +667,43 @@ create a new branch before starting
 > commit and make PR
 
 ---
+## 2026-06-04 09:22 | prashant.kessa
+
+> look at the jira board Musical Goggles and look at epic 22, create a new branch, and implement using the openspec workflow. 
+Ask clarifying questions
+
+---
+
+## 2026-06-04 09:45 | prashant.kessa
+
+> can you first archive the outstanding ones then continue
+
+---
+
+## 2026-06-04 10:22 | prashant.kessa
+
+> ran in docker and the previous seeded admin login is not working anymore
+
+---
+
+## 2026-06-04 10:49 | prashant.kessa
+
+> POST http://localhost:4200/api/auth/login 500 (Internal Server Error) - i cant log in
+
+---
+
+## 2026-06-04 11:21 | prashant.kessa
+
+> having an issue with docker, everytime i try to login to my site i get an error 500 and cant figure out why. can you check my files ?
+
+---
+
+## 2026-06-04 11:41 | prashant.kessa
+
+> openspec archive, commit, then open a pr
+
+---
+
 
 ## 2026-06-04 09:40:56 | hendrik.muller
 

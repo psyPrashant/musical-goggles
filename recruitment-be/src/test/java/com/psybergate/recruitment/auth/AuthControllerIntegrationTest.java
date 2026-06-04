@@ -40,6 +40,8 @@ class AuthControllerIntegrationTest extends AbstractIntegrationTest {
     void setUp() {
         userRepository.findByEmail(TEST_EMAIL).ifPresent(userRepository::delete);
         User user = new User();
+        user.setFirstName("Test");
+        user.setLastName("User");
         user.setEmail(TEST_EMAIL);
         user.setPasswordHash(passwordEncoder.encode(TEST_PASSWORD));
         user.setRole(Role.RECRUITER);

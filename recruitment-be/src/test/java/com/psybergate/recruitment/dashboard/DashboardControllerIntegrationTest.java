@@ -34,6 +34,8 @@ class DashboardControllerIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void setUp() {
         User recruiter = new User();
+        recruiter.setFirstName("Test");
+        recruiter.setLastName("Recruiter");
         recruiter.setEmail("dashboard-test@integration.dev");
         recruiter.setPasswordHash(passwordEncoder.encode("pass"));
         recruiter.setRole(Role.RECRUITER);

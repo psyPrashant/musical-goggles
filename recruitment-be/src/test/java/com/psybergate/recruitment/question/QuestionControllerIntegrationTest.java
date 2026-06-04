@@ -46,6 +46,8 @@ class QuestionControllerIntegrationTest extends AbstractIntegrationTest {
     void setUp() {
         userRepository.findByEmail("qtest@integration.dev").ifPresent(userRepository::delete);
         recruiter = new User();
+        recruiter.setFirstName("Test");
+        recruiter.setLastName("Recruiter");
         recruiter.setEmail("qtest@integration.dev");
         recruiter.setPasswordHash(passwordEncoder.encode("pass"));
         recruiter.setRole(Role.RECRUITER);

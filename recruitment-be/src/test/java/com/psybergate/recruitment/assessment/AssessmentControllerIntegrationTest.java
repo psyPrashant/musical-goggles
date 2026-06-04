@@ -53,6 +53,8 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
         userRepository.findByEmail("acandidate@integration.dev").ifPresent(userRepository::delete);
 
         recruiter = new User();
+        recruiter.setFirstName("Test");
+        recruiter.setLastName("Recruiter");
         recruiter.setEmail("atest@integration.dev");
         recruiter.setPasswordHash(passwordEncoder.encode("pass"));
         recruiter.setRole(Role.RECRUITER);
@@ -60,6 +62,8 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
         token = jwtService.generateToken(recruiter.getId().toString(), Role.RECRUITER, 1L);
 
         User candidate = new User();
+        candidate.setFirstName("Test");
+        candidate.setLastName("Candidate");
         candidate.setEmail("acandidate@integration.dev");
         candidate.setPasswordHash(passwordEncoder.encode("pass"));
         candidate.setRole(Role.CANDIDATE);

@@ -42,6 +42,8 @@ class CandidateControllerIntegrationTest extends AbstractIntegrationTest {
     void setUp() {
         userRepository.findByEmail("ctest@integration.dev").ifPresent(userRepository::delete);
         recruiter = new User();
+        recruiter.setFirstName("Test");
+        recruiter.setLastName("Recruiter");
         recruiter.setEmail("ctest@integration.dev");
         recruiter.setPasswordHash(passwordEncoder.encode("pass"));
         recruiter.setRole(Role.RECRUITER);

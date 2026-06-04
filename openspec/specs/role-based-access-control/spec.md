@@ -1,5 +1,9 @@
-## ADDED Requirements
+# role-based-access-control Specification
 
+## Purpose
+
+Define and enforce role-based access control across the platform. Three distinct roles — ADMIN, RECRUITER, and CANDIDATE — are persisted per user and mapped to Spring Security authorities. All API endpoints must be explicitly permissioned via `@PreAuthorize` annotations.
+## Requirements
 ### Requirement: Three distinct roles exist: ADMIN, RECRUITER, CANDIDATE
 The system SHALL define exactly three roles. `ADMIN` has full platform access. `RECRUITER` can manage questions, assessments, and candidates but cannot manage other users. `CANDIDATE` can only access their own assigned assessment — no other platform features.
 
@@ -36,3 +40,15 @@ Authentication and health-check endpoints (`/api/auth/**`, `/actuator/health`) S
 #### Scenario: Unknown endpoint requires authentication
 - **WHEN** an unauthenticated request is made to any endpoint not in the whitelist
 - **THEN** the security filter returns HTTP 401 before the request reaches the controller
+
+### Requirement: Staff management endpoints are restricted to ADMIN role
+The `/api/staff/**` endpoints SHALL be protected by `@PreAuthorize("hasRole('ADMIN')")` at the controller class level. No Recruiter or Candidate SHALL be able to list, create, or edit staff users.
+
+#### Scenario: Recruiter is denied access to staff endpoints
+- **WHEN** a Recruiter sends any request to `/api/staff` or `/api/staff/{id}` with a valid JWT
+- **THEN** Spring Security returns HTTP 403 Forbidden before the controller method executes
+
+#### Scenario: Admin can access all staff endpoints
+- **WHEN** an Admin sends a valid request to any `/api/staff/**` endpoint
+- **THEN** the request is processed and the appropriate response is returned
+

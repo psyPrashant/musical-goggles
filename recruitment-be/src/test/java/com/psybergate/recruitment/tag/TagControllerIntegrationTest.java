@@ -44,6 +44,8 @@ class TagControllerIntegrationTest extends AbstractIntegrationTest {
     void setUp() {
         userRepository.findByEmail("tagtest@integration.dev").ifPresent(userRepository::delete);
         recruiter = new User();
+        recruiter.setFirstName("Test");
+        recruiter.setLastName("Recruiter");
         recruiter.setEmail("tagtest@integration.dev");
         recruiter.setPasswordHash(passwordEncoder.encode("pass"));
         recruiter.setRole(Role.RECRUITER);
