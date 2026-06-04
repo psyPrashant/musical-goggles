@@ -19,7 +19,7 @@ import { FlagListItem } from '../../core/flag/flag.model';
           <span class="page-sub">{{ filtered().length }} candidates</span>
         </div>
         <button class="btn btn-primary" (click)="showInvite.set(true)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
             <polyline points="22,6 12,13 2,6"/>
           </svg>
@@ -69,13 +69,13 @@ import { FlagListItem } from '../../core/flag/flag.model';
                   <div class="actions-cell edit-actions">
                     <button class="action-btn action-save" title="Save" (click)="saveEdit(c.id)" [disabled]="editSaving()">
                       @if (editSaving()) {
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>
                       } @else {
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                       }
                     </button>
                     <button class="action-btn" title="Cancel" (click)="cancelEdit()">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
                     </button>
                   </div>
                 } @else {
@@ -91,25 +91,25 @@ import { FlagListItem } from '../../core/flag/flag.model';
                   <div class="date-cell">{{ c.createdAt | date:'dd MMM yyyy' }}</div>
                   <div class="actions-cell">
                     <button class="action-btn" title="Edit" (click)="startEdit(c)">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                       </svg>
                     </button>
                     <button class="action-btn" title="Invite" (click)="openInviteForCandidate(c)">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                         <polyline points="22,6 12,13 2,6"/>
                       </svg>
                     </button>
                     <button class="action-btn" title="Assessment history" (click)="openAssessmentHistory(c)">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                         <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
                       </svg>
                     </button>
                     <button class="action-btn" title="View flag history" (click)="openFlagHistory(c)">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
                         <line x1="4" y1="22" x2="4" y2="15"/>
                       </svg>
@@ -341,7 +341,7 @@ import { FlagListItem } from '../../core/flag/flag.model';
               <button class="btn btn-ghost" (click)="closeInvite()">Cancel</button>
               <button class="btn btn-primary" (click)="sendInvite()" [disabled]="inviteSending() || !inviteAssessment() || (!inviteCandidate() && (!inviteEmail() || !inviteFirstName() || !inviteLastName()))">
                 @if (inviteSending()) { Sending… } @else {
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
                   </svg>
                   Send Invite
@@ -447,6 +447,7 @@ import { FlagListItem } from '../../core/flag/flag.model';
     .action-btn:hover:not(:disabled) { color: var(--text-1); background: var(--bg-elevated); }
     .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .action-save:hover:not(:disabled) { color: var(--success) !important; }
+    .action-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
 
     .edit-cell { display: flex; flex-direction: column; gap: 4px; }
 

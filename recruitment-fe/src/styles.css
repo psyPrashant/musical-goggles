@@ -28,6 +28,29 @@
   --font-mono:      'JetBrains Mono', monospace;
 }
 
+:root.light {
+  --bg:             #f4f5f9;
+  --bg-card:        #ffffff;
+  --bg-elevated:    #ffffff;
+  --bg-hover:       #eef0f7;
+  --border:         #e2e5ef;
+  --border-hover:   #cdd1e0;
+  --accent:         #6366f1;
+  --accent-hover:   #4f51d9;
+  --accent-subtle:  rgba(99, 102, 241, 0.10);
+  --text-1:         #111827;
+  --text-2:         #4b5563;
+  --text-3:         #9ca3af;
+  --success:        #059669;
+  --success-subtle: rgba(5, 150, 105, 0.10);
+  --warning:        #d97706;
+  --warning-subtle: rgba(217, 119, 6, 0.10);
+  --danger:         #dc2626;
+  --danger-subtle:  rgba(220, 38, 38, 0.10);
+  --info:           #2563eb;
+  --info-subtle:    rgba(37, 99, 235, 0.10);
+}
+
 *,
 *::before,
 *::after {
@@ -81,4 +104,10 @@ input,
 textarea,
 select {
   color-scheme: dark;
+}
+
+html.light input,
+html.light textarea,
+html.light select {
+  color-scheme: light;
 }
