@@ -119,40 +119,91 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         for (AssessmentQuestion aq : aqList) {
             Question rawQ = (Question) Hibernate.unproxy(aq.getQuestion());
-            CandidateAnswer answer = answerByQuestionId.get(rawQ.getId());
 
-            String candidateAnswerText = null;
-            Integer score = null;
-            String feedback = null;
-            boolean autoMarked = false;
-            UUID markedBy = null;
-            Instant markedAt = null;
+            if (rawQ instanceof GroupQuestion gq) {
+                // Expand GROUP into nested sub-question DTOs
+                List<ResultQuestionDto> subDtos = new ArrayList<>();
+                for (GroupQuestionMember m : gq.getMembers()) {
+                    Question subQ = (Question) Hibernate.unproxy(m.getQuestion());
+                    CandidateAnswer subAnswer = answerByQuestionId.get(subQ.getId());
 
-            if (answer != null) {
-                answeredCount++;
-                candidateAnswerText = resolveCandidateAnswer(answer, rawQ);
+                    String subCandidateAnswer = null;
+                    Integer subScore = null;
+                    String subFeedback = null;
+                    boolean subAutoMarked = false;
+                    UUID subMarkedBy = null;
+                    Instant subMarkedAt = null;
 
-                AnswerScore answerScore = scoreByAnswerId.get(answer.getId());
-                if (answerScore != null) {
-                    score = answerScore.getScore();
-                    feedback = answerScore.getFeedback();
-                    autoMarked = answerScore.isAutoMarked();
-                    markedBy = answerScore.getMarkedBy();
-                    markedAt = answerScore.getMarkedAt();
-                    totalScore += score;
+                    if (subAnswer != null) {
+                        answeredCount++;
+                        subCandidateAnswer = resolveCandidateAnswer(subAnswer, subQ);
+                        AnswerScore subAnswerScore = scoreByAnswerId.get(subAnswer.getId());
+                        if (subAnswerScore != null) {
+                            subScore = subAnswerScore.getScore();
+                            subFeedback = subAnswerScore.getFeedback();
+                            subAutoMarked = subAnswerScore.isAutoMarked();
+                            subMarkedBy = subAnswerScore.getMarkedBy();
+                            subMarkedAt = subAnswerScore.getMarkedAt();
+                            totalScore += subScore;
+                        } else {
+                            fullyMarked = false;
+                        }
+                    } else {
+                        fullyMarked = false;
+                    }
+
+                    subDtos.add(new ResultQuestionDto(
+                            subQ.getId(),
+                            subAnswer != null ? subAnswer.getId() : null,
+                            subQ.getTitle(), subQ.getType(),
+                            subCandidateAnswer, subScore, subQ.getMaxScore(),
+                            subFeedback, subAutoMarked, subMarkedBy, subMarkedAt,
+                            null
+                    ));
+                }
+
+                questionDtos.add(new ResultQuestionDto(
+                        rawQ.getId(), null, rawQ.getTitle(), rawQ.getType(),
+                        null, null, rawQ.getMaxScore(), null, false, null, null,
+                        subDtos
+                ));
+            } else {
+                CandidateAnswer answer = answerByQuestionId.get(rawQ.getId());
+
+                String candidateAnswerText = null;
+                Integer score = null;
+                String feedback = null;
+                boolean autoMarked = false;
+                UUID markedBy = null;
+                Instant markedAt = null;
+
+                if (answer != null) {
+                    answeredCount++;
+                    candidateAnswerText = resolveCandidateAnswer(answer, rawQ);
+
+                    AnswerScore answerScore = scoreByAnswerId.get(answer.getId());
+                    if (answerScore != null) {
+                        score = answerScore.getScore();
+                        feedback = answerScore.getFeedback();
+                        autoMarked = answerScore.isAutoMarked();
+                        markedBy = answerScore.getMarkedBy();
+                        markedAt = answerScore.getMarkedAt();
+                        totalScore += score;
+                    } else {
+                        fullyMarked = false;
+                    }
                 } else {
                     fullyMarked = false;
                 }
-            } else {
-                fullyMarked = false;
-            }
 
-            questionDtos.add(new ResultQuestionDto(
-                    rawQ.getId(),
-                    answer != null ? answer.getId() : null,
-                    rawQ.getTitle(), rawQ.getType(),
-                    candidateAnswerText, score, rawQ.getMaxScore(), feedback, autoMarked, markedBy, markedAt
-            ));
+                questionDtos.add(new ResultQuestionDto(
+                        rawQ.getId(),
+                        answer != null ? answer.getId() : null,
+                        rawQ.getTitle(), rawQ.getType(),
+                        candidateAnswerText, score, rawQ.getMaxScore(), feedback, autoMarked, markedBy, markedAt,
+                        null
+                ));
+            }
         }
 
         String markingStatus = fullyMarked && !aqList.isEmpty() ? "FULLY_MARKED" : "PENDING_REVIEW";
@@ -221,6 +272,24 @@ public class SubmissionServiceImpl implements SubmissionService {
                                 row -> ((Long) row[1]).intValue()
                         ));
 
+        // Compute total answerable questions per assessment (GROUP sub-questions counted individually)
+        Map<UUID, Integer> totalAnswerableByAssessment = new HashMap<>();
+        for (UUID assessmentId : assessmentIds) {
+            List<AssessmentQuestion> aqItems = assessmentQuestionRepository
+                    .findByAssessmentIdOrderByDisplayOrder(assessmentId);
+            int total = 0;
+            for (AssessmentQuestion aqItem : aqItems) {
+                Question q = (Question) Hibernate.unproxy(aqItem.getQuestion());
+                if (q instanceof GroupQuestion gq) {
+                    Hibernate.initialize(gq.getMembers());
+                    total += gq.getMembers().size();
+                } else {
+                    total++;
+                }
+            }
+            totalAnswerableByAssessment.put(assessmentId, total);
+        }
+
         // Load open flags for all submissions
         List<FlagStatus> openStatuses = List.of(FlagStatus.FLAGGED, FlagStatus.UNDER_REVIEW);
         Map<UUID, FlagStatus> flagStatusBySubmission = submissionIds.stream()
@@ -242,10 +311,11 @@ public class SubmissionServiceImpl implements SubmissionService {
                     int marked = scoredBySubmission.getOrDefault(s.getId(), 0L).intValue();
                     int score = totalScoreBySubmission.getOrDefault(s.getId(), 0);
                     int maxScore = questionCountByAssessment.getOrDefault(s.getAssessmentId(), 0);
+                    int totalAnswerable = totalAnswerableByAssessment.getOrDefault(s.getAssessmentId(), 0);
                     FlagStatus flagStatus = flagStatusBySubmission.get(s.getId());
                     return new SubmissionSummaryResponse(
                             s.getId(), s.getInvitationId(), s.getCandidateId(), name, s.getStatus(),
-                            s.getSubmittedAt(), answered, answered, marked, score, maxScore, flagStatus
+                            s.getSubmittedAt(), answered, totalAnswerable, marked, score, maxScore, flagStatus
                     );
                 })
                 .toList();

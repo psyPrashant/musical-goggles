@@ -129,7 +129,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                   <span class="marking-badge" [class.badge-done]="result()!.markingStatus === 'FULLY_MARKED'" [class.badge-pending]="result()!.markingStatus === 'PENDING_REVIEW'">
                     {{ result()!.markingStatus === 'FULLY_MARKED' ? '✓ Fully Marked' : '⏳ Pending Review' }}
                   </span>
-                  <div class="answered-stat">{{ result()!.answeredCount }}/{{ result()!.maxScore }} answered</div>
+                  <div class="answered-stat">{{ result()!.answeredCount }}/{{ totalQuestionCount() }} answered</div>
                   @if (activeFlag()) {
                     <span class="flag-badge-detail">⚑ {{ activeFlag()!.status === 'FLAGGED' ? 'Flagged' : 'Under Review' }}</span>
                   }
@@ -239,51 +239,105 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
               <!-- Per-question answers -->
               <div class="answers-list">
                 @for (q of result()!.questions; track q.questionId; let i = $index) {
-                  <div class="answer-card">
-                    <div class="answer-card-header">
-                      <div class="q-num">Q{{ i + 1 }}</div>
-                      <span class="q-type-badge type-{{ q.questionType.toLowerCase() }}">{{ typeLabel(q.questionType) }}</span>
-                      <span class="q-title">{{ q.questionTitle }}</span>
-                      @if (q.autoMarked) {
-                        <span class="auto-badge">Auto-scored</span>
-                      }
-                      <span class="q-max-score">/ {{ q.maxScore }} pt{{ q.maxScore !== 1 ? 's' : '' }}</span>
-                      @if (q.score !== null) {
-                        <span class="score-display">{{ q.score }}/{{ q.maxScore }}</span>
+                  @if (q.questionType === 'GROUP') {
+                    <!-- GROUP: preamble header + individually-markable sub-questions -->
+                    <div class="answer-card group-preamble-card">
+                      <div class="answer-card-header">
+                        <div class="q-num">Q{{ i + 1 }}</div>
+                        <span class="q-type-badge type-group">Group</span>
+                        <span class="q-title">{{ q.questionTitle }}</span>
+                        <span class="q-max-score">/ {{ q.maxScore }} pt{{ q.maxScore !== 1 ? 's' : '' }}</span>
+                      </div>
+                      @for (sub of q.subQuestions ?? []; track sub.questionId; let si = $index) {
+                        <div class="sub-answer-card">
+                          <div class="answer-card-header">
+                            <div class="q-num sub-q-num">{{ si + 1 }}.</div>
+                            <span class="q-type-badge type-{{ sub.questionType.toLowerCase() }}">{{ typeLabel(sub.questionType) }}</span>
+                            <span class="q-title">{{ sub.questionTitle }}</span>
+                            @if (sub.autoMarked) {
+                              <span class="auto-badge">Auto-scored</span>
+                            }
+                            <span class="q-max-score">/ {{ sub.maxScore }} pt{{ sub.maxScore !== 1 ? 's' : '' }}</span>
+                            @if (sub.score !== null) {
+                              <span class="score-display">{{ sub.score }}/{{ sub.maxScore }}</span>
+                            }
+                          </div>
+                          <div class="answer-content">{{ sub.candidateAnswer ?? '(No answer)' }}</div>
+                          @if (sub.feedback) {
+                            <div class="feedback-display">{{ sub.feedback }}</div>
+                          }
+                          @if (!sub.autoMarked || sub.questionType !== 'MCQ') {
+                            <div class="mark-row">
+                              <input type="number" class="score-input" [min]="0" [max]="sub.maxScore"
+                                     [value]="editScores()[sub.questionId] ?? sub.score ?? ''"
+                                     (input)="onScoreInput(sub.questionId, $event)"
+                                     placeholder="Score (max {{ sub.maxScore }})" />
+                              <input type="text" class="feedback-input-inline"
+                                     [value]="editFeedback()[sub.questionId] ?? sub.feedback ?? ''"
+                                     (input)="onFeedbackInput(sub.questionId, $event)"
+                                     placeholder="Feedback (optional)" />
+                              <button class="save-btn" (click)="saveScore(sub)" [disabled]="saving() || !sub.answerId">Save</button>
+                            </div>
+                          } @else {
+                            <div class="mark-row">
+                              <span class="override-hint">Override auto-score:</span>
+                              <input type="number" class="score-input" [min]="0" [max]="sub.maxScore"
+                                     [value]="editScores()[sub.questionId] ?? ''"
+                                     (input)="onScoreInput(sub.questionId, $event)"
+                                     placeholder="{{ sub.score }}" />
+                              <button class="save-btn secondary" (click)="saveScore(sub)" [disabled]="saving()">Override</button>
+                            </div>
+                          }
+                        </div>
                       }
                     </div>
-
-                    <div class="answer-content">{{ q.candidateAnswer ?? '(No answer)' }}</div>
-
-                    @if (q.feedback) {
-                      <div class="feedback-display">{{ q.feedback }}</div>
-                    }
-
-                    <!-- Score input for text/code or override for MCQ -->
-                    @if (!q.autoMarked || q.questionType !== 'MCQ') {
-                      <div class="mark-row">
-                        <input type="number" class="score-input" [min]="0" [max]="q.maxScore"
-                               [value]="editScores()[q.questionId] ?? q.score ?? ''"
-                               (input)="onScoreInput(q.questionId, $event)"
-                               placeholder="Score (max {{ q.maxScore }})" />
-                        <input type="text" class="feedback-input-inline"
-                               [value]="editFeedback()[q.questionId] ?? q.feedback ?? ''"
-                               (input)="onFeedbackInput(q.questionId, $event)"
-                               placeholder="Feedback (optional)" />
-                        <button class="save-btn" (click)="saveScore(q)" [disabled]="saving()">Save</button>
+                  } @else {
+                    <div class="answer-card">
+                      <div class="answer-card-header">
+                        <div class="q-num">Q{{ i + 1 }}</div>
+                        <span class="q-type-badge type-{{ q.questionType.toLowerCase() }}">{{ typeLabel(q.questionType) }}</span>
+                        <span class="q-title">{{ q.questionTitle }}</span>
+                        @if (q.autoMarked) {
+                          <span class="auto-badge">Auto-scored</span>
+                        }
+                        <span class="q-max-score">/ {{ q.maxScore }} pt{{ q.maxScore !== 1 ? 's' : '' }}</span>
+                        @if (q.score !== null) {
+                          <span class="score-display">{{ q.score }}/{{ q.maxScore }}</span>
+                        }
                       </div>
-                    } @else {
-                      <!-- MCQ auto-scored — allow override -->
-                      <div class="mark-row">
-                        <span class="override-hint">Override auto-score:</span>
-                        <input type="number" class="score-input" [min]="0" [max]="q.maxScore"
-                               [value]="editScores()[q.questionId] ?? ''"
-                               (input)="onScoreInput(q.questionId, $event)"
-                               placeholder="{{ q.score }}" />
-                        <button class="save-btn secondary" (click)="saveScore(q)" [disabled]="saving()">Override</button>
-                      </div>
-                    }
-                  </div>
+
+                      <div class="answer-content">{{ q.candidateAnswer ?? '(No answer)' }}</div>
+
+                      @if (q.feedback) {
+                        <div class="feedback-display">{{ q.feedback }}</div>
+                      }
+
+                      <!-- Score input for text/code or override for MCQ -->
+                      @if (!q.autoMarked || q.questionType !== 'MCQ') {
+                        <div class="mark-row">
+                          <input type="number" class="score-input" [min]="0" [max]="q.maxScore"
+                                 [value]="editScores()[q.questionId] ?? q.score ?? ''"
+                                 (input)="onScoreInput(q.questionId, $event)"
+                                 placeholder="Score (max {{ q.maxScore }})" />
+                          <input type="text" class="feedback-input-inline"
+                                 [value]="editFeedback()[q.questionId] ?? q.feedback ?? ''"
+                                 (input)="onFeedbackInput(q.questionId, $event)"
+                                 placeholder="Feedback (optional)" />
+                          <button class="save-btn" (click)="saveScore(q)" [disabled]="saving()">Save</button>
+                        </div>
+                      } @else {
+                        <!-- MCQ auto-scored — allow override -->
+                        <div class="mark-row">
+                          <span class="override-hint">Override auto-score:</span>
+                          <input type="number" class="score-input" [min]="0" [max]="q.maxScore"
+                                 [value]="editScores()[q.questionId] ?? ''"
+                                 (input)="onScoreInput(q.questionId, $event)"
+                                 placeholder="{{ q.score }}" />
+                          <button class="save-btn secondary" (click)="saveScore(q)" [disabled]="saving()">Override</button>
+                        </div>
+                      }
+                    </div>
+                  }
                 }
               </div>
             </div>
@@ -415,6 +469,22 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
     .type-mcq { background: var(--accent-subtle); color: var(--accent); }
     .type-text { background: var(--info-subtle); color: var(--info); }
     .type-code_submission { background: rgba(168,85,247,0.13); color: #a855f7; }
+    .type-group { background: rgba(20,184,166,0.13); color: #14b8a6; }
+
+    .group-preamble-card { display: flex; flex-direction: column; gap: 10px; }
+
+    .sub-answer-card {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 14px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+
+    .sub-q-num {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--bg); color: var(--text-3);
+      font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
 
     .q-title { font-size: 13px; font-weight: 500; color: var(--text-1); flex: 1; }
 
@@ -788,6 +858,13 @@ export class ResultsComponent implements OnInit {
   }
 
   typeLabel(type: string): string {
-    return { MCQ: 'MCQ', TEXT: 'Text', CODE_SUBMISSION: 'Code' }[type] ?? type;
+    return { MCQ: 'MCQ', TEXT: 'Text', CODE_SUBMISSION: 'Code', GROUP: 'Group' }[type] ?? type;
+  }
+
+  totalQuestionCount(): number {
+    return (this.result()?.questions ?? []).reduce(
+      (sum, q) => sum + (q.questionType === 'GROUP' ? (q.subQuestions?.length ?? 0) : 1),
+      0
+    );
   }
 }
