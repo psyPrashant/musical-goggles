@@ -1,6 +1,6 @@
 export type SubmissionStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'SUBMITTED' | 'AUTO_SUBMITTED';
 export type MarkingStatus = 'FULLY_MARKED' | 'PENDING_REVIEW';
-export type QuestionType = 'MCQ' | 'TEXT' | 'CODE_SUBMISSION';
+export type QuestionType = 'MCQ' | 'TEXT' | 'CODE_SUBMISSION' | 'GROUP';
 export type FlagStatus = 'FLAGGED' | 'UNDER_REVIEW' | 'RESOLVED' | 'DISMISSED';
 
 export interface SubmissionSummary {
@@ -30,6 +30,7 @@ export interface ResultQuestion {
   autoMarked: boolean;
   markedBy: string | null;
   markedAt: string | null;
+  subQuestions?: ResultQuestion[];
 }
 
 export interface ResultSummary {

@@ -3,6 +3,7 @@ package com.psybergate.recruitment.marking.dto;
 import com.psybergate.recruitment.domain.QuestionType;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public record ResultQuestionDto(
@@ -16,5 +17,6 @@ public record ResultQuestionDto(
         String feedback,
         boolean autoMarked,
         UUID markedBy,
-        Instant markedAt
+        Instant markedAt,
+        List<ResultQuestionDto> subQuestions
 ) {}

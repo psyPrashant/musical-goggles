@@ -672,6 +672,7 @@ create a new branch before starting
 > look at the jira board Musical Goggles and look at epic 22, create a new branch, and implement using the openspec workflow. 
 Ask clarifying questions
 
+
 ---
 
 ## 2026-06-04 09:45 | prashant.kessa
@@ -785,10 +786,120 @@ Ask clarifying questions
 
 ---
 
-
 ## 2026-06-04 10:52:03 | hendrik.muller
 
 > ship this
+
+---
+
+## 2026-06-04 10:54:23 | hendrik.muller
+
+> commit to new brach and ship for ep-23
+
+---
+
+
+## 2026-06-04 10:55:49 | hendrik.muller
+
+> create a PR for ep-23
+
+---
+
+## 2026-06-04 11:09:09 | hendrik.muller
+
+> Can you help me updating current seeded question data with different and appropiate scoring and difficulty , add some more submissions to result and evaluation page and flagged page
+
+---
+
+
+
+## 2026-06-04 11:32:59 | hendrik.muller
+
+> commit to new branch and make PR
+
+---
+
+
+## 2026-06-04 11:41:58 | hendrik.muller
+
+> help me plan this fix for group Questions with openspec and add to jira, the mark allocation should be totaled in heading and , each induvidual question points next the respective question, in both questionbank view and candidate view when taking the assesments;
+
+---
+
+## 2026-06-04 11:41:58 | hendrik.muller
+
+>  test with docker and playwright
+
+---
+
+
+## 2026-06-04 12:02:30 | hendrik.muller
+
+> fix those
+
+---
+
+
+## 2026-06-04 12:09:04 | hendrik.muller
+
+> commit to new branch rebase and make PR
+
+---
+
+
+## 2026-06-04 12:10:41 | hendrik.muller
+
+> archive the openspec change
+
+---
+
+
+## 2026-06-04 12:12:22 | hendrik.muller
+
+> commit and push
+
+---
+
+
+
+## 2026-06-04 15:12:17 | hendrik.muller
+
+> help me fix detail header on result and evalution page, the marking stat under marking badge, should be x/quetions answered not x/total score, create jira ticket and plan with open spec
+
+---
+
+
+## 2026-06-04 15:15:18 | hendrik.muller
+
+> apply it
+
+---
+
+
+## 2026-06-04 15:27:35 | hendrik.muller
+
+> The questions in group questions arent show in the marking and evaluation detail window and not being add to question count , aswell as the candidate list in results and evaluation where is x/x questions, plan this and fix with open spec and create jira ticket
+
+---
+
+
+## 2026-06-04 15:34:05 | hendrik.muller
+
+> /opsx:apply
+
+---
+
+
+## 2026-06-04 15:45:13 | hendrik.muller
+
+> now test with playwright and docker
+
+---
+
+
+## 2026-06-04 15:49:56 | hendrik.muller
+
+> opsx:archive , commit to new branch push and PR, update jira ticket
 
 ---
 
