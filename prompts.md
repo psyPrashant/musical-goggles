@@ -667,3 +667,57 @@ create a new branch before starting
 > commit and make PR
 
 ---
+
+## 2026-06-04 09:40:56 | hendrik.muller
+
+> help me plan MG-118 with openspec
+
+---
+
+
+## 2026-06-04 09:44:42 | hendrik.muller
+
+> continue with design and specs
+
+---
+
+
+## 2026-06-04 09:45:59 | hendrik.muller
+
+> continue with tasks
+
+---
+
+
+## 2026-06-04 09:46:37 | hendrik.muller
+
+> run /openspce aplly
+
+---
+
+
+## 2026-06-04 10:10:20 | hendrik.muller
+
+> check feature MG-118 is working with docker playwright
+
+---
+## 2026-06-04 10:17:58 | hendrik.muller
+
+> where is the log file for the playwright testing
+
+---
+
+
+## 2026-06-04 10:19:26 | hendrik.muller
+
+> what up with this health actuator
+
+---
+
+## 2026-06-04 10:22:10 | hendrik.muller
+
+> git commit to new branch and make PR
+
+---
+
+

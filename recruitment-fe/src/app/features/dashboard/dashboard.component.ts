@@ -38,70 +38,21 @@ import { DashboardStats } from '../../core/dashboard/dashboard.model';
       }
 
       <div class="content">
-        <div class="stat-row">
-          <div class="stat-card">
-            <div class="stat-body">
-              <div>
-                <div class="stat-label">Total Assessments</div>
-                <div class="stat-value">{{ assessments().length }}</div>
-                <div class="stat-sub">+1 this week</div>
-              </div>
-              <div class="stat-icon accent">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
-                </svg>
-              </div>
-            </div>
+        <div class="card no-pad">
+          <div class="card-header border-bottom">
+            <span class="card-title">Candidate Pipeline</span>
+            <a routerLink="/candidates" class="btn btn-ghost btn-sm">Manage →</a>
           </div>
-
-          <div class="stat-card">
-            <div class="stat-body">
-              <div>
-                <div class="stat-label">Active Candidates</div>
-                <div class="stat-value">{{ stats()?.activeCandidates ?? '—' }}</div>
-                <div class="stat-sub">Across all assessments</div>
+          <div class="pipeline">
+            @for (stage of pipelineStages(); track stage.label; let i = $index) {
+              <div class="pipeline-stage" [class.last]="i === pipelineStages().length - 1">
+                <div class="pipeline-count" [style.color]="stage.color">{{ stage.count }}</div>
+                <div class="pipeline-label">{{ stage.label }}</div>
+                <div class="pipeline-bar">
+                  <div class="pipeline-fill" [style.width.%]="stage.count / 10 * 100" [style.background]="stage.color"></div>
+                </div>
               </div>
-              <div class="stat-icon info">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-body">
-              <div>
-                <div class="stat-label">Pending Reviews</div>
-                <div class="stat-value">{{ stats()?.pendingReviews ?? '—' }}</div>
-                <div class="stat-sub">Awaiting evaluation</div>
-              </div>
-              <div class="stat-icon warning">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"/>
-                  <path d="M12 8v4M12 16h.01"/>
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-body">
-              <div>
-                <div class="stat-label">Average Score</div>
-                <div class="stat-value">{{ avgScoreDisplay() }}</div>
-                <div class="stat-sub">Last 30 days</div>
-              </div>
-              <div class="stat-icon success">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="8" r="7"/>
-                  <path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"/>
-                </svg>
-              </div>
-            </div>
+            }
           </div>
         </div>
 
@@ -169,23 +120,6 @@ import { DashboardStats } from '../../core/dashboard/dashboard.model';
           </div>
         </div>
 
-        <div class="card no-pad">
-          <div class="card-header border-bottom">
-            <span class="card-title">Candidate Pipeline</span>
-            <a routerLink="/candidates" class="btn btn-ghost btn-sm">Manage →</a>
-          </div>
-          <div class="pipeline">
-            @for (stage of pipelineStages(); track stage.label; let i = $index) {
-              <div class="pipeline-stage" [class.last]="i === pipelineStages().length - 1">
-                <div class="pipeline-count" [style.color]="stage.color">{{ stage.count }}</div>
-                <div class="pipeline-label">{{ stage.label }}</div>
-                <div class="pipeline-bar">
-                  <div class="pipeline-fill" [style.width.%]="stage.count / 10 * 100" [style.background]="stage.color"></div>
-                </div>
-              </div>
-            }
-          </div>
-        </div>
       </div>
     </div>
   `,
@@ -387,12 +321,6 @@ export class DashboardComponent implements OnInit {
 
   readonly stats = signal<DashboardStats | null>(null);
   readonly statsError = signal(false);
-
-  readonly avgScoreDisplay = computed(() => {
-    const s = this.stats();
-    if (!s || s.averageScore === null) return '—';
-    return s.averageScore.toFixed(1) + '%';
-  });
 
   readonly pipelineStages = computed(() => {
     const p = this.stats()?.pipeline;
