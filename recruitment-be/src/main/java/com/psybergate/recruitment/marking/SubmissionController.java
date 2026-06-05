@@ -34,6 +34,12 @@ public class SubmissionController {
         return ResponseEntity.ok(submissionService.listAllSubmissions());
     }
 
+    /** List only completed (submitted/auto-submitted) submissions */
+    @GetMapping("/api/submissions/completed")
+    public ResponseEntity<List<SubmissionSummaryResponse>> listCompletedSubmissions() {
+        return ResponseEntity.ok(submissionService.listCompletedSubmissions());
+    }
+
     /** Manual score for a single answer (MG-37) */
     @PutMapping("/api/submissions/{submissionId}/answers/{answerId}/score")
     public ResponseEntity<AnswerScoreResponse> scoreAnswer(

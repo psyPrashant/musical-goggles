@@ -8,6 +8,8 @@ export interface SubmissionSummary {
   invitationId: string;
   candidateId: string;
   candidateName: string;
+  assessmentId: string | null;
+  assessmentTitle: string;
   status: SubmissionStatus;
   submittedAt: string | null;
   answeredCount: number;

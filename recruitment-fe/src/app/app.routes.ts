@@ -81,6 +81,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'completed-assessments',
+        loadComponent: () =>
+          import('./features/completed-assessments/completed-assessments.component').then(
+            m => m.CompletedAssessmentsComponent,
+          ),
+      },
+      {
         path: 'staff',
         loadComponent: () =>
           import('./features/staff/staff.component').then(m => m.StaffComponent),

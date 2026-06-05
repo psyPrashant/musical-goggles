@@ -3,6 +3,7 @@ package com.psybergate.recruitment.dashboard;
 import com.psybergate.recruitment.dashboard.dto.DashboardStats;
 import com.psybergate.recruitment.domain.FlagStatus;
 import com.psybergate.recruitment.domain.SubmissionStatus;
+import com.psybergate.recruitment.marking.SubmissionService;
 import com.psybergate.recruitment.repository.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +28,7 @@ class DashboardServiceTest {
     @Mock private AnswerScoreRepository answerScoreRepository;
     @Mock private CandidateRepository candidateRepository;
     @Mock private SubmissionFlagRepository flagRepository;
+    @Mock private SubmissionService submissionService;
 
     @InjectMocks
     private DashboardServiceImpl service;
@@ -37,7 +39,7 @@ class DashboardServiceTest {
         when(answerScoreRepository.averageScoreSince(any())).thenReturn(null);
         when(invitationRepository.countInvitedWithoutSubmission()).thenReturn(0L);
         when(submissionRepository.countByStatus(SubmissionStatus.IN_PROGRESS)).thenReturn(0L);
-        when(submissionRepository.countCompleted(any())).thenReturn(0L);
+        when(submissionService.listCompletedSubmissions()).thenReturn(List.of());
         when(invitationRepository.findRecentSent(any())).thenReturn(List.of());
         when(submissionRepository.findRecentByStatusIn(any(), any())).thenReturn(List.of());
         when(candidateRepository.findAllById(any())).thenReturn(List.of());

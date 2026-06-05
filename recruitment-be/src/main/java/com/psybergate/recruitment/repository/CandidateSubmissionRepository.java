@@ -22,6 +22,8 @@ public interface CandidateSubmissionRepository extends JpaRepository<CandidateSu
 
     List<CandidateSubmission> findAll();
 
+    List<CandidateSubmission> findByStatusIn(List<SubmissionStatus> statuses);
+
     long countByStatus(SubmissionStatus status);
 
     @Query("""

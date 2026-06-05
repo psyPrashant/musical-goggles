@@ -9,6 +9,8 @@ const mockSummary: SubmissionSummary = {
   invitationId: 'inv-1',
   candidateId: 'cand-1',
   candidateName: 'Jane Doe',
+  assessmentId: 'assess-1',
+  assessmentTitle: 'Test Assessment',
   status: 'SUBMITTED',
   submittedAt: '2026-05-29T10:00:00Z',
   answeredCount: 2,

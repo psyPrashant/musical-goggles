@@ -965,3 +965,86 @@ Ask clarifying questions
 ---
 
 
+## 2026-06-05 11:44 | prashant.kessa
+
+> look at the jira board Musical Goggles and implement epic 29. switch to a new branch and use the openspec workflow. Update the tickets status as you progress
+
+---
+
+## 2026-06-05 12:27 | prashant.kessa
+
+> <task-notification>
+<task-id>bbvruow0u</task-id>
+<summary>Monitor event: "Backend startup — waiting for Spring Boot to be ready"</summary>
+<event>[Monitor timed out — re-arm if needed.]</event>
+</task-notification>
+
+---
+
+## 2026-06-05 12:28 | prashant.kessa
+
+> run in docker
+
+---
+
+## 2026-06-05 12:31 | prashant.kessa
+
+> <task-notification>
+<task-id>b4sz84mla</task-id>
+<summary>Monitor event: "Backend container — waiting for Spring Boot to be ready"</summary>
+<event>[Monitor timed out — re-arm if needed.]</event>
+</task-notification>
+
+---
+
+## 2026-06-05 12:34 | prashant.kessa
+
+> <task-notification>
+<task-id>bg2jo5goa</task-id>
+<summary>Monitor event: "Backend ready check after rebuild"</summary>
+<event>[Monitor timed out — re-arm if needed.]</event>
+</task-notification>
+
+---
+
+## 2026-06-05 12:42 | prashant.kessa
+
+> why does pending review say 0 but when you click on it there are 4 candidate
+
+---
+
+## 2026-06-05 12:47 | prashant.kessa
+
+> it was right, just that the number in the pipeline was not saying 4. pending review means that they have questions that need to be manually marked.
+
+---
+
+## 2026-06-05 12:51 | prashant.kessa
+
+> <task-notification>
+<task-id>bcdqt122o</task-id>
+<summary>Monitor event: "Backend ready after pipeline fix"</summary>
+<event>[Monitor timed out — re-arm if needed.]</event>
+</task-notification>
+
+---
+
+## 2026-06-05 12:56 | prashant.kessa
+
+> for the completed section - would it be better to only show the ones that have been fully marked or keep it as is but somehow indicate which are still pending (because their mark can still change after being fully marked)
+
+---
+
+## 2026-06-05 13:01 | prashant.kessa
+
+> <ci-monitor-event>CI checks "Backend — Build & Test", "Frontend — Type-check & Test" failed on psyPrashant/musical-goggles PR #39. Run `gh pr checks 39 --repo psyPrashant/musical-goggles` to see details, then fix the failing checks.</ci-monitor-event>
+
+---
+
+## 2026-06-05 13:06 | prashant.kessa
+
+> <ci-monitor-event>psyPrashant/musical-goggles PR #39 has merge conflicts. Please resolve the conflicts so the PR can be merged.</ci-monitor-event>
+
+---
+
+

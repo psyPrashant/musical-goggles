@@ -13,6 +13,8 @@ public interface SubmissionService {
 
     List<SubmissionSummaryResponse> listAllSubmissions();
 
+    List<SubmissionSummaryResponse> listCompletedSubmissions();
+
     AnswerScoreResponse scoreAnswer(UUID submissionId, UUID answerId, int score, String feedback, UUID markerId);
 
     AnswerScoreResponse scoreByQuestionId(UUID submissionId, UUID questionId, int score, String feedback, UUID markerId);

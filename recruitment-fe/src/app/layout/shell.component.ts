@@ -61,6 +61,13 @@ import { ThemeService } from '../core/theme/theme.service';
             </svg>
             Results
           </a>
+          <a routerLink="/completed-assessments" routerLinkActive="nav-active" class="nav-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            Completed
+          </a>
           <a routerLink="/flagged-submissions" routerLinkActive="nav-active" class="nav-item">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
