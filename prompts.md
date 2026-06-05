@@ -1048,3 +1048,58 @@ Ask clarifying questions
 ---
 
 
+## 2026-06-05 14:54:48 | hendrik.muller
+
+> pull from main then help me do ep-31 , use open spec
+
+---
+
+## 2026-06-05 14:56:46 | hendrik.muller
+
+> go ahead and draft it
+
+---
+
+
+## 2026-06-05 14:58:34 | hendrik.muller
+
+> /opsx:apply
+
+---
+
+
+## 2026-06-05 15:08:48 | hendrik.muller
+
+> when marking, dont allow the marker to enter a score higher than the question max score
+
+---
+
+
+## 2026-06-05 15:14:13 | hendrik.muller
+
+> when the max score is 5, should be able to do anything from 0 to 5 , at current its accepting 0,1and 5.
+
+---
+
+
+## 2026-06-05 15:21:09 | hendrik.muller
+
+> archive openspec,commit this to new branch ,push make PR update jira
+
+---
+
+
+## 2026-06-05 15:24:41 | hendrik.muller
+
+> Check PR check, frontend failed
+
+---
+
+
+## 2026-06-05 15:28:48 | hendrik.muller
+
+> commit Promts .md
+
+---
+
+
