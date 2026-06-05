@@ -904,3 +904,27 @@ Ask clarifying questions
 ---
 
 
+## 2026-06-05 10:33 | prashant.kessa
+
+> look at the jira board Musical Goggles and implement epic 27. switch to a new branch and use the openspec workflow.
+
+---
+
+## 2026-06-05 11:30 | prashant.kessa
+
+> push and create a pr
+
+---
+
+## 2026-06-05 11:35 | prashant.kessa
+
+> rebase onto main
+
+---
+
+## 2026-06-05 11:36 | prashant.kessa
+
+> rebase onto main
+
+---
+
