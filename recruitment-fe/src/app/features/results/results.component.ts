@@ -41,6 +41,9 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                   <div class="sub-name-row">
                     <span class="sub-name">{{ s.candidateName }}</span>
                     <span class="sub-status" [class]="statusClass(s)">{{ statusLabel(s) }}</span>
+                    @if ((s.status === 'SUBMITTED' || s.status === 'AUTO_SUBMITTED') && s.markedCount < s.totalAnswers) {
+                      <span class="pending-badge">⏳ Pending</span>
+                    }
                     @if (s.flagStatus === 'FLAGGED' || s.flagStatus === 'UNDER_REVIEW') {
                       <span class="flag-badge">⚑ Flagged</span>
                     }
@@ -552,6 +555,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
 
     .empty-panel { padding: 40px; text-align: center; color: var(--text-3); font-size: 13px; }
 
+    .pending-badge { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--warning-subtle); color: var(--warning); font-weight: 600; flex-shrink: 0; }
     .flag-badge { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--danger-subtle); color: var(--danger); font-weight: 600; flex-shrink: 0; }
     .flag-badge-detail { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--danger-subtle); color: var(--danger); }
 
@@ -661,11 +665,19 @@ export class ResultsComponent implements OnInit {
     { value: 'IN_PROGRESS', label: 'In Progress' },
     { value: 'SUBMITTED', label: 'Submitted' },
     { value: 'AUTO_SUBMITTED', label: 'Auto-submitted' },
+    { value: 'PENDING_REVIEW', label: 'Pending Review' },
   ];
 
   readonly filteredSubmissions = computed(() => {
     const f = this.statusFilter();
-    return f ? this.submissions().filter(s => s.status === f) : this.submissions();
+    if (!f) return this.submissions();
+    if (f === 'PENDING_REVIEW') {
+      return this.submissions().filter(s =>
+        (s.status === 'SUBMITTED' || s.status === 'AUTO_SUBMITTED') &&
+        s.markedCount < s.totalAnswers,
+      );
+    }
+    return this.submissions().filter(s => s.status === f);
   });
 
   ngOnInit() {
