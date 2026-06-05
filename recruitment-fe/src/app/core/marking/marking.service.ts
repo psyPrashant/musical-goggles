@@ -34,4 +34,15 @@ export class MarkingService {
       req,
     );
   }
+
+  scoreAnswerByQuestion(
+    submissionId: string,
+    questionId: string,
+    req: ScoreAnswerRequest,
+  ): Observable<AnswerScoreResponse> {
+    return this.http.put<AnswerScoreResponse>(
+      `/api/submissions/${submissionId}/questions/${questionId}/score`,
+      req,
+    );
+  }
 }

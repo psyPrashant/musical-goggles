@@ -1,10 +1,10 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Recruiter retrieves an overall result summary for a candidate submission
 The system SHALL expose a `GET /api/submissions/{submissionId}/result` endpoint accessible to `ROLE_RECRUITER` and `ROLE_ADMIN`. The response SHALL aggregate all `AnswerScore` values for the submission into a total score, list each question with its answer, score, and feedback, indicate the marking completeness status (`FULLY_MARKED` or `PENDING_REVIEW`), and include submission metadata (candidate name, assessment title, submitted at).
 
 The marking completeness status SHALL be computed as follows:
-- `FULLY_MARKED`: every assessment question that has a `CandidateAnswer` also has an `AnswerScore`. Questions with no `CandidateAnswer` (unanswered, not yet scored via the questionId endpoint) do NOT block `FULLY_MARKED`.
+- `FULLY_MARKED`: every assessment question that has a `CandidateAnswer` also has an `AnswerScore`. Questions with no `CandidateAnswer` (unanswered, implicitly scored 0 on submission) do NOT block `FULLY_MARKED`.
 - `PENDING_REVIEW`: at least one assessment question has a `CandidateAnswer` with no corresponding `AnswerScore`.
 
 #### Scenario: Fully marked submission returns complete result
@@ -33,14 +33,3 @@ The marking completeness status SHALL be computed as follows:
 #### Scenario: Candidate cannot access the result summary
 - **WHEN** a request with `role=CANDIDATE` JWT calls `GET /api/submissions/{id}/result`
 - **THEN** the response is HTTP 403
-
-### Requirement: Result summary includes per-question detail sufficient for comparison
-Each entry in the `questions` list of the result summary SHALL include: `questionId`, `questionTitle`, `questionType`, `candidateAnswer` (the submitted text or selected option text, not raw IDs), `score` (nullable), `feedback` (nullable), `isAutoMarked` (boolean), `markedBy` (nullable user ID), and `markedAt` (nullable timestamp).
-
-#### Scenario: MCQ answer displays selected option text, not raw UUID
-- **WHEN** the result summary is fetched for a submission with an MCQ answer
-- **THEN** `candidateAnswer` in that question entry contains the text of the selected option, not the UUID
-
-#### Scenario: Unanswered question shows null candidate answer
-- **WHEN** a question was not answered by the candidate
-- **THEN** `candidateAnswer` is null in that question entry
