@@ -5,6 +5,7 @@ import com.psybergate.recruitment.AbstractIntegrationTest;
 import com.psybergate.recruitment.TestDatasourceInitializer;
 import com.psybergate.recruitment.assessment.dto.AddAssessmentQuestionRequest;
 import com.psybergate.recruitment.assessment.dto.AssessmentRequest;
+import com.psybergate.recruitment.assessment.dto.ReorderAssessmentQuestionsRequest;
 import com.psybergate.recruitment.domain.QuestionType;
 import com.psybergate.recruitment.domain.Role;
 import com.psybergate.recruitment.domain.User;
@@ -322,6 +323,49 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(delete("/api/assessments/" + assessmentId + "/questions/" + UUID.randomUUID())
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNotFound());
+    }
+
+    // ── Reorder ───────────────────────────────────────────────────────────────
+
+    @Test
+    void reorderQuestions_happyPath_returns200WithNewOrder() throws Exception {
+        String assessmentId = createAssessmentViaApi("Reorder Test", 30);
+        String q1 = createTextQuestionViaApi("First question");
+        String q2 = createTextQuestionViaApi("Second question");
+        addQuestionToAssessment(assessmentId, q1, 1);
+        addQuestionToAssessment(assessmentId, q2, 2);
+
+        var items = List.of(
+                new ReorderAssessmentQuestionsRequest.QuestionOrderItem(UUID.fromString(q1), 2),
+                new ReorderAssessmentQuestionsRequest.QuestionOrderItem(UUID.fromString(q2), 1)
+        );
+        ReorderAssessmentQuestionsRequest req = new ReorderAssessmentQuestionsRequest(items);
+
+        mockMvc.perform(put("/api/assessments/" + assessmentId + "/questions/order")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.questions[0].questionId").value(q2))
+                .andExpect(jsonPath("$.questions[1].questionId").value(q1));
+    }
+
+    @Test
+    void reorderQuestions_unknownQuestionId_returns422() throws Exception {
+        String assessmentId = createAssessmentViaApi("Reorder 422 Test", 30);
+        String q1 = createTextQuestionViaApi("Real question");
+        addQuestionToAssessment(assessmentId, q1, 1);
+
+        var items = List.of(
+                new ReorderAssessmentQuestionsRequest.QuestionOrderItem(UUID.randomUUID(), 1)
+        );
+        ReorderAssessmentQuestionsRequest req = new ReorderAssessmentQuestionsRequest(items);
+
+        mockMvc.perform(put("/api/assessments/" + assessmentId + "/questions/order")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isUnprocessableEntity());
     }
 
     // ── Preview ───────────────────────────────────────────────────────────────

@@ -169,6 +169,12 @@ import { Difficulty, Question } from '../../core/question/question.model';
                     @if (q.type === 'GROUP' && q.subQuestionCount > 0) {
                       <span class="sub-q-hint">{{ q.subQuestionCount }} sub-questions</span>
                     }
+                    <button class="icon-btn" (click)="moveUp(i)" [disabled]="i === 0" title="Move up">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+                    </button>
+                    <button class="icon-btn" (click)="moveDown(i)" [disabled]="i === (assessment()?.questions?.length ?? 0) - 1" title="Move down">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
                     <button class="icon-btn danger" (click)="removeQuestion(q.questionId)" title="Remove">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -804,6 +810,7 @@ export class AssessmentBuilderComponent implements OnInit {
   readonly bankSearch = signal('');
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
+  readonly orderChanged = signal(false);
 
   readonly passingScore = signal(70);
   readonly accessType = signal<'invite' | 'password' | 'open'>('invite');
@@ -928,7 +935,25 @@ export class AssessmentBuilderComponent implements OnInit {
   }
 
   finish() {
-    this.router.navigate(['/assessments']);
+    const a = this.assessment();
+    if (a && this.orderChanged()) {
+      this.saving.set(true);
+      const order = a.questions.map(q => ({ questionId: q.questionId, displayOrder: q.displayOrder }));
+      this.assessmentService.reorderQuestions(a.id, order).subscribe({
+        next: updated => {
+          this.assessment.set(updated);
+          this.orderChanged.set(false);
+          this.saving.set(false);
+          this.router.navigate(['/assessments']);
+        },
+        error: () => {
+          this.error.set('Failed to save question order. Please try again.');
+          this.saving.set(false);
+        },
+      });
+    } else {
+      this.router.navigate(['/assessments']);
+    }
   }
 
   private saveBasicInfo() {
@@ -958,6 +983,31 @@ export class AssessmentBuilderComponent implements OnInit {
         this.saving.set(false);
       },
     });
+  }
+
+  moveUp(index: number) {
+    if (index <= 0) return;
+    this.assessment.update(a => {
+      if (!a) return a;
+      const qs = [...a.questions];
+      [qs[index - 1], qs[index]] = [qs[index], qs[index - 1]];
+      const reindexed = qs.map((q, i) => ({ ...q, displayOrder: i + 1 }));
+      return { ...a, questions: reindexed };
+    });
+    this.orderChanged.set(true);
+  }
+
+  moveDown(index: number) {
+    const len = this.assessment()?.questions.length ?? 0;
+    if (index >= len - 1) return;
+    this.assessment.update(a => {
+      if (!a) return a;
+      const qs = [...a.questions];
+      [qs[index], qs[index + 1]] = [qs[index + 1], qs[index]];
+      const reindexed = qs.map((q, i) => ({ ...q, displayOrder: i + 1 }));
+      return { ...a, questions: reindexed };
+    });
+    this.orderChanged.set(true);
   }
 
   addQuestion(questionId: string) {

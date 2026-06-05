@@ -108,6 +108,29 @@ public class AssessmentServiceImpl implements AssessmentService {
     }
 
     @Override
+    public AssessmentDetailResponse reorderQuestions(UUID assessmentId, ReorderAssessmentQuestionsRequest request) {
+        Assessment assessment = requireAssessment(assessmentId);
+        List<AssessmentQuestion> existing = assessmentQuestionRepository.findByAssessmentIdOrderByDisplayOrder(assessmentId);
+        var existingIds = existing.stream().map(aq -> aq.getQuestion().getId()).collect(java.util.stream.Collectors.toSet());
+
+        for (ReorderAssessmentQuestionsRequest.QuestionOrderItem item : request.questions()) {
+            if (!existingIds.contains(item.questionId())) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Question " + item.questionId() + " is not part of this assessment");
+            }
+        }
+
+        for (ReorderAssessmentQuestionsRequest.QuestionOrderItem item : request.questions()) {
+            existing.stream()
+                    .filter(aq -> aq.getQuestion().getId().equals(item.questionId()))
+                    .findFirst()
+                    .ifPresent(aq -> aq.setDisplayOrder(item.displayOrder()));
+        }
+
+        return toDetailResponse(assessment);
+    }
+
+    @Override
     public void removeQuestion(UUID assessmentId, UUID questionId) {
         requireAssessment(assessmentId);
         AssessmentQuestion item = assessmentQuestionRepository

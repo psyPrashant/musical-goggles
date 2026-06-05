@@ -62,6 +62,12 @@ public class AssessmentController {
         return ResponseEntity.status(status).body(result.assessment());
     }
 
+    @PutMapping("/{id}/questions/order")
+    public ResponseEntity<AssessmentDetailResponse> reorderQuestions(@PathVariable UUID id,
+                                                                      @RequestBody @Valid ReorderAssessmentQuestionsRequest request) {
+        return ResponseEntity.ok(assessmentService.reorderQuestions(id, request));
+    }
+
     @DeleteMapping("/{id}/questions/{questionId}")
     public ResponseEntity<Void> removeQuestion(@PathVariable UUID id, @PathVariable UUID questionId) {
         assessmentService.removeQuestion(id, questionId);
