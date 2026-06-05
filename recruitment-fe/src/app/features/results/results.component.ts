@@ -280,7 +280,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                                      [value]="editFeedback()[sub.questionId] ?? sub.feedback ?? ''"
                                      (input)="onFeedbackInput(sub.questionId, $event)"
                                      placeholder="Feedback (optional)" />
-                              <button class="save-btn" (click)="saveScore(sub)" [disabled]="saving() || !sub.answerId">Save</button>
+                              <button class="save-btn" (click)="saveScore(sub)" [disabled]="saving()">Save</button>
                             </div>
                           } @else {
                             <div class="mark-row">
@@ -816,7 +816,7 @@ export class ResultsComponent implements OnInit {
   saveScore(q: ResultQuestion) {
     const r = this.result();
     const s = this.selectedSummary();
-    if (!r || !s || !s.submissionId || !q.answerId) return;
+    if (!r || !s || !s.submissionId) return;
 
     const scoreVal = this.editScores()[q.questionId] ?? q.score;
     if (scoreVal == null) return;
@@ -824,7 +824,11 @@ export class ResultsComponent implements OnInit {
     const feedbackVal = this.editFeedback()[q.questionId] ?? q.feedback ?? undefined;
     this.saving.set(true);
 
-    this.markingSvc.scoreAnswer(r.submissionId, q.answerId, { score: scoreVal, feedback: feedbackVal }).subscribe({
+    const score$ = q.answerId
+      ? this.markingSvc.scoreAnswer(r.submissionId, q.answerId, { score: scoreVal, feedback: feedbackVal })
+      : this.markingSvc.scoreAnswerByQuestion(r.submissionId, q.questionId, { score: scoreVal, feedback: feedbackVal });
+
+    score$.subscribe({
       next: saved => {
         this.saving.set(false);
         // Refresh the result to show updated score/marking status

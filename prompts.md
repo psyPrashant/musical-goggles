@@ -904,29 +904,66 @@ Ask clarifying questions
 ---
 
 
-## 2026-06-05 10:33 | prashant.kessa
+## 2026-06-05 10:23:03 | hendrik.muller
 
-> look at the jira board Musical Goggles and implement epic 27. switch to a new branch and use the openspec workflow.
-
----
-
-## 2026-06-05 11:30 | prashant.kessa
-
-> push and create a pr
+> help me plan Ep-25 with open spec
 
 ---
 
-## 2026-06-05 11:35 | prashant.kessa
+## 2026-06-05 10:35:20 | hendrik.muller
 
-> rebase onto main
+> run /opsx:apply
+
+---
+
+## 2026-06-05 10:44:36 | hendrik.muller
+
+> commit to new branch , test this fix with docker and playwright
 
 ---
 
-## 2026-06-05 11:36 | prashant.kessa
 
-> rebase onto main
+## 2026-06-05 10:55:01 | hendrik.muller
+
+> the div: <span _ngcontent-ng-c4014171703="" class="marking-badge badge-done"> Γ£ô Fully Marked </span> it there on details even tho its not fully marked
 
 ---
+
+
+## 2026-06-05 10:59:30 | hendrik.muller
+
+> test with docker playwright
+
+---
+
+
+## 2026-06-05 11:06:45 | hendrik.muller
+
+> check frank Wilson, 8/10 marked but has the fully marked div
+
+---
+
+
+## 2026-06-05 11:22:06 | hendrik.muller
+
+> the div  :<span _ngcontent-ng-c4014171703="" class="sub-progress">9/10 marked</span> is not upto date, even tho all questions are auto scored should be 10/10
+
+---
+
+
+## 2026-06-05 11:33:22 | hendrik.muller
+
+> archive openspec, commit make PR update jira tickets
+
+---
+
+
+## 2026-06-05 11:40:03 | hendrik.muller
+
+> backend test failed, rebase with main, fix commit make PR
+
+---
+
 
 ## 2026-06-05 11:44 | prashant.kessa
 
@@ -969,4 +1006,5 @@ Ask clarifying questions
 </task-notification>
 
 ---
+
 

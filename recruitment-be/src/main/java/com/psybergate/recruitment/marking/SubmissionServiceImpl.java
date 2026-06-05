@@ -92,6 +92,64 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     @Override
+    @Transactional
+    public AnswerScoreResponse scoreByQuestionId(UUID submissionId, UUID questionId, int score, String feedback, UUID markerId) {
+        CandidateSubmission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Submission not found"));
+
+        if (score < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Score must be non-negative");
+        }
+
+        // Validate questionId belongs to this submission's assessment (top-level or GROUP sub-question)
+        List<AssessmentQuestion> aqList = assessmentQuestionRepository
+                .findByAssessmentIdOrderByDisplayOrder(submission.getAssessmentId());
+        boolean validQuestion = false;
+        for (AssessmentQuestion aq : aqList) {
+            Question q = (Question) Hibernate.unproxy(aq.getQuestion());
+            if (q.getId().equals(questionId)) { validQuestion = true; break; }
+            if (q instanceof GroupQuestion gq) {
+                for (GroupQuestionMember m : gq.getMembers()) {
+                    if (m.getQuestion().getId().equals(questionId)) { validQuestion = true; break; }
+                }
+            }
+            if (validQuestion) break;
+        }
+        if (!validQuestion) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found in this assessment");
+        }
+
+        // Find or create a CandidateAnswer for this question
+        CandidateAnswer answer = answerRepository
+                .findBySubmissionIdAndQuestionId(submissionId, questionId)
+                .orElseGet(() -> {
+                    CandidateAnswer a = new CandidateAnswer();
+                    a.setSubmissionId(submissionId);
+                    a.setQuestionId(questionId);
+                    a.setSavedAt(Instant.now());
+                    a.setDraft(false);
+                    return answerRepository.save(a);
+                });
+
+        AnswerScore answerScore = scoreRepository.findByCandidateAnswerId(answer.getId())
+                .orElseGet(AnswerScore::new);
+
+        answerScore.setCandidateAnswerId(answer.getId());
+        answerScore.setScore(score);
+        answerScore.setFeedback(feedback);
+        answerScore.setMarkedBy(markerId);
+        answerScore.setMarkedAt(Instant.now());
+        answerScore.setAutoMarked(false);
+
+        answerScore = scoreRepository.save(answerScore);
+
+        return new AnswerScoreResponse(
+                answer.getId(), answerScore.getScore(), answerScore.getFeedback(),
+                answerScore.isAutoMarked(), answerScore.getMarkedBy(), answerScore.getMarkedAt()
+        );
+    }
+
+    @Override
     public ResultSummaryResponse getResult(UUID submissionId) {
         CandidateSubmission submission = submissionRepository.findById(submissionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Submission not found"));
@@ -155,7 +213,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                             fullyMarked = false;
                         }
                     } else {
-                        fullyMarked = false;
+                        fullyMarked = false; // unanswered sub-question: must be scored via questionId endpoint
                     }
 
                     subDtos.add(new ResultQuestionDto(
@@ -199,7 +257,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                         fullyMarked = false;
                     }
                 } else {
-                    fullyMarked = false;
+                    fullyMarked = false; // unanswered: must be scored via questionId endpoint
                 }
 
                 questionDtos.add(new ResultQuestionDto(
@@ -255,13 +313,20 @@ public class SubmissionServiceImpl implements SubmissionService {
         Set<UUID> allAnswerIds = allAnswers.stream().map(CandidateAnswer::getId).collect(Collectors.toSet());
         Map<UUID, UUID> submissionByAnswerId = allAnswers.stream()
                 .collect(Collectors.toMap(CandidateAnswer::getId, CandidateAnswer::getSubmissionId));
+        // Build questionId lookup for each answerId (needed for slot-based marked count)
+        Map<UUID, UUID> questionIdByAnswerId = allAnswers.stream()
+                .collect(Collectors.toMap(CandidateAnswer::getId, CandidateAnswer::getQuestionId));
         List<AnswerScore> allScores = allAnswerIds.isEmpty() ? List.of() :
                 scoreRepository.findByCandidateAnswerIdIn(allAnswerIds);
-        Map<UUID, Long> scoredBySubmission = allScores.stream()
-                .collect(Collectors.groupingBy(
-                        as -> submissionByAnswerId.get(as.getCandidateAnswerId()),
-                        Collectors.counting()
-                ));
+        // Build set of scored question IDs per submission for slot-based counting
+        Map<UUID, Set<UUID>> scoredQIdsBySubmission = new HashMap<>();
+        for (AnswerScore as : allScores) {
+            UUID sid = submissionByAnswerId.get(as.getCandidateAnswerId());
+            UUID qid = questionIdByAnswerId.get(as.getCandidateAnswerId());
+            if (sid != null && qid != null) {
+                scoredQIdsBySubmission.computeIfAbsent(sid, k -> new HashSet<>()).add(qid);
+            }
+        }
         Map<UUID, Integer> totalScoreBySubmission = allScores.stream()
                 .collect(Collectors.groupingBy(
                         as -> submissionByAnswerId.get(as.getCandidateAnswerId()),
@@ -274,6 +339,8 @@ public class SubmissionServiceImpl implements SubmissionService {
         Map<UUID, String> assessmentTitleById = assessmentIds.isEmpty() ? Map.of() :
                 assessmentRepository.findAllById(assessmentIds).stream()
                         .collect(Collectors.toMap(Assessment::getId, Assessment::getTitle));
+        Map<UUID, UUID> assessmentBySubmission = submissions.stream()
+                .collect(Collectors.toMap(CandidateSubmission::getId, CandidateSubmission::getAssessmentId));
 
         // Batch-load question counts per assessment
         Map<UUID, Integer> questionCountByAssessment = assessmentIds.isEmpty() ? Map.of() :
@@ -283,22 +350,25 @@ public class SubmissionServiceImpl implements SubmissionService {
                                 row -> ((Long) row[1]).intValue()
                         ));
 
-        // Compute total answerable questions per assessment (GROUP sub-questions counted individually)
+        // Build slot list per assessment: question IDs for every answerable slot (GROUP sub-questions
+        // counted individually; a question ID that appears in multiple slots counts once per slot)
+        Map<UUID, List<UUID>> slotQIdsByAssessment = new HashMap<>();
         Map<UUID, Integer> totalAnswerableByAssessment = new HashMap<>();
         for (UUID assessmentId : assessmentIds) {
             List<AssessmentQuestion> aqItems = assessmentQuestionRepository
                     .findByAssessmentIdOrderByDisplayOrder(assessmentId);
-            int total = 0;
+            List<UUID> slots = new ArrayList<>();
             for (AssessmentQuestion aqItem : aqItems) {
                 Question q = (Question) Hibernate.unproxy(aqItem.getQuestion());
                 if (q instanceof GroupQuestion gq) {
                     Hibernate.initialize(gq.getMembers());
-                    total += gq.getMembers().size();
+                    gq.getMembers().forEach(m -> slots.add(m.getQuestion().getId()));
                 } else {
-                    total++;
+                    slots.add(q.getId());
                 }
             }
-            totalAnswerableByAssessment.put(assessmentId, total);
+            slotQIdsByAssessment.put(assessmentId, slots);
+            totalAnswerableByAssessment.put(assessmentId, slots.size());
         }
 
         // Load open flags for all submissions
@@ -319,7 +389,11 @@ public class SubmissionServiceImpl implements SubmissionService {
                     Candidate c = candidateMap.get(s.getCandidateId());
                     String name = c != null ? c.getFirstName() + " " + c.getLastName() : "Unknown";
                     int answered = answeredBySubmission.getOrDefault(s.getId(), 0L).intValue();
-                    int marked = scoredBySubmission.getOrDefault(s.getId(), 0L).intValue();
+                    // Count scored slots: each slot whose question ID has a score counts once per slot
+                    Set<UUID> scoredQIds = scoredQIdsBySubmission.getOrDefault(s.getId(), Set.of());
+                    List<UUID> slots = slotQIdsByAssessment.getOrDefault(
+                            assessmentBySubmission.get(s.getId()), List.of());
+                    int marked = (int) slots.stream().filter(scoredQIds::contains).count();
                     int score = totalScoreBySubmission.getOrDefault(s.getId(), 0);
                     int maxScore = questionCountByAssessment.getOrDefault(s.getAssessmentId(), 0);
                     int totalAnswerable = totalAnswerableByAssessment.getOrDefault(s.getAssessmentId(), 0);

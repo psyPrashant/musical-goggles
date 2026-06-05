@@ -53,6 +53,19 @@ public class SubmissionController {
         );
     }
 
+    /** Score a question by questionId — creates CandidateAnswer if unanswered (MG-143) */
+    @PutMapping("/api/submissions/{submissionId}/questions/{questionId}/score")
+    public ResponseEntity<AnswerScoreResponse> scoreByQuestion(
+            @PathVariable UUID submissionId,
+            @PathVariable UUID questionId,
+            @RequestBody @Valid ScoreAnswerRequest request,
+            Authentication auth) {
+        UUID markerId = UUID.fromString(auth.getName());
+        return ResponseEntity.ok(
+                submissionService.scoreByQuestionId(submissionId, questionId, request.score(), request.feedback(), markerId)
+        );
+    }
+
     /** Overall result summary per candidate (MG-40) */
     @GetMapping("/api/submissions/{submissionId}/result")
     public ResponseEntity<ResultSummaryResponse> getResult(@PathVariable UUID submissionId) {
