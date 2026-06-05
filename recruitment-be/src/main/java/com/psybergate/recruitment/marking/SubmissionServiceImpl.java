@@ -174,6 +174,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         int totalScore = 0;
         int answeredCount = 0;
         boolean fullyMarked = true;
+        boolean hasAnyAnswer = false; // at least one CandidateAnswer must exist for FULLY_MARKED
 
         for (AssessmentQuestion aq : aqList) {
             Question rawQ = (Question) Hibernate.unproxy(aq.getQuestion());
@@ -193,6 +194,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                     Instant subMarkedAt = null;
 
                     if (subAnswer != null) {
+                        hasAnyAnswer = true;
                         answeredCount++;
                         subCandidateAnswer = resolveCandidateAnswer(subAnswer, subQ);
                         AnswerScore subAnswerScore = scoreByAnswerId.get(subAnswer.getId());
@@ -235,6 +237,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                 Instant markedAt = null;
 
                 if (answer != null) {
+                    hasAnyAnswer = true;
                     answeredCount++;
                     candidateAnswerText = resolveCandidateAnswer(answer, rawQ);
 
@@ -262,7 +265,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             }
         }
 
-        String markingStatus = fullyMarked && !aqList.isEmpty() ? "FULLY_MARKED" : "PENDING_REVIEW";
+        String markingStatus = fullyMarked && hasAnyAnswer ? "FULLY_MARKED" : "PENDING_REVIEW";
 
         int maxScore = aqList.stream()
                 .mapToInt(aq -> ((Question) Hibernate.unproxy(aq.getQuestion())).getMaxScore())

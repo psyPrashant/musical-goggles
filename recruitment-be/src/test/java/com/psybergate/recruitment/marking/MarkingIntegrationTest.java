@@ -433,6 +433,22 @@ class MarkingIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.markingStatus").value("FULLY_MARKED"));
     }
 
+    @Test
+    void getResult_noAnswersAtAll_returnsPendingReview() throws Exception {
+        // Submission with no CandidateAnswer rows must never show FULLY_MARKED
+        CandidateSubmission sub = new CandidateSubmission();
+        sub.setCandidateId(candidate.getId());
+        sub.setAssessmentId(assessment.getId());
+        sub.setStatus(SubmissionStatus.SUBMITTED);
+        sub.setSubmittedAt(Instant.now());
+        sub = submissionRepository.save(sub);
+
+        mockMvc.perform(get("/api/submissions/" + sub.getId() + "/result")
+                .header("Authorization", "Bearer " + recruiterToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.markingStatus").value("PENDING_REVIEW"));
+    }
+
     // ── manual marking edge cases ──────────────────────────────────────────
 
     @Test
