@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { ResultsComponent } from './results.component';
@@ -56,6 +57,7 @@ describe('ResultsComponent', () => {
     TestBed.configureTestingModule({
       imports: [ResultsComponent],
       providers: [
+        provideRouter([]),
         { provide: MarkingService, useValue: markingSvc },
         { provide: FlagService, useValue: flagSvc },
         { provide: ReminderService, useValue: reminderSvc },
