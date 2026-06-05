@@ -23,3 +23,26 @@ Keep the implementation minimal and consistent with existing patterns in the cod
 ```
 mg-145-reorder-assessment-questions
 ```
+
+---
+
+## MG-147 — Prevent sending a completed assessment invite
+
+**OpenSpec propose prompt:**
+```
+MG-147: Prevent sending a completed assessment invite to a candidate who has already completed it.
+
+Context: This is a bug. Currently a recruiter can send the same assessment invite to a candidate who has already completed that assessment. This should not be allowed.
+
+What's needed:
+- FE: In candidates.component.ts, disable/hide the invite action for a candidate–assessment pair when the candidate's history shows that assessment as COMPLETED
+- BE: In the invitation creation flow (InvitationController / invitation service), validate that no COMPLETED or active submission already exists for the candidate + assessment pair; reject with 409 Conflict if it does
+- The check should be: if a CandidateSubmission exists for this candidate+assessment with status SUBMITTED or AUTO_SUBMITTED (i.e. completed), block the invite
+
+Keep changes minimal. Do not affect the ability to re-invite for assessments that are merely IN_PROGRESS or NOT_STARTED.
+```
+
+**OpenSpec apply prompt:**
+```
+mg-147-prevent-duplicate-completed-invite
+```
