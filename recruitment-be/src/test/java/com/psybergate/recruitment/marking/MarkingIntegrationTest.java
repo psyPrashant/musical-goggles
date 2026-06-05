@@ -50,6 +50,7 @@ class MarkingIntegrationTest extends AbstractIntegrationTest {
     private Assessment assessment;
     private McqQuestion mcqQuestion;
     private QuestionOption correctOption;
+    private CandidateInvitation invitation;
     private String recruiterToken;
     private String candidateSessionToken;
 
@@ -104,12 +105,12 @@ class MarkingIntegrationTest extends AbstractIntegrationTest {
         aq.setDisplayOrder(1);
         assessmentQuestionRepository.save(aq);
 
-        CandidateInvitation invitation = new CandidateInvitation();
+        invitation = new CandidateInvitation();
         invitation.setCandidate(candidate);
         invitation.setAssessment(assessment);
         invitation.setInvitationToken("mark-test-token-" + UUID.randomUUID());
         invitation.setExpiresAt(Instant.now().plusSeconds(86_400));
-        invitationRepository.save(invitation);
+        invitation = invitationRepository.save(invitation);
 
         candidateSessionToken = jwtService.generateCandidateSessionToken(
                 candidate.getId().toString(), assessment.getId().toString());
@@ -347,6 +348,7 @@ class MarkingIntegrationTest extends AbstractIntegrationTest {
         CandidateSubmission sub = new CandidateSubmission();
         sub.setCandidateId(candidate.getId());
         sub.setAssessmentId(assessment.getId());
+        sub.setInvitationId(invitation.getId());
         sub.setStatus(SubmissionStatus.SUBMITTED);
         sub.setSubmittedAt(Instant.now());
         sub = submissionRepository.save(sub);
@@ -375,6 +377,7 @@ class MarkingIntegrationTest extends AbstractIntegrationTest {
         CandidateSubmission sub = new CandidateSubmission();
         sub.setCandidateId(candidate.getId());
         sub.setAssessmentId(assessment.getId());
+        sub.setInvitationId(invitation.getId());
         sub.setStatus(SubmissionStatus.SUBMITTED);
         sub.setSubmittedAt(Instant.now());
         sub = submissionRepository.save(sub);
@@ -408,6 +411,7 @@ class MarkingIntegrationTest extends AbstractIntegrationTest {
         CandidateSubmission sub = new CandidateSubmission();
         sub.setCandidateId(candidate.getId());
         sub.setAssessmentId(assessment.getId());
+        sub.setInvitationId(invitation.getId());
         sub.setStatus(SubmissionStatus.SUBMITTED);
         sub.setSubmittedAt(Instant.now());
         sub = submissionRepository.save(sub);
@@ -453,6 +457,7 @@ class MarkingIntegrationTest extends AbstractIntegrationTest {
         CandidateSubmission sub = new CandidateSubmission();
         sub.setCandidateId(candidate.getId());
         sub.setAssessmentId(assessment.getId());
+        sub.setInvitationId(invitation.getId());
         sub.setStatus(SubmissionStatus.SUBMITTED);
         sub.setSubmittedAt(Instant.now());
         sub = submissionRepository.save(sub);
