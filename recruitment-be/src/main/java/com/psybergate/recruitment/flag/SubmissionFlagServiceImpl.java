@@ -129,8 +129,9 @@ public class SubmissionFlagServiceImpl implements SubmissionFlagService {
                     CandidateSubmission sub = submissionMap.get(f.getSubmissionId());
                     String assessmentName = sub != null ? assessmentNames.getOrDefault(sub.getAssessmentId(), "Unknown") : "Unknown";
                     return new FlagListItemResponse(
-                            f.getId(), f.getSubmissionId(), candidateName, assessmentName,
-                            f.getReason(), f.getStatus(), f.getCreatedAt());
+                            f.getId(), f.getSubmissionId(), candidate.getId(), candidateName, assessmentName,
+                            f.getReason(), f.getStatus(), f.getCreatedAt(),
+                            candidate.isBlacklisted(), candidate.isActionRequired());
                 })
                 .toList();
     }
@@ -153,9 +154,8 @@ public class SubmissionFlagServiceImpl implements SubmissionFlagService {
 
         Set<UUID> candidateIds = submissionMap.values().stream()
                 .map(CandidateSubmission::getCandidateId).collect(Collectors.toSet());
-        Map<UUID, String> candidateNameMap = candidateRepository.findAllById(candidateIds).stream()
-                .collect(Collectors.toMap(Candidate::getId,
-                        c -> c.getFirstName() + " " + c.getLastName()));
+        Map<UUID, Candidate> candidateMap = candidateRepository.findAllById(candidateIds).stream()
+                .collect(Collectors.toMap(Candidate::getId, c -> c));
 
         return flags.stream()
                 .filter(f -> reason == null || f.getReason() == reason)
@@ -169,10 +169,13 @@ public class SubmissionFlagServiceImpl implements SubmissionFlagService {
                 .sorted(Comparator.comparing(SubmissionFlag::getCreatedAt).reversed())
                 .map(f -> {
                     CandidateSubmission sub = submissionMap.get(f.getSubmissionId());
-                    String cName = sub != null ? candidateNameMap.getOrDefault(sub.getCandidateId(), "Unknown") : "Unknown";
+                    Candidate cand = sub != null ? candidateMap.get(sub.getCandidateId()) : null;
+                    String cName = cand != null ? cand.getFirstName() + " " + cand.getLastName() : "Unknown";
                     String aName = sub != null ? assessmentNameMap.getOrDefault(sub.getAssessmentId(), "Unknown") : "Unknown";
-                    return new FlagListItemResponse(f.getId(), f.getSubmissionId(), cName, aName,
-                            f.getReason(), f.getStatus(), f.getCreatedAt());
+                    UUID cId = cand != null ? cand.getId() : null;
+                    return new FlagListItemResponse(f.getId(), f.getSubmissionId(), cId, cName, aName,
+                            f.getReason(), f.getStatus(), f.getCreatedAt(),
+                            cand != null && cand.isBlacklisted(), cand != null && cand.isActionRequired());
                 })
                 .toList();
     }

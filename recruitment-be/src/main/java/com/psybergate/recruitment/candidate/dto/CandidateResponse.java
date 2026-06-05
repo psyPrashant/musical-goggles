@@ -9,5 +9,7 @@ public record CandidateResponse(
         String lastName,
         String email,
         String cellPhone,
-        Instant createdAt
+        Instant createdAt,
+        boolean actionRequired,
+        boolean blacklisted
 ) {}

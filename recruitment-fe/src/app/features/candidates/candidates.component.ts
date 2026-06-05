@@ -84,6 +84,9 @@ import { FlagListItem } from '../../core/flag/flag.model';
                     <div class="avatar" [style.background]="avatarColor(fullName(c))">{{ initials(fullName(c)) }}</div>
                     <div class="candidate-info">
                       <span class="candidate-name">{{ fullName(c) }}</span>
+                      @if (c.blacklisted) {
+                        <span class="blacklisted-tag">Blacklisted</span>
+                      }
                     </div>
                   </div>
                   <div class="assessment-cell">{{ c.email }}</div>
@@ -293,6 +296,14 @@ import { FlagListItem } from '../../core/flag/flag.model';
             </div>
           } @else {
             <div class="modal-body">
+              @if (inviteCandidate()?.blacklisted) {
+                <div class="blacklist-notice">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                  </svg>
+                  This candidate has been blacklisted and cannot be invited to do another assessment.
+                </div>
+              }
               @if (knownEmailNotice()) {
                 <div class="known-email-notice">{{ knownEmailNotice() }}</div>
               }
@@ -317,7 +328,8 @@ import { FlagListItem } from '../../core/flag/flag.model';
               }
               <div class="field">
                 <label class="field-label">Assessment <span class="required">*</span></label>
-                <select class="field-select" [value]="inviteAssessment()" (change)="inviteAssessment.set($any($event.target).value)">
+                <select class="field-select" [value]="inviteAssessment()" (change)="inviteAssessment.set($any($event.target).value)"
+                        [disabled]="!!inviteCandidate()?.blacklisted">
                   <option value="">Select an assessment…</option>
                   @for (a of assessments(); track a.id) {
                     <option [value]="a.id" [disabled]="inviteCompletedIds().has(a.id)">
@@ -341,7 +353,7 @@ import { FlagListItem } from '../../core/flag/flag.model';
             </div>
             <div class="modal-footer">
               <button class="btn btn-ghost" (click)="closeInvite()">Cancel</button>
-              <button class="btn btn-primary" (click)="sendInvite()" [disabled]="inviteSending() || !inviteAssessment() || (!inviteCandidate() && (!inviteEmail() || !inviteFirstName() || !inviteLastName()))">
+              <button class="btn btn-primary" (click)="sendInvite()" [disabled]="inviteSending() || !!inviteCandidate()?.blacklisted || !inviteAssessment() || (!inviteCandidate() && (!inviteEmail() || !inviteFirstName() || !inviteLastName()))">
                 @if (inviteSending()) { Sending… } @else {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -432,6 +444,20 @@ import { FlagListItem } from '../../core/flag/flag.model';
     .candidate-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 
     .candidate-name { font-size: 13px; font-weight: 600; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .blacklisted-tag {
+      display: inline-flex; padding: 1px 6px; border-radius: 999px;
+      font-size: 10px; font-weight: 600; letter-spacing: 0.03em;
+      background: var(--danger-subtle); color: var(--danger); width: fit-content;
+    }
+
+    .blacklist-notice {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 10px 12px; background: var(--danger-subtle);
+      border: 1px solid rgba(239,68,68,.25); border-radius: var(--radius-sm);
+      font-size: 13px; color: var(--danger); line-height: 1.45;
+    }
+    .blacklist-notice svg { flex-shrink: 0; margin-top: 1px; }
 
     .assessment-cell { font-size: 12.5px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 

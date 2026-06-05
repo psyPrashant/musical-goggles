@@ -29,11 +29,14 @@ export interface FlagAuditEntry {
 export interface FlagListItem {
   flagId: string;
   submissionId: string;
+  candidateId: string;
   candidateName: string;
   assessmentName: string;
   reason: FlagReason;
   status: FlagStatus;
   createdAt: string;
+  candidateBlacklisted: boolean;
+  candidateActionRequired: boolean;
 }
 
 export interface CreateFlagRequest {
