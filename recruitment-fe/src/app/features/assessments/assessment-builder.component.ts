@@ -1,6 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { CdkDragDrop, CdkDropList, CdkDrag, CdkDragHandle, moveItemInArray } from '@angular/cdk/drag-drop';
 import { AssessmentService } from '../../core/assessment/assessment.service';
 import { QuestionService } from '../../core/question/question.service';
 import { AssessmentDetail } from '../../core/assessment/assessment.model';
@@ -9,7 +10,7 @@ import { Difficulty, Question } from '../../core/question/question.model';
 @Component({
   selector: 'app-assessment-builder',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, CdkDropList, CdkDrag, CdkDragHandle],
   template: `
     <div class="builder">
       <div class="builder-header">
@@ -139,7 +140,7 @@ import { Difficulty, Question } from '../../core/question/question.model';
                 </button>
               </div>
 
-              <div class="question-list">
+              <div class="question-list" cdkDropList (cdkDropListDropped)="drop($event)">
                 @if ((assessment()?.questions?.length ?? 0) === 0) {
                   <div class="empty-questions">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -151,8 +152,8 @@ import { Difficulty, Question } from '../../core/question/question.model';
                   </div>
                 }
                 @for (q of assessment()?.questions; track q.questionId; let i = $index) {
-                  <div class="q-row">
-                    <svg class="drag-handle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+                  <div class="q-row" cdkDrag>
+                    <svg cdkDragHandle class="drag-handle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="9" cy="6" r="1" fill="currentColor" stroke="none"/>
                       <circle cx="15" cy="6" r="1" fill="currentColor" stroke="none"/>
                       <circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/>
@@ -169,12 +170,6 @@ import { Difficulty, Question } from '../../core/question/question.model';
                     @if (q.type === 'GROUP' && q.subQuestionCount > 0) {
                       <span class="sub-q-hint">{{ q.subQuestionCount }} sub-questions</span>
                     }
-                    <button class="icon-btn" (click)="moveUp(i)" [disabled]="i === 0" title="Move up">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
-                    </button>
-                    <button class="icon-btn" (click)="moveDown(i)" [disabled]="i === (assessment()?.questions?.length ?? 0) - 1" title="Move down">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
                     <button class="icon-btn danger" (click)="removeQuestion(q.questionId)" title="Remove">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -596,6 +591,11 @@ import { Difficulty, Question } from '../../core/question/question.model';
     }
 
     .drag-handle { color: var(--text-3); flex-shrink: 0; cursor: grab; }
+    .drag-handle:active { cursor: grabbing; }
+    .cdk-drag-preview { background: var(--bg-card); border: 1px solid var(--accent); border-radius: var(--radius-sm); box-shadow: 0 4px 16px rgba(0,0,0,0.3); opacity: 0.95; }
+    .cdk-drag-placeholder { opacity: 0.3; }
+    .cdk-drag-animating { transition: transform 200ms ease; }
+    .question-list.cdk-drop-list-dragging .q-row:not(.cdk-drag-placeholder) { transition: transform 200ms ease; }
 
     .q-num { font-size: 11.5px; color: var(--text-3); width: 18px; text-align: center; flex-shrink: 0; }
 
@@ -985,25 +985,12 @@ export class AssessmentBuilderComponent implements OnInit {
     });
   }
 
-  moveUp(index: number) {
-    if (index <= 0) return;
+  drop(event: CdkDragDrop<unknown[]>) {
+    if (event.previousIndex === event.currentIndex) return;
     this.assessment.update(a => {
       if (!a) return a;
       const qs = [...a.questions];
-      [qs[index - 1], qs[index]] = [qs[index], qs[index - 1]];
-      const reindexed = qs.map((q, i) => ({ ...q, displayOrder: i + 1 }));
-      return { ...a, questions: reindexed };
-    });
-    this.orderChanged.set(true);
-  }
-
-  moveDown(index: number) {
-    const len = this.assessment()?.questions.length ?? 0;
-    if (index >= len - 1) return;
-    this.assessment.update(a => {
-      if (!a) return a;
-      const qs = [...a.questions];
-      [qs[index], qs[index + 1]] = [qs[index + 1], qs[index]];
+      moveItemInArray(qs, event.previousIndex, event.currentIndex);
       const reindexed = qs.map((q, i) => ({ ...q, displayOrder: i + 1 }));
       return { ...a, questions: reindexed };
     });
