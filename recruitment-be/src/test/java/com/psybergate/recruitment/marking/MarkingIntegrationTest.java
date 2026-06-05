@@ -4,6 +4,7 @@ import tools.jackson.databind.ObjectMapper;
 import com.psybergate.recruitment.AbstractIntegrationTest;
 import com.psybergate.recruitment.TestDatasourceInitializer;
 import com.psybergate.recruitment.domain.*;
+import com.psybergate.recruitment.domain.SubmissionStatus;
 import com.psybergate.recruitment.marking.dto.ScoreAnswerRequest;
 import com.psybergate.recruitment.repository.*;
 import com.psybergate.recruitment.security.JwtService;
@@ -336,6 +337,100 @@ class MarkingIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/assessments/" + UUID.randomUUID() + "/submissions")
                 .header("Authorization", "Bearer " + recruiterToken))
                 .andExpect(status().isNotFound());
+    }
+
+    // ── scoreByQuestionId (MG-143) ─────────────────────────────────────────
+
+    @Test
+    void scoreByQuestionId_noExistingAnswer_createsCandidateAnswerAndSavesScore() throws Exception {
+        // Directly create a submitted submission with no answers
+        CandidateSubmission sub = new CandidateSubmission();
+        sub.setCandidateId(candidate.getId());
+        sub.setAssessmentId(assessment.getId());
+        sub.setStatus(SubmissionStatus.SUBMITTED);
+        sub.setSubmittedAt(Instant.now());
+        sub = submissionRepository.save(sub);
+
+        // No CandidateAnswer exists for mcqQuestion
+        org.junit.jupiter.api.Assertions.assertTrue(
+                answerRepository.findBySubmissionIdAndQuestionId(sub.getId(), mcqQuestion.getId()).isEmpty());
+
+        ScoreAnswerRequest req = new ScoreAnswerRequest(1, "Good");
+        mockMvc.perform(put("/api/submissions/" + sub.getId() + "/questions/" + mcqQuestion.getId() + "/score")
+                .header("Authorization", "Bearer " + recruiterToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.score").value(1))
+                .andExpect(jsonPath("$.autoMarked").value(false))
+                .andExpect(jsonPath("$.answerId").isNotEmpty());
+
+        // CandidateAnswer should now exist
+        org.junit.jupiter.api.Assertions.assertTrue(
+                answerRepository.findBySubmissionIdAndQuestionId(sub.getId(), mcqQuestion.getId()).isPresent());
+    }
+
+    @Test
+    void scoreByQuestionId_questionNotInAssessment_returns404() throws Exception {
+        CandidateSubmission sub = new CandidateSubmission();
+        sub.setCandidateId(candidate.getId());
+        sub.setAssessmentId(assessment.getId());
+        sub.setStatus(SubmissionStatus.SUBMITTED);
+        sub.setSubmittedAt(Instant.now());
+        sub = submissionRepository.save(sub);
+
+        ScoreAnswerRequest req = new ScoreAnswerRequest(1, null);
+        mockMvc.perform(put("/api/submissions/" + sub.getId() + "/questions/" + UUID.randomUUID() + "/score")
+                .header("Authorization", "Bearer " + recruiterToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isNotFound());
+    }
+
+    // ── fullyMarked with missing CandidateAnswer (MG-144) ──────────────────
+
+    @Test
+    void getResult_unansweredQuestionHasNoAnswer_doesNotBlockFullyMarked() throws Exception {
+        // Create a second TEXT question and add it to the assessment
+        TextQuestion textQ = new TextQuestion();
+        textQ.setTitle("Explain recursion");
+        textQ.setBody("What is recursion?");
+        textQ.setCreatedBy(recruiter);
+        textQ = (TextQuestion) questionRepository.save(textQ);
+
+        AssessmentQuestion aq2 = new AssessmentQuestion();
+        aq2.setAssessment(assessment);
+        aq2.setQuestion(textQ);
+        aq2.setDisplayOrder(2);
+        assessmentQuestionRepository.save(aq2);
+
+        // Create a submitted submission
+        CandidateSubmission sub = new CandidateSubmission();
+        sub.setCandidateId(candidate.getId());
+        sub.setAssessmentId(assessment.getId());
+        sub.setStatus(SubmissionStatus.SUBMITTED);
+        sub.setSubmittedAt(Instant.now());
+        sub = submissionRepository.save(sub);
+
+        // Create CandidateAnswer + AnswerScore for mcqQuestion only; textQ has none
+        CandidateAnswer mcqAnswer = new CandidateAnswer();
+        mcqAnswer.setSubmissionId(sub.getId());
+        mcqAnswer.setQuestionId(mcqQuestion.getId());
+        mcqAnswer.setSavedAt(Instant.now());
+        mcqAnswer = answerRepository.save(mcqAnswer);
+
+        AnswerScore mcqScore = new AnswerScore();
+        mcqScore.setCandidateAnswerId(mcqAnswer.getId());
+        mcqScore.setScore(1);
+        mcqScore.setAutoMarked(true);
+        mcqScore.setMarkedAt(Instant.now());
+        scoreRepository.save(mcqScore);
+
+        // textQ has no CandidateAnswer at all — should NOT block FULLY_MARKED
+        mockMvc.perform(get("/api/submissions/" + sub.getId() + "/result")
+                .header("Authorization", "Bearer " + recruiterToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.markingStatus").value("FULLY_MARKED"));
     }
 
     // ── manual marking edge cases ──────────────────────────────────────────

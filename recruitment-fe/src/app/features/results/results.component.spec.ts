@@ -41,6 +41,7 @@ describe('ResultsComponent', () => {
       listAllSubmissions: vi.fn().mockReturnValue(of(mockSubmissions)),
       getResult: vi.fn().mockReturnValue(of(mockResult)),
       scoreAnswer: vi.fn().mockReturnValue(of({ answerId: 'a1', score: 8, feedback: '', autoMarked: false, markedBy: 'u1', markedAt: '2026-05-29T10:00:00Z' })),
+      scoreAnswerByQuestion: vi.fn().mockReturnValue(of({ answerId: 'a-new', score: 3, feedback: '', autoMarked: false, markedBy: 'u1', markedAt: '2026-05-29T10:00:00Z' })),
     };
     flagSvc = {
       createFlag: vi.fn().mockReturnValue(of({ flagId: 'f1', submissionId: 's1', reason: 'COPIED_ANSWERS', status: 'FLAGGED', resolutionNotes: null, createdBy: 'u1', createdAt: '2026-06-01T10:00:00Z' })),
@@ -104,6 +105,40 @@ describe('ResultsComponent', () => {
     component.submitFlag();
 
     expect(flagSvc.createFlag).not.toHaveBeenCalled();
+  });
+
+  it('saveScore uses scoreAnswer when answerId is present', () => {
+    const fixture = TestBed.createComponent(ResultsComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const resultWithAnswer: ResultSummary = { ...mockResult, submissionId: 's1' };
+    component.result.set(resultWithAnswer);
+    component.selectedSummary.set(mockSubmissions[0]);
+
+    const question = mockResult.questions[0]; // answerId: 'a1'
+    component.editScores.set({ [question.questionId]: 8 });
+    component.saveScore(question);
+
+    expect(markingSvc.scoreAnswer).toHaveBeenCalledWith('s1', 'a1', expect.objectContaining({ score: 8 }));
+    expect(markingSvc.scoreAnswerByQuestion).not.toHaveBeenCalled();
+  });
+
+  it('saveScore uses scoreAnswerByQuestion when answerId is null', () => {
+    const fixture = TestBed.createComponent(ResultsComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const unansweredQuestion = { ...mockResult.questions[0], answerId: null };
+    const resultWithUnanswered: ResultSummary = { ...mockResult, submissionId: 's1', questions: [unansweredQuestion] };
+    component.result.set(resultWithUnanswered);
+    component.selectedSummary.set(mockSubmissions[0]);
+
+    component.editScores.set({ [unansweredQuestion.questionId]: 3 });
+    component.saveScore(unansweredQuestion);
+
+    expect(markingSvc.scoreAnswerByQuestion).toHaveBeenCalledWith('s1', 'q1', expect.objectContaining({ score: 3 }));
+    expect(markingSvc.scoreAnswer).not.toHaveBeenCalled();
   });
 
   it('submitFlag calls createFlag with selected reason', () => {

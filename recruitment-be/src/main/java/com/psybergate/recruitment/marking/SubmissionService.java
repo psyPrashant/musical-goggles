@@ -15,5 +15,7 @@ public interface SubmissionService {
 
     AnswerScoreResponse scoreAnswer(UUID submissionId, UUID answerId, int score, String feedback, UUID markerId);
 
+    AnswerScoreResponse scoreByQuestionId(UUID submissionId, UUID questionId, int score, String feedback, UUID markerId);
+
     ResultSummaryResponse getResult(UUID submissionId);
 }

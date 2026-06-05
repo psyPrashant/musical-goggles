@@ -86,6 +86,64 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     @Override
+    @Transactional
+    public AnswerScoreResponse scoreByQuestionId(UUID submissionId, UUID questionId, int score, String feedback, UUID markerId) {
+        CandidateSubmission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Submission not found"));
+
+        if (score < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Score must be non-negative");
+        }
+
+        // Validate questionId belongs to this submission's assessment (top-level or GROUP sub-question)
+        List<AssessmentQuestion> aqList = assessmentQuestionRepository
+                .findByAssessmentIdOrderByDisplayOrder(submission.getAssessmentId());
+        boolean validQuestion = false;
+        for (AssessmentQuestion aq : aqList) {
+            Question q = (Question) Hibernate.unproxy(aq.getQuestion());
+            if (q.getId().equals(questionId)) { validQuestion = true; break; }
+            if (q instanceof GroupQuestion gq) {
+                for (GroupQuestionMember m : gq.getMembers()) {
+                    if (m.getQuestion().getId().equals(questionId)) { validQuestion = true; break; }
+                }
+            }
+            if (validQuestion) break;
+        }
+        if (!validQuestion) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found in this assessment");
+        }
+
+        // Find or create a CandidateAnswer for this question
+        CandidateAnswer answer = answerRepository
+                .findBySubmissionIdAndQuestionId(submissionId, questionId)
+                .orElseGet(() -> {
+                    CandidateAnswer a = new CandidateAnswer();
+                    a.setSubmissionId(submissionId);
+                    a.setQuestionId(questionId);
+                    a.setSavedAt(Instant.now());
+                    a.setDraft(false);
+                    return answerRepository.save(a);
+                });
+
+        AnswerScore answerScore = scoreRepository.findByCandidateAnswerId(answer.getId())
+                .orElseGet(AnswerScore::new);
+
+        answerScore.setCandidateAnswerId(answer.getId());
+        answerScore.setScore(score);
+        answerScore.setFeedback(feedback);
+        answerScore.setMarkedBy(markerId);
+        answerScore.setMarkedAt(Instant.now());
+        answerScore.setAutoMarked(false);
+
+        answerScore = scoreRepository.save(answerScore);
+
+        return new AnswerScoreResponse(
+                answer.getId(), answerScore.getScore(), answerScore.getFeedback(),
+                answerScore.isAutoMarked(), answerScore.getMarkedBy(), answerScore.getMarkedAt()
+        );
+    }
+
+    @Override
     public ResultSummaryResponse getResult(UUID submissionId) {
         CandidateSubmission submission = submissionRepository.findById(submissionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Submission not found"));
@@ -146,11 +204,10 @@ public class SubmissionServiceImpl implements SubmissionService {
                             subMarkedAt = subAnswerScore.getMarkedAt();
                             totalScore += subScore;
                         } else {
-                            fullyMarked = false;
+                            fullyMarked = false; // answered but not yet scored
                         }
-                    } else {
-                        fullyMarked = false;
                     }
+                    // subAnswer == null means unanswered — implicitly scored 0; does not block FULLY_MARKED
 
                     subDtos.add(new ResultQuestionDto(
                             subQ.getId(),
@@ -190,11 +247,10 @@ public class SubmissionServiceImpl implements SubmissionService {
                         markedAt = answerScore.getMarkedAt();
                         totalScore += score;
                     } else {
-                        fullyMarked = false;
+                        fullyMarked = false; // answered but not yet scored
                     }
-                } else {
-                    fullyMarked = false;
                 }
+                // answer == null means unanswered — implicitly scored 0; does not block FULLY_MARKED
 
                 questionDtos.add(new ResultQuestionDto(
                         rawQ.getId(),
