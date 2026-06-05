@@ -18,6 +18,12 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
           <span class="page-sub">{{ filteredSubmissions().length }} submissions</span>
         </div>
         <div class="header-filters">
+          <select class="assessment-select" [value]="assessmentFilter()" (change)="assessmentFilter.set($any($event.target).value)">
+            <option value="">All Assessments</option>
+            @for (a of availableAssessments(); track a.assessmentId) {
+              <option [value]="a.assessmentId">{{ a.assessmentTitle }}</option>
+            }
+          </select>
           @for (f of statusFilters; track f.value) {
             <button class="filter-chip" [class.active]="statusFilter() === f.value" (click)="statusFilter.set(f.value)">{{ f.label }}</button>
           }
@@ -274,7 +280,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                             <div class="mark-row">
                               <input type="number" class="score-input" [min]="0" [max]="sub.maxScore"
                                      [value]="editScores()[sub.questionId] ?? sub.score ?? ''"
-                                     (input)="onScoreInput(sub.questionId, $event)"
+                                     (input)="onScoreInput(sub.questionId, $event)" (blur)="onScoreBlur(sub.questionId, $event, sub.maxScore)"
                                      placeholder="Score (max {{ sub.maxScore }})" />
                               <input type="text" class="feedback-input-inline"
                                      [value]="editFeedback()[sub.questionId] ?? sub.feedback ?? ''"
@@ -287,7 +293,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                               <span class="override-hint">Override auto-score:</span>
                               <input type="number" class="score-input" [min]="0" [max]="sub.maxScore"
                                      [value]="editScores()[sub.questionId] ?? ''"
-                                     (input)="onScoreInput(sub.questionId, $event)"
+                                     (input)="onScoreInput(sub.questionId, $event)" (blur)="onScoreBlur(sub.questionId, $event, sub.maxScore)"
                                      placeholder="{{ sub.score }}" />
                               <button class="save-btn secondary" (click)="saveScore(sub)" [disabled]="saving()">Override</button>
                             </div>
@@ -321,7 +327,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                         <div class="mark-row">
                           <input type="number" class="score-input" [min]="0" [max]="q.maxScore"
                                  [value]="editScores()[q.questionId] ?? q.score ?? ''"
-                                 (input)="onScoreInput(q.questionId, $event)"
+                                 (input)="onScoreInput(q.questionId, $event)" (blur)="onScoreBlur(q.questionId, $event, q.maxScore)"
                                  placeholder="Score (max {{ q.maxScore }})" />
                           <input type="text" class="feedback-input-inline"
                                  [value]="editFeedback()[q.questionId] ?? q.feedback ?? ''"
@@ -335,7 +341,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                           <span class="override-hint">Override auto-score:</span>
                           <input type="number" class="score-input" [min]="0" [max]="q.maxScore"
                                  [value]="editScores()[q.questionId] ?? ''"
-                                 (input)="onScoreInput(q.questionId, $event)"
+                                 (input)="onScoreInput(q.questionId, $event)" (blur)="onScoreBlur(q.questionId, $event, q.maxScore)"
                                  placeholder="{{ q.score }}" />
                           <button class="save-btn secondary" (click)="saveScore(q)" [disabled]="saving()">Override</button>
                         </div>
@@ -364,6 +370,14 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
     .page-sub { font-size: 12px; color: var(--text-3); }
 
     .header-filters { display: flex; gap: 5px; }
+
+    .assessment-select {
+      padding: 5px 10px; border-radius: var(--radius-sm); cursor: pointer;
+      font-family: var(--font); font-size: 12.5px;
+      background: var(--bg-elevated); color: var(--text-2); border: 1px solid var(--border);
+      outline: none; transition: border-color 120ms;
+    }
+    .assessment-select:focus { border-color: var(--accent); color: var(--text-1); }
 
     .filter-chip {
       padding: 5px 12px; border-radius: 999px; cursor: pointer;
@@ -640,6 +654,7 @@ export class ResultsComponent implements OnInit {
   readonly loadingResult = signal(false);
   readonly saving = signal(false);
   readonly statusFilter = signal('');
+  readonly assessmentFilter = signal('');
 
   // Flag state
   readonly activeFlag = signal<FlagResponse | null>(null);
@@ -668,16 +683,33 @@ export class ResultsComponent implements OnInit {
     { value: 'PENDING_REVIEW', label: 'Pending Review' },
   ];
 
+  readonly availableAssessments = computed(() => {
+    const seen = new Set<string>();
+    const result: { assessmentId: string; assessmentTitle: string }[] = [];
+    for (const s of this.submissions()) {
+      if (s.assessmentId && !seen.has(s.assessmentId)) {
+        seen.add(s.assessmentId);
+        result.push({ assessmentId: s.assessmentId, assessmentTitle: s.assessmentTitle });
+      }
+    }
+    return result;
+  });
+
   readonly filteredSubmissions = computed(() => {
-    const f = this.statusFilter();
-    if (!f) return this.submissions();
-    if (f === 'PENDING_REVIEW') {
-      return this.submissions().filter(s =>
+    const statusF = this.statusFilter();
+    const assessmentF = this.assessmentFilter();
+    let list = this.submissions();
+    if (assessmentF) {
+      list = list.filter(s => s.assessmentId === assessmentF);
+    }
+    if (!statusF) return list;
+    if (statusF === 'PENDING_REVIEW') {
+      return list.filter(s =>
         (s.status === 'SUBMITTED' || s.status === 'AUTO_SUBMITTED') &&
         s.markedCount < s.totalAnswers,
       );
     }
-    return this.submissions().filter(s => s.status === f);
+    return list.filter(s => s.status === statusF);
   });
 
   ngOnInit() {
@@ -808,6 +840,18 @@ export class ResultsComponent implements OnInit {
     this.editScores.update(s => ({ ...s, [questionId]: isNaN(val) ? undefined : val }));
   }
 
+  onScoreBlur(questionId: string, event: Event, maxScore: number) {
+    const input = event.target as HTMLInputElement;
+    const raw = parseFloat(input.value);
+    if (!isNaN(raw)) {
+      const clamped = Math.min(Math.max(raw, 0), maxScore);
+      if (clamped !== raw) {
+        input.value = String(clamped);
+        this.editScores.update(s => ({ ...s, [questionId]: clamped }));
+      }
+    }
+  }
+
   onFeedbackInput(questionId: string, event: Event) {
     const val = (event.target as HTMLInputElement).value;
     this.editFeedback.update(f => ({ ...f, [questionId]: val }));
@@ -818,8 +862,9 @@ export class ResultsComponent implements OnInit {
     const s = this.selectedSummary();
     if (!r || !s || !s.submissionId) return;
 
-    const scoreVal = this.editScores()[q.questionId] ?? q.score;
-    if (scoreVal == null) return;
+    const rawScore = this.editScores()[q.questionId] ?? q.score;
+    if (rawScore == null) return;
+    const scoreVal = Math.min(Math.max(rawScore, 0), q.maxScore);
 
     const feedbackVal = this.editFeedback()[q.questionId] ?? q.feedback ?? undefined;
     this.saving.set(true);
