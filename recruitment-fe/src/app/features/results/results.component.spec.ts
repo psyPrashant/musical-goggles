@@ -23,12 +23,12 @@ const mockResult: ResultSummary = {
   assessmentTitle: 'Test Assessment',
   submittedAt: '2026-05-29T10:00:00Z',
   totalScore: 5,
-  maxScore: 1,
+  maxScore: 10,
   answeredCount: 1,
   markingStatus: 'PENDING_REVIEW',
   questions: [
     { questionId: 'q1', answerId: 'a1', questionTitle: 'What is OOP?', questionType: 'TEXT',
-      candidateAnswer: 'Objects and classes', score: null, maxScore: 1, feedback: null,
+      candidateAnswer: 'Objects and classes', score: null, maxScore: 10, feedback: null,
       autoMarked: false, markedBy: null, markedAt: null },
   ],
 };
