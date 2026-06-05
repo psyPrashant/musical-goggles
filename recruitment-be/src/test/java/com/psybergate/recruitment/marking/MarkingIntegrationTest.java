@@ -426,7 +426,21 @@ class MarkingIntegrationTest extends AbstractIntegrationTest {
         mcqScore.setMarkedAt(Instant.now());
         scoreRepository.save(mcqScore);
 
-        // textQ has no CandidateAnswer at all — should NOT block FULLY_MARKED
+        // textQ has no CandidateAnswer — blocks FULLY_MARKED until recruiter scores it via questionId endpoint
+        mockMvc.perform(get("/api/submissions/" + sub.getId() + "/result")
+                .header("Authorization", "Bearer " + recruiterToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.markingStatus").value("PENDING_REVIEW"));
+
+        // Recruiter scores the unanswered textQ via the questionId endpoint
+        ScoreAnswerRequest scoreTextQ = new ScoreAnswerRequest(0, "Not answered");
+        mockMvc.perform(put("/api/submissions/" + sub.getId() + "/questions/" + textQ.getId() + "/score")
+                .header("Authorization", "Bearer " + recruiterToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(scoreTextQ)))
+                .andExpect(status().isOk());
+
+        // Now all questions are scored — should be FULLY_MARKED
         mockMvc.perform(get("/api/submissions/" + sub.getId() + "/result")
                 .header("Authorization", "Bearer " + recruiterToken))
                 .andExpect(status().isOk())

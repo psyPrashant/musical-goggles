@@ -174,7 +174,6 @@ public class SubmissionServiceImpl implements SubmissionService {
         int totalScore = 0;
         int answeredCount = 0;
         boolean fullyMarked = true;
-        boolean hasAnyAnswer = false; // at least one CandidateAnswer must exist for FULLY_MARKED
 
         for (AssessmentQuestion aq : aqList) {
             Question rawQ = (Question) Hibernate.unproxy(aq.getQuestion());
@@ -194,7 +193,6 @@ public class SubmissionServiceImpl implements SubmissionService {
                     Instant subMarkedAt = null;
 
                     if (subAnswer != null) {
-                        hasAnyAnswer = true;
                         answeredCount++;
                         subCandidateAnswer = resolveCandidateAnswer(subAnswer, subQ);
                         AnswerScore subAnswerScore = scoreByAnswerId.get(subAnswer.getId());
@@ -206,10 +204,11 @@ public class SubmissionServiceImpl implements SubmissionService {
                             subMarkedAt = subAnswerScore.getMarkedAt();
                             totalScore += subScore;
                         } else {
-                            fullyMarked = false; // answered but not yet scored
+                            fullyMarked = false;
                         }
+                    } else {
+                        fullyMarked = false; // unanswered sub-question: must be scored via questionId endpoint
                     }
-                    // subAnswer == null means unanswered — implicitly scored 0; does not block FULLY_MARKED
 
                     subDtos.add(new ResultQuestionDto(
                             subQ.getId(),
@@ -237,7 +236,6 @@ public class SubmissionServiceImpl implements SubmissionService {
                 Instant markedAt = null;
 
                 if (answer != null) {
-                    hasAnyAnswer = true;
                     answeredCount++;
                     candidateAnswerText = resolveCandidateAnswer(answer, rawQ);
 
@@ -250,10 +248,11 @@ public class SubmissionServiceImpl implements SubmissionService {
                         markedAt = answerScore.getMarkedAt();
                         totalScore += score;
                     } else {
-                        fullyMarked = false; // answered but not yet scored
+                        fullyMarked = false;
                     }
+                } else {
+                    fullyMarked = false; // unanswered: must be scored via questionId endpoint
                 }
-                // answer == null means unanswered — implicitly scored 0; does not block FULLY_MARKED
 
                 questionDtos.add(new ResultQuestionDto(
                         rawQ.getId(),
@@ -265,7 +264,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             }
         }
 
-        String markingStatus = fullyMarked && hasAnyAnswer ? "FULLY_MARKED" : "PENDING_REVIEW";
+        String markingStatus = fullyMarked && !aqList.isEmpty() ? "FULLY_MARKED" : "PENDING_REVIEW";
 
         int maxScore = aqList.stream()
                 .mapToInt(aq -> ((Question) Hibernate.unproxy(aq.getQuestion())).getMaxScore())
@@ -308,13 +307,20 @@ public class SubmissionServiceImpl implements SubmissionService {
         Set<UUID> allAnswerIds = allAnswers.stream().map(CandidateAnswer::getId).collect(Collectors.toSet());
         Map<UUID, UUID> submissionByAnswerId = allAnswers.stream()
                 .collect(Collectors.toMap(CandidateAnswer::getId, CandidateAnswer::getSubmissionId));
+        // Build questionId lookup for each answerId (needed for slot-based marked count)
+        Map<UUID, UUID> questionIdByAnswerId = allAnswers.stream()
+                .collect(Collectors.toMap(CandidateAnswer::getId, CandidateAnswer::getQuestionId));
         List<AnswerScore> allScores = allAnswerIds.isEmpty() ? List.of() :
                 scoreRepository.findByCandidateAnswerIdIn(allAnswerIds);
-        Map<UUID, Long> scoredBySubmission = allScores.stream()
-                .collect(Collectors.groupingBy(
-                        as -> submissionByAnswerId.get(as.getCandidateAnswerId()),
-                        Collectors.counting()
-                ));
+        // Build set of scored question IDs per submission for slot-based counting
+        Map<UUID, Set<UUID>> scoredQIdsBySubmission = new HashMap<>();
+        for (AnswerScore as : allScores) {
+            UUID sid = submissionByAnswerId.get(as.getCandidateAnswerId());
+            UUID qid = questionIdByAnswerId.get(as.getCandidateAnswerId());
+            if (sid != null && qid != null) {
+                scoredQIdsBySubmission.computeIfAbsent(sid, k -> new HashSet<>()).add(qid);
+            }
+        }
         Map<UUID, Integer> totalScoreBySubmission = allScores.stream()
                 .collect(Collectors.groupingBy(
                         as -> submissionByAnswerId.get(as.getCandidateAnswerId()),
@@ -324,6 +330,8 @@ public class SubmissionServiceImpl implements SubmissionService {
         // Batch-load question counts per assessment
         Set<UUID> assessmentIds = submissions.stream()
                 .map(CandidateSubmission::getAssessmentId).collect(Collectors.toSet());
+        Map<UUID, UUID> assessmentBySubmission = submissions.stream()
+                .collect(Collectors.toMap(CandidateSubmission::getId, CandidateSubmission::getAssessmentId));
         Map<UUID, Integer> questionCountByAssessment = assessmentIds.isEmpty() ? Map.of() :
                 assessmentQuestionRepository.sumMaxScoreGroupByAssessmentId(assessmentIds).stream()
                         .collect(Collectors.toMap(
@@ -331,22 +339,25 @@ public class SubmissionServiceImpl implements SubmissionService {
                                 row -> ((Long) row[1]).intValue()
                         ));
 
-        // Compute total answerable questions per assessment (GROUP sub-questions counted individually)
+        // Build slot list per assessment: question IDs for every answerable slot (GROUP sub-questions
+        // counted individually; a question ID that appears in multiple slots counts once per slot)
+        Map<UUID, List<UUID>> slotQIdsByAssessment = new HashMap<>();
         Map<UUID, Integer> totalAnswerableByAssessment = new HashMap<>();
         for (UUID assessmentId : assessmentIds) {
             List<AssessmentQuestion> aqItems = assessmentQuestionRepository
                     .findByAssessmentIdOrderByDisplayOrder(assessmentId);
-            int total = 0;
+            List<UUID> slots = new ArrayList<>();
             for (AssessmentQuestion aqItem : aqItems) {
                 Question q = (Question) Hibernate.unproxy(aqItem.getQuestion());
                 if (q instanceof GroupQuestion gq) {
                     Hibernate.initialize(gq.getMembers());
-                    total += gq.getMembers().size();
+                    gq.getMembers().forEach(m -> slots.add(m.getQuestion().getId()));
                 } else {
-                    total++;
+                    slots.add(q.getId());
                 }
             }
-            totalAnswerableByAssessment.put(assessmentId, total);
+            slotQIdsByAssessment.put(assessmentId, slots);
+            totalAnswerableByAssessment.put(assessmentId, slots.size());
         }
 
         // Load open flags for all submissions
@@ -367,7 +378,11 @@ public class SubmissionServiceImpl implements SubmissionService {
                     Candidate c = candidateMap.get(s.getCandidateId());
                     String name = c != null ? c.getFirstName() + " " + c.getLastName() : "Unknown";
                     int answered = answeredBySubmission.getOrDefault(s.getId(), 0L).intValue();
-                    int marked = scoredBySubmission.getOrDefault(s.getId(), 0L).intValue();
+                    // Count scored slots: each slot whose question ID has a score counts once per slot
+                    Set<UUID> scoredQIds = scoredQIdsBySubmission.getOrDefault(s.getId(), Set.of());
+                    List<UUID> slots = slotQIdsByAssessment.getOrDefault(
+                            assessmentBySubmission.get(s.getId()), List.of());
+                    int marked = (int) slots.stream().filter(scoredQIds::contains).count();
                     int score = totalScoreBySubmission.getOrDefault(s.getId(), 0);
                     int maxScore = questionCountByAssessment.getOrDefault(s.getAssessmentId(), 0);
                     int totalAnswerable = totalAnswerableByAssessment.getOrDefault(s.getAssessmentId(), 0);
