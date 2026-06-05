@@ -82,10 +82,10 @@ import { ThemeService } from '../core/theme/theme.service';
         </nav>
 
         <div class="sidebar-user">
-          <div class="user-avatar">AU</div>
+          <div class="user-avatar">{{ initials }}</div>
           <div class="user-info">
-            <span class="user-name">Admin User</span>
-            <span class="user-role">Administrator</span>
+            <span class="user-name">{{ auth.displayName() }}</span>
+            <span class="user-role">{{ roleLabel }}</span>
           </div>
           <button class="theme-btn" (click)="theme.toggle()" [title]="theme.isDark() ? 'Switch to light mode' : 'Switch to dark mode'">
             @if (theme.isDark()) {
@@ -307,6 +307,18 @@ import { ThemeService } from '../core/theme/theme.service';
 export class ShellComponent {
   protected readonly auth = inject(AuthService);
   readonly theme = inject(ThemeService);
+
+  get initials(): string {
+    const f = this.auth.firstName()?.[0] ?? '';
+    const l = this.auth.lastName()?.[0] ?? '';
+    return (f + l).toUpperCase() || '?';
+  }
+
+  get roleLabel(): string {
+    const role = this.auth.role();
+    if (!role) return '';
+    return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+  }
 
   logout() {
     this.auth.logout();

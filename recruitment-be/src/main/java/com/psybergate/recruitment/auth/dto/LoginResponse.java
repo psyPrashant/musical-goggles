@@ -1,3 +1,3 @@
 package com.psybergate.recruitment.auth.dto;
 
-public record LoginResponse(String token, String role) {}
+public record LoginResponse(String token, String role, String firstName, String lastName) {}

@@ -33,7 +33,7 @@ public class AuthServiceImpl implements AuthService {
         }
         long ttlHours = user.getRole() == Role.CANDIDATE ? 2L : 1L;
         String token = jwtService.generateToken(user.getId().toString(), user.getRole(), ttlHours);
-        return new LoginResponse(token, user.getRole().name());
+        return new LoginResponse(token, user.getRole().name(), user.getFirstName(), user.getLastName());
     }
 
     @Override
