@@ -14,6 +14,7 @@ import java.util.UUID;
 public interface CandidateSubmissionRepository extends JpaRepository<CandidateSubmission, UUID> {
 
     Optional<CandidateSubmission> findByCandidateIdAndAssessmentId(UUID candidateId, UUID assessmentId);
+    boolean existsByCandidateIdAndAssessmentIdAndStatusIn(UUID candidateId, UUID assessmentId, List<SubmissionStatus> statuses);
     Optional<CandidateSubmission> findByInvitationId(UUID invitationId);
 
     List<CandidateSubmission> findByAssessmentId(UUID assessmentId);

@@ -320,7 +320,9 @@ import { FlagListItem } from '../../core/flag/flag.model';
                 <select class="field-select" [value]="inviteAssessment()" (change)="inviteAssessment.set($any($event.target).value)">
                   <option value="">Select an assessment…</option>
                   @for (a of assessments(); track a.id) {
-                    <option [value]="a.id">{{ a.title }}{{ a.status === 'DRAFT' ? ' (Draft)' : '' }}</option>
+                    <option [value]="a.id" [disabled]="inviteCompletedIds().has(a.id)">
+                      {{ a.title }}{{ a.status === 'DRAFT' ? ' (Draft)' : '' }}{{ inviteCompletedIds().has(a.id) ? ' (Completed)' : '' }}
+                    </option>
                   }
                 </select>
               </div>
@@ -622,6 +624,14 @@ export class CandidatesComponent implements OnInit {
   readonly inviteLink = signal('');
   readonly copied = signal(false);
   readonly knownEmailNotice = signal('');
+  readonly inviteCandidateHistory = signal<CandidateHistoryItem[]>([]);
+  readonly inviteCompletedIds = computed(() =>
+    new Set(
+      this.inviteCandidateHistory()
+        .filter(h => h.status === 'SUBMITTED' || h.status === 'AUTO_SUBMITTED')
+        .map(h => h.assessmentId)
+    )
+  );
 
   // ── DRAFT confirmation state ─────────────────────────────────────────────────
   readonly showDraftConfirm = signal(false);
@@ -693,6 +703,10 @@ export class CandidatesComponent implements OnInit {
   openInviteForCandidate(c: Candidate) {
     this.inviteCandidate.set(c);
     this.showInvite.set(true);
+    this.inviteCandidateHistory.set([]);
+    this.candidateSvc.getHistory(c.id).subscribe({
+      next: items => this.inviteCandidateHistory.set(items),
+    });
   }
 
   closeInvite() {
@@ -709,6 +723,7 @@ export class CandidatesComponent implements OnInit {
     this.knownEmailNotice.set('');
     this.showDraftConfirm.set(false);
     this.draftPublishError.set('');
+    this.inviteCandidateHistory.set([]);
   }
 
   sendInvite() {
@@ -763,7 +778,9 @@ export class CandidatesComponent implements OnInit {
           error: err => {
             this.inviteSending.set(false);
             const errCode = err.error?.detail ?? err.error?.message ?? err.error;
-            if (err.status === 409 && errCode === 'DUPLICATE_INVITE') {
+            if (err.status === 409 && errCode === 'ASSESSMENT_ALREADY_COMPLETED') {
+              this.toastSvc.show('This candidate has already completed this assessment.', 'warning');
+            } else if (err.status === 409 && errCode === 'DUPLICATE_INVITE') {
               this.toastSvc.show('This candidate already has a pending invitation for this assessment.', 'warning');
             } else if (err.status === 409 && errCode === 'ACTIVE_INVITE_EXISTS') {
               this.inviteError.set('This candidate already has an active assessment link. Cancel it before sending a new one.');

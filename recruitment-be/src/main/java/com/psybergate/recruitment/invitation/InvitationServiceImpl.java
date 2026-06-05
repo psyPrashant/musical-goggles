@@ -5,11 +5,13 @@ import com.psybergate.recruitment.domain.AssessmentStatus;
 import com.psybergate.recruitment.domain.Candidate;
 import com.psybergate.recruitment.domain.CandidateInvitation;
 import com.psybergate.recruitment.domain.InvitationStatus;
+import com.psybergate.recruitment.domain.SubmissionStatus;
 import com.psybergate.recruitment.email.EmailService;
 import com.psybergate.recruitment.invitation.dto.InviteRequest;
 import com.psybergate.recruitment.invitation.dto.InviteResponse;
 import com.psybergate.recruitment.repository.AssessmentRepository;
 import com.psybergate.recruitment.repository.CandidateRepository;
+import com.psybergate.recruitment.repository.CandidateSubmissionRepository;
 import com.psybergate.recruitment.repository.InvitationRepository;
 import com.psybergate.recruitment.security.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -33,8 +36,12 @@ public class InvitationServiceImpl implements InvitationService {
     @Autowired private CandidateRepository candidateRepository;
     @Autowired private AssessmentRepository assessmentRepository;
     @Autowired private InvitationRepository invitationRepository;
+    @Autowired private CandidateSubmissionRepository submissionRepository;
     @Autowired private JwtService jwtService;
     @Autowired private EmailService emailService;
+
+    private static final List<SubmissionStatus> COMPLETED_STATUSES =
+            List.of(SubmissionStatus.SUBMITTED, SubmissionStatus.AUTO_SUBMITTED);
 
     private static final List<InvitationStatus> CANCELLABLE_STATUSES =
             List.of(InvitationStatus.PENDING, InvitationStatus.SENT);
@@ -54,6 +61,11 @@ public class InvitationServiceImpl implements InvitationService {
 
         if (assessment.getStatus() != AssessmentStatus.PUBLISHED) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Assessment must be published before inviting candidates");
+        }
+
+        if (submissionRepository.existsByCandidateIdAndAssessmentIdAndStatusIn(
+                candidate.getId(), assessment.getId(), COMPLETED_STATUSES)) {
+            throw new AssessmentAlreadyCompletedException();
         }
 
         Optional<CandidateInvitation> existingInvite = invitationRepository
