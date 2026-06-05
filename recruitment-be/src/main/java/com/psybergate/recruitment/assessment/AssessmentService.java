@@ -24,4 +24,6 @@ public interface AssessmentService {
     void removeQuestion(UUID assessmentId, UUID questionId);
 
     AssessmentPreviewResponse getPreview(UUID assessmentId);
+
+    AssessmentDetailResponse reorderQuestions(UUID assessmentId, ReorderAssessmentQuestionsRequest request);
 }

@@ -45,6 +45,10 @@ export class AssessmentService {
     return this.http.delete<void>(`/api/assessments/${assessmentId}/questions/${questionId}`);
   }
 
+  reorderQuestions(assessmentId: string, order: { questionId: string; displayOrder: number }[]): Observable<AssessmentDetail> {
+    return this.http.put<AssessmentDetail>(`/api/assessments/${assessmentId}/questions/order`, { questions: order });
+  }
+
   getPreview(assessmentId: string, token?: string): Observable<AssessmentPreview> {
     const headers = token
       ? new HttpHeaders({ Authorization: `Bearer ${token}` })

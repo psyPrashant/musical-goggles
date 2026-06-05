@@ -1,6 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { CdkDragDrop, CdkDropList, CdkDrag, CdkDragHandle, moveItemInArray } from '@angular/cdk/drag-drop';
 import { AssessmentService } from '../../core/assessment/assessment.service';
 import { QuestionService } from '../../core/question/question.service';
 import { AssessmentDetail } from '../../core/assessment/assessment.model';
@@ -9,7 +10,7 @@ import { Difficulty, Question } from '../../core/question/question.model';
 @Component({
   selector: 'app-assessment-builder',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, CdkDropList, CdkDrag, CdkDragHandle],
   template: `
     <div class="builder">
       <div class="builder-header">
@@ -139,7 +140,7 @@ import { Difficulty, Question } from '../../core/question/question.model';
                 </button>
               </div>
 
-              <div class="question-list">
+              <div class="question-list" cdkDropList (cdkDropListDropped)="drop($event)">
                 @if ((assessment()?.questions?.length ?? 0) === 0) {
                   <div class="empty-questions">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -151,8 +152,8 @@ import { Difficulty, Question } from '../../core/question/question.model';
                   </div>
                 }
                 @for (q of assessment()?.questions; track q.questionId; let i = $index) {
-                  <div class="q-row">
-                    <svg class="drag-handle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+                  <div class="q-row" cdkDrag>
+                    <svg cdkDragHandle class="drag-handle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="9" cy="6" r="1" fill="currentColor" stroke="none"/>
                       <circle cx="15" cy="6" r="1" fill="currentColor" stroke="none"/>
                       <circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/>
@@ -590,6 +591,11 @@ import { Difficulty, Question } from '../../core/question/question.model';
     }
 
     .drag-handle { color: var(--text-3); flex-shrink: 0; cursor: grab; }
+    .drag-handle:active { cursor: grabbing; }
+    .cdk-drag-preview { background: var(--bg-card); border: 1px solid var(--accent); border-radius: var(--radius-sm); box-shadow: 0 4px 16px rgba(0,0,0,0.3); opacity: 0.95; }
+    .cdk-drag-placeholder { opacity: 0.3; }
+    .cdk-drag-animating { transition: transform 200ms ease; }
+    .question-list.cdk-drop-list-dragging .q-row:not(.cdk-drag-placeholder) { transition: transform 200ms ease; }
 
     .q-num { font-size: 11.5px; color: var(--text-3); width: 18px; text-align: center; flex-shrink: 0; }
 
@@ -804,6 +810,7 @@ export class AssessmentBuilderComponent implements OnInit {
   readonly bankSearch = signal('');
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
+  readonly orderChanged = signal(false);
 
   readonly passingScore = signal(70);
   readonly accessType = signal<'invite' | 'password' | 'open'>('invite');
@@ -928,7 +935,25 @@ export class AssessmentBuilderComponent implements OnInit {
   }
 
   finish() {
-    this.router.navigate(['/assessments']);
+    const a = this.assessment();
+    if (a && this.orderChanged()) {
+      this.saving.set(true);
+      const order = a.questions.map(q => ({ questionId: q.questionId, displayOrder: q.displayOrder }));
+      this.assessmentService.reorderQuestions(a.id, order).subscribe({
+        next: updated => {
+          this.assessment.set(updated);
+          this.orderChanged.set(false);
+          this.saving.set(false);
+          this.router.navigate(['/assessments']);
+        },
+        error: () => {
+          this.error.set('Failed to save question order. Please try again.');
+          this.saving.set(false);
+        },
+      });
+    } else {
+      this.router.navigate(['/assessments']);
+    }
   }
 
   private saveBasicInfo() {
@@ -958,6 +983,18 @@ export class AssessmentBuilderComponent implements OnInit {
         this.saving.set(false);
       },
     });
+  }
+
+  drop(event: CdkDragDrop<unknown[]>) {
+    if (event.previousIndex === event.currentIndex) return;
+    this.assessment.update(a => {
+      if (!a) return a;
+      const qs = [...a.questions];
+      moveItemInArray(qs, event.previousIndex, event.currentIndex);
+      const reindexed = qs.map((q, i) => ({ ...q, displayOrder: i + 1 }));
+      return { ...a, questions: reindexed };
+    });
+    this.orderChanged.set(true);
   }
 
   addQuestion(questionId: string) {
