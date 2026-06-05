@@ -6,6 +6,7 @@ import { DashboardComponent } from './dashboard.component';
 import { AssessmentService } from '../../core/assessment/assessment.service';
 import { DashboardService } from '../../core/dashboard/dashboard.service';
 import { DashboardStats } from '../../core/dashboard/dashboard.model';
+import { MarkingService } from '../../core/marking/marking.service';
 
 const mockStats: DashboardStats = {
   activeCandidates: 5,
@@ -18,6 +19,7 @@ const mockStats: DashboardStats = {
 function createComponent(stats = mockStats) {
   const dashboardSvc = { getStats: vi.fn().mockReturnValue(of(stats)) };
   const assessmentSvc = { listAssessments: vi.fn().mockReturnValue(of([])) };
+  const markingSvc = { listAllSubmissions: vi.fn().mockReturnValue(of([])) };
 
   TestBed.configureTestingModule({
     imports: [DashboardComponent],
@@ -25,6 +27,7 @@ function createComponent(stats = mockStats) {
       provideRouter([]),
       { provide: DashboardService, useValue: dashboardSvc },
       { provide: AssessmentService, useValue: assessmentSvc },
+      { provide: MarkingService, useValue: markingSvc },
     ],
   });
 
