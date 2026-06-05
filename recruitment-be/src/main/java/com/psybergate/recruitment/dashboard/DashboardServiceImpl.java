@@ -4,6 +4,8 @@ import com.psybergate.recruitment.dashboard.dto.ActivityEvent;
 import com.psybergate.recruitment.dashboard.dto.DashboardStats;
 import com.psybergate.recruitment.dashboard.dto.PipelineStats;
 import com.psybergate.recruitment.domain.*;
+import com.psybergate.recruitment.marking.SubmissionService;
+import com.psybergate.recruitment.marking.dto.SubmissionSummaryResponse;
 import com.psybergate.recruitment.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -33,6 +35,7 @@ public class DashboardServiceImpl implements DashboardService {
     @Autowired private AnswerScoreRepository answerScoreRepository;
     @Autowired private CandidateRepository candidateRepository;
     @Autowired private SubmissionFlagRepository flagRepository;
+    @Autowired private SubmissionService submissionService;
 
     private static final List<FlagStatus> OPEN_FLAG_STATUSES =
             List.of(FlagStatus.FLAGGED, FlagStatus.UNDER_REVIEW);
@@ -59,9 +62,16 @@ public class DashboardServiceImpl implements DashboardService {
     private PipelineStats buildPipeline() {
         int invited = (int) invitationRepository.countInvitedWithoutSubmission();
         int inProgress = (int) submissionRepository.countByStatus(SubmissionStatus.IN_PROGRESS);
-        int pendingReview = (int) submissionRepository.countPendingReviews(SUBMITTED_STATUSES);
-        int completed = (int) submissionRepository.countCompleted(SUBMITTED_STATUSES);
         int flagged = (int) flagRepository.countDistinctSubmissionIdByStatusIn(OPEN_FLAG_STATUSES);
+
+        List<SubmissionSummaryResponse> submitted = submissionService.listCompletedSubmissions();
+        int pendingReview = (int) submitted.stream()
+                .filter(s -> s.markedCount() < s.totalAnswers())
+                .count();
+        int completed = (int) submitted.stream()
+                .filter(s -> s.markedCount() >= s.totalAnswers())
+                .count();
+
         return new PipelineStats(invited, inProgress, pendingReview, completed, flagged);
     }
 

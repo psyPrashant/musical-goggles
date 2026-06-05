@@ -460,12 +460,12 @@ export class DashboardComponent implements OnInit {
       case 'Pending Review':
         return subs.filter(s =>
           (s.status === 'SUBMITTED' || s.status === 'AUTO_SUBMITTED') &&
-          s.markedCount < s.answeredCount,
+          s.markedCount < s.totalAnswers,
         );
       case 'Completed':
         return subs.filter(s =>
           (s.status === 'SUBMITTED' || s.status === 'AUTO_SUBMITTED') &&
-          s.markedCount >= s.answeredCount,
+          s.markedCount >= s.totalAnswers,
         );
       case 'Flagged':
         return subs.filter(s => s.flagStatus === 'FLAGGED' || s.flagStatus === 'UNDER_REVIEW');
