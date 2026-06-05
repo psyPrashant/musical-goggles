@@ -349,6 +349,7 @@ class MarkingIntegrationTest extends AbstractIntegrationTest {
         sub.setCandidateId(candidate.getId());
         sub.setAssessmentId(assessment.getId());
         sub.setInvitationId(invitation.getId());
+        sub.setStartedAt(Instant.now());
         sub.setStatus(SubmissionStatus.SUBMITTED);
         sub.setSubmittedAt(Instant.now());
         sub = submissionRepository.save(sub);
@@ -378,6 +379,7 @@ class MarkingIntegrationTest extends AbstractIntegrationTest {
         sub.setCandidateId(candidate.getId());
         sub.setAssessmentId(assessment.getId());
         sub.setInvitationId(invitation.getId());
+        sub.setStartedAt(Instant.now());
         sub.setStatus(SubmissionStatus.SUBMITTED);
         sub.setSubmittedAt(Instant.now());
         sub = submissionRepository.save(sub);
@@ -412,6 +414,7 @@ class MarkingIntegrationTest extends AbstractIntegrationTest {
         sub.setCandidateId(candidate.getId());
         sub.setAssessmentId(assessment.getId());
         sub.setInvitationId(invitation.getId());
+        sub.setStartedAt(Instant.now());
         sub.setStatus(SubmissionStatus.SUBMITTED);
         sub.setSubmittedAt(Instant.now());
         sub = submissionRepository.save(sub);
@@ -458,6 +461,7 @@ class MarkingIntegrationTest extends AbstractIntegrationTest {
         sub.setCandidateId(candidate.getId());
         sub.setAssessmentId(assessment.getId());
         sub.setInvitationId(invitation.getId());
+        sub.setStartedAt(Instant.now());
         sub.setStatus(SubmissionStatus.SUBMITTED);
         sub.setSubmittedAt(Instant.now());
         sub = submissionRepository.save(sub);
