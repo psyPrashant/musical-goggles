@@ -11,6 +11,8 @@ public record SubmissionSummaryResponse(
         UUID invitationId,
         UUID candidateId,
         String candidateName,
+        UUID assessmentId,
+        String assessmentTitle,
         SubmissionStatus status,
         Instant submittedAt,
         int answeredCount,

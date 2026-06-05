@@ -928,3 +928,45 @@ Ask clarifying questions
 
 ---
 
+## 2026-06-05 11:44 | prashant.kessa
+
+> look at the jira board Musical Goggles and implement epic 29. switch to a new branch and use the openspec workflow. Update the tickets status as you progress
+
+---
+
+## 2026-06-05 12:27 | prashant.kessa
+
+> <task-notification>
+<task-id>bbvruow0u</task-id>
+<summary>Monitor event: "Backend startup — waiting for Spring Boot to be ready"</summary>
+<event>[Monitor timed out — re-arm if needed.]</event>
+</task-notification>
+
+---
+
+## 2026-06-05 12:28 | prashant.kessa
+
+> run in docker
+
+---
+
+## 2026-06-05 12:31 | prashant.kessa
+
+> <task-notification>
+<task-id>b4sz84mla</task-id>
+<summary>Monitor event: "Backend container — waiting for Spring Boot to be ready"</summary>
+<event>[Monitor timed out — re-arm if needed.]</event>
+</task-notification>
+
+---
+
+## 2026-06-05 12:34 | prashant.kessa
+
+> <task-notification>
+<task-id>bg2jo5goa</task-id>
+<summary>Monitor event: "Backend ready check after rebuild"</summary>
+<event>[Monitor timed out — re-arm if needed.]</event>
+</task-notification>
+
+---
+

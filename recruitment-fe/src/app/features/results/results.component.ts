@@ -1,4 +1,5 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { MarkingService } from '../../core/marking/marking.service';
 import { ResultQuestion, ResultSummary, SubmissionSummary } from '../../core/marking/marking.model';
 import { FlagService } from '../../core/flag/flag.service';
@@ -626,6 +627,7 @@ export class ResultsComponent implements OnInit {
   private readonly markingSvc = inject(MarkingService);
   private readonly flagSvc = inject(FlagService);
   private readonly reminderSvc = inject(ReminderService);
+  private readonly route = inject(ActivatedRoute);
 
   readonly submissions = signal<SubmissionSummary[]>([]);
   readonly selectedSummary = signal<SubmissionSummary | null>(null);
@@ -669,7 +671,15 @@ export class ResultsComponent implements OnInit {
   ngOnInit() {
     this.loadingList.set(true);
     this.markingSvc.listAllSubmissions().subscribe({
-      next: list => { this.submissions.set(list); this.loadingList.set(false); },
+      next: list => {
+        this.submissions.set(list);
+        this.loadingList.set(false);
+        const targetId = this.route.snapshot.queryParamMap.get('submissionId');
+        if (targetId) {
+          const match = list.find(s => s.submissionId === targetId);
+          if (match) this.selectSubmission(match);
+        }
+      },
       error: () => this.loadingList.set(false),
     });
   }

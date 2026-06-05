@@ -86,7 +86,8 @@ public class DashboardServiceImpl implements DashboardService {
                     "INVITATION_SENT",
                     name + " invited to " + inv.getAssessment().getTitle(),
                     "Awaiting response",
-                    inv.getCreatedAt()));
+                    inv.getCreatedAt(),
+                    null));
         }
 
         for (CandidateSubmission sub : recentSubmissions) {
@@ -97,13 +98,15 @@ public class DashboardServiceImpl implements DashboardService {
                         "SUBMISSION_STARTED",
                         name + " started an assessment",
                         "In progress",
-                        sub.getCreatedAt()));
+                        sub.getCreatedAt(),
+                        sub.getId()));
             } else {
                 events.add(new ActivityEvent(
                         "SUBMISSION_COMPLETED",
                         name + " submitted an assessment",
                         "Ready for review",
-                        sub.getCreatedAt()));
+                        sub.getCreatedAt(),
+                        sub.getId()));
             }
         }
 

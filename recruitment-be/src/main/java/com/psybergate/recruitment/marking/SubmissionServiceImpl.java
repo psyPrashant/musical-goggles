@@ -51,6 +51,12 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     @Override
+    public List<SubmissionSummaryResponse> listCompletedSubmissions() {
+        List<SubmissionStatus> completedStatuses = List.of(SubmissionStatus.SUBMITTED, SubmissionStatus.AUTO_SUBMITTED);
+        return buildSummaries(submissionRepository.findByStatusIn(completedStatuses));
+    }
+
+    @Override
     @Transactional
     public AnswerScoreResponse scoreAnswer(UUID submissionId, UUID answerId, int score, String feedback, UUID markerId) {
         submissionRepository.findById(submissionId)
@@ -262,9 +268,14 @@ public class SubmissionServiceImpl implements SubmissionService {
                         Collectors.summingInt(AnswerScore::getScore)
                 ));
 
-        // Batch-load question counts per assessment
+        // Batch-load assessment titles
         Set<UUID> assessmentIds = submissions.stream()
                 .map(CandidateSubmission::getAssessmentId).collect(Collectors.toSet());
+        Map<UUID, String> assessmentTitleById = assessmentIds.isEmpty() ? Map.of() :
+                assessmentRepository.findAllById(assessmentIds).stream()
+                        .collect(Collectors.toMap(Assessment::getId, Assessment::getTitle));
+
+        // Batch-load question counts per assessment
         Map<UUID, Integer> questionCountByAssessment = assessmentIds.isEmpty() ? Map.of() :
                 assessmentQuestionRepository.sumMaxScoreGroupByAssessmentId(assessmentIds).stream()
                         .collect(Collectors.toMap(
@@ -313,9 +324,11 @@ public class SubmissionServiceImpl implements SubmissionService {
                     int maxScore = questionCountByAssessment.getOrDefault(s.getAssessmentId(), 0);
                     int totalAnswerable = totalAnswerableByAssessment.getOrDefault(s.getAssessmentId(), 0);
                     FlagStatus flagStatus = flagStatusBySubmission.get(s.getId());
+                    String assessmentTitle = assessmentTitleById.getOrDefault(s.getAssessmentId(), "");
                     return new SubmissionSummaryResponse(
-                            s.getId(), s.getInvitationId(), s.getCandidateId(), name, s.getStatus(),
-                            s.getSubmittedAt(), answered, totalAnswerable, marked, score, maxScore, flagStatus
+                            s.getId(), s.getInvitationId(), s.getCandidateId(), name,
+                            s.getAssessmentId(), assessmentTitle,
+                            s.getStatus(), s.getSubmittedAt(), answered, totalAnswerable, marked, score, maxScore, flagStatus
                     );
                 })
                 .toList();
@@ -327,9 +340,12 @@ public class SubmissionServiceImpl implements SubmissionService {
                 .map(inv -> {
                     com.psybergate.recruitment.domain.Candidate c = inv.getCandidate();
                     String name = c.getFirstName() + " " + c.getLastName();
+                    UUID assessmentId = inv.getAssessment() != null ? inv.getAssessment().getId() : null;
+                    String assessmentTitle = inv.getAssessment() != null ? inv.getAssessment().getTitle() : "";
                     return new SubmissionSummaryResponse(
-                            null, inv.getId(), c.getId(), name, SubmissionStatus.NOT_STARTED,
-                            null, 0, 0, 0, 0, 0, null
+                            null, inv.getId(), c.getId(), name,
+                            assessmentId, assessmentTitle,
+                            SubmissionStatus.NOT_STARTED, null, 0, 0, 0, 0, 0, null
                     );
                 })
                 .toList();

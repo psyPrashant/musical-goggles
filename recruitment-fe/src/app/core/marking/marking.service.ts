@@ -20,6 +20,10 @@ export class MarkingService {
     return this.http.get<SubmissionSummary[]>('/api/submissions');
   }
 
+  listCompletedSubmissions(): Observable<SubmissionSummary[]> {
+    return this.http.get<SubmissionSummary[]>('/api/submissions/completed');
+  }
+
   getResult(submissionId: string): Observable<ResultSummary> {
     return this.http.get<ResultSummary>(`/api/submissions/${submissionId}/result`);
   }

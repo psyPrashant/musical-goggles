@@ -11,6 +11,7 @@ export interface ActivityEvent {
   description: string;
   meta: string;
   occurredAt: string;
+  submissionId?: string | null;
 }
 
 export interface DashboardStats {

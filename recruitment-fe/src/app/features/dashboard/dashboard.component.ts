@@ -1,10 +1,12 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { AssessmentService } from '../../core/assessment/assessment.service';
 import { Assessment } from '../../core/assessment/assessment.model';
 import { DashboardService } from '../../core/dashboard/dashboard.service';
-import { DashboardStats } from '../../core/dashboard/dashboard.model';
+import { ActivityEvent, DashboardStats } from '../../core/dashboard/dashboard.model';
+import { MarkingService } from '../../core/marking/marking.service';
+import { SubmissionSummary } from '../../core/marking/marking.model';
 
 @Component({
   selector: 'app-dashboard',
@@ -45,7 +47,7 @@ import { DashboardStats } from '../../core/dashboard/dashboard.model';
           </div>
           <div class="pipeline">
             @for (stage of pipelineStages(); track stage.label; let i = $index) {
-              <div class="pipeline-stage" [class.last]="i === pipelineStages().length - 1">
+              <div class="pipeline-stage" [class.last]="i === pipelineStages().length - 1" [class.pipeline-stage-active]="activePipelineStage() === stage.label" (click)="togglePipeline(stage.label)">
                 <div class="pipeline-count" [style.color]="stage.color">{{ stage.count }}</div>
                 <div class="pipeline-label">{{ stage.label }}</div>
                 <div class="pipeline-bar">
@@ -54,6 +56,29 @@ import { DashboardStats } from '../../core/dashboard/dashboard.model';
               </div>
             }
           </div>
+          @if (activePipelineStage()) {
+            <div class="pipeline-panel">
+              <div class="pipeline-panel-header">
+                <span>{{ activePipelineStage() }} — {{ pipelineCandidates().length }} candidate{{ pipelineCandidates().length === 1 ? '' : 's' }}</span>
+                <button class="pipeline-panel-close" (click)="togglePipeline(activePipelineStage()!)">✕</button>
+              </div>
+              @if (pipelineCandidates().length === 0) {
+                <div class="pipeline-panel-empty">No candidates in this stage</div>
+              } @else {
+                <div class="pipeline-panel-list">
+                  @for (c of pipelineCandidates(); track c.invitationId) {
+                    <div class="pipeline-candidate">
+                      <span class="pipeline-candidate-name">{{ c.candidateName }}</span>
+                      <span class="pipeline-candidate-score">{{ scorePercent(c) }}</span>
+                      @if (c.submissionId) {
+                        <button class="pipeline-view-btn" (click)="router.navigate(['/results'], { queryParams: { submissionId: c.submissionId } })">View Result →</button>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
         </div>
 
         <div class="mid-grid">
@@ -103,7 +128,7 @@ import { DashboardStats } from '../../core/dashboard/dashboard.model';
             </div>
             <div class="activity-list">
               @for (item of stats()?.recentActivity ?? []; track $index) {
-                <div class="activity-item">
+                <div class="activity-item" [class.activity-link]="!!item.submissionId" (click)="navigateToResult(item)">
                   <div class="activity-dot" [class]="'dot-' + activityColor(item.type)"></div>
                   <div class="activity-body">
                     <div class="activity-text">{{ item.description }}</div>
@@ -296,6 +321,15 @@ import { DashboardStats } from '../../core/dashboard/dashboard.model';
       color: var(--text-3);
     }
 
+    .activity-link {
+      cursor: pointer;
+      transition: background 100ms;
+    }
+
+    .activity-link:hover {
+      background: var(--bg-hover);
+    }
+
     .pipeline { display: grid; grid-template-columns: repeat(5, 1fr); }
 
     .pipeline-stage {
@@ -309,11 +343,88 @@ import { DashboardStats } from '../../core/dashboard/dashboard.model';
     .pipeline-label { font-size: 12px; color: var(--text-3); margin-top: 3px; }
     .pipeline-bar { height: 3px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 6px; }
     .pipeline-fill { height: 100%; border-radius: 3px; transition: width 400ms ease; }
+
+    .pipeline-stage {
+      cursor: pointer;
+      transition: background 100ms;
+    }
+    .pipeline-stage:hover { background: var(--bg-hover); }
+    .pipeline-stage-active { background: var(--accent-subtle); }
+
+    .pipeline-panel {
+      border-top: 1px solid var(--border);
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .pipeline-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-2);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--bg-card);
+    }
+
+    .pipeline-panel-close {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-3);
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: color 100ms, background 100ms;
+    }
+    .pipeline-panel-close:hover { color: var(--text-1); background: var(--bg-hover); }
+
+    .pipeline-panel-empty {
+      padding: 20px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-3);
+    }
+
+    .pipeline-panel-list { display: flex; flex-direction: column; }
+
+    .pipeline-candidate {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .pipeline-candidate:last-child { border-bottom: none; }
+
+    .pipeline-candidate-name { flex: 1; font-weight: 500; color: var(--text-1); }
+    .pipeline-candidate-score { font-size: 12px; color: var(--text-3); min-width: 36px; text-align: right; }
+
+    .pipeline-view-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--accent);
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: var(--font);
+      transition: background 100ms, border-color 100ms;
+      white-space: nowrap;
+    }
+    .pipeline-view-btn:hover { background: var(--accent-subtle); border-color: var(--accent); }
   `],
 })
 export class DashboardComponent implements OnInit {
   private readonly assessmentService = inject(AssessmentService);
   private readonly dashboardService = inject(DashboardService);
+  private readonly markingService = inject(MarkingService);
+  protected readonly router = inject(Router);
 
   readonly assessments = signal<Assessment[]>([]);
   readonly loading = signal(true);
@@ -321,6 +432,9 @@ export class DashboardComponent implements OnInit {
 
   readonly stats = signal<DashboardStats | null>(null);
   readonly statsError = signal(false);
+
+  readonly submissions = signal<SubmissionSummary[]>([]);
+  readonly activePipelineStage = signal<string | null>(null);
 
   readonly pipelineStages = computed(() => {
     const p = this.stats()?.pipeline;
@@ -334,10 +448,51 @@ export class DashboardComponent implements OnInit {
     ];
   });
 
+  readonly pipelineCandidates = computed(() => {
+    const stage = this.activePipelineStage();
+    const subs = this.submissions();
+    if (!stage) return [];
+    switch (stage) {
+      case 'Invited':
+        return subs.filter(s => s.status === 'NOT_STARTED');
+      case 'In Progress':
+        return subs.filter(s => s.status === 'IN_PROGRESS');
+      case 'Pending Review':
+        return subs.filter(s =>
+          (s.status === 'SUBMITTED' || s.status === 'AUTO_SUBMITTED') &&
+          s.markedCount < s.totalAnswers,
+        );
+      case 'Completed':
+        return subs.filter(s =>
+          (s.status === 'SUBMITTED' || s.status === 'AUTO_SUBMITTED') &&
+          s.markedCount >= s.totalAnswers,
+        );
+      case 'Flagged':
+        return subs.filter(s => s.flagStatus === 'FLAGGED' || s.flagStatus === 'UNDER_REVIEW');
+      default:
+        return [];
+    }
+  });
+
   activityColor(type: string): string {
     if (type === 'SUBMISSION_COMPLETED') return 'success';
     if (type === 'SUBMISSION_STARTED') return 'info';
     return 'warning';
+  }
+
+  navigateToResult(item: ActivityEvent): void {
+    if (item.submissionId) {
+      this.router.navigate(['/results'], { queryParams: { submissionId: item.submissionId } });
+    }
+  }
+
+  togglePipeline(label: string): void {
+    this.activePipelineStage.set(this.activePipelineStage() === label ? null : label);
+  }
+
+  scorePercent(s: SubmissionSummary): string {
+    if (!s.submissionId || s.maxScore === 0) return '';
+    return Math.round((s.totalScore / s.maxScore) * 100) + '%';
   }
 
   ngOnInit() {
@@ -349,6 +504,10 @@ export class DashboardComponent implements OnInit {
     this.dashboardService.getStats().subscribe({
       next: s => this.stats.set(s),
       error: () => this.statsError.set(true),
+    });
+
+    this.markingService.listAllSubmissions().subscribe({
+      next: list => this.submissions.set(list),
     });
   }
 }
