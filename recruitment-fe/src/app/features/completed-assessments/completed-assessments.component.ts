@@ -52,12 +52,21 @@ import { SubmissionSummary } from '../../core/marking/marking.model';
                       <div class="candidate-name">{{ s.candidateName }}</div>
                     </td>
                     <td class="text-dim">{{ s.assessmentTitle }}</td>
-                    <td class="align-right text-dim">{{ s.totalScore }} / {{ s.maxScore }}</td>
+                    <td class="align-right text-dim">
+                      @if (s.markedCount >= s.totalAnswers) { {{ s.totalScore }} / {{ s.maxScore }} }
+                      @else { — / {{ s.maxScore }} }
+                    </td>
                     <td class="align-right">
-                      <span class="score-pct">{{ scorePercent(s) }}</span>
+                      @if (s.markedCount >= s.totalAnswers) {
+                        <span class="score-pct">{{ scorePercent(s) }}</span>
+                      } @else {
+                        <span class="text-dim">—</span>
+                      }
                     </td>
                     <td>
-                      @if (isPassing(s)) {
+                      @if (s.markedCount < s.totalAnswers) {
+                        <span class="badge badge-marking">⏳ Marking</span>
+                      } @else if (isPassing(s)) {
                         <span class="badge badge-pass">Pass</span>
                       } @else {
                         <span class="badge badge-fail">Fail</span>
@@ -172,6 +181,7 @@ import { SubmissionSummary } from '../../core/marking/marking.model';
     }
     .badge-pass { background: var(--success-subtle); color: var(--success); }
     .badge-fail { background: var(--danger-subtle, rgba(239,68,68,.08)); color: var(--danger, #ef4444); }
+    .badge-marking { background: var(--warning-subtle); color: var(--warning); }
   `],
 })
 export class CompletedAssessmentsComponent implements OnInit {
@@ -203,7 +213,7 @@ export class CompletedAssessmentsComponent implements OnInit {
   }
 
   isPassing(s: SubmissionSummary): boolean {
-    return s.maxScore > 0 && s.totalScore / s.maxScore >= 0.5;
+    return s.markedCount >= s.totalAnswers && s.maxScore > 0 && s.totalScore / s.maxScore >= 0.5;
   }
 
   scorePercent(s: SubmissionSummary): string {
