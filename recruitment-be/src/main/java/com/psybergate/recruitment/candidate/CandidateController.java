@@ -1,8 +1,10 @@
 package com.psybergate.recruitment.candidate;
 
+import com.psybergate.recruitment.candidate.dto.BlacklistRequest;
 import com.psybergate.recruitment.candidate.dto.CandidateHistoryItemResponse;
 import com.psybergate.recruitment.candidate.dto.CandidateRequest;
 import com.psybergate.recruitment.candidate.dto.CandidateResponse;
+import com.psybergate.recruitment.candidate.dto.ContactCandidateRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -53,5 +55,21 @@ public class CandidateController {
     @GetMapping("/{candidateId}/history")
     public ResponseEntity<List<CandidateHistoryItemResponse>> getHistory(@PathVariable UUID candidateId) {
         return ResponseEntity.ok(candidateService.getAssessmentHistory(candidateId));
+    }
+
+    @PostMapping("/{id}/contact")
+    public ResponseEntity<Void> contact(@PathVariable UUID id,
+                                        @RequestBody @Valid ContactCandidateRequest request) {
+        candidateService.contactCandidate(id, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/blacklist")
+    public ResponseEntity<CandidateResponse> blacklist(@PathVariable UUID id,
+                                                       @RequestBody @Valid BlacklistRequest request,
+                                                       Authentication auth) {
+        boolean isAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        return ResponseEntity.ok(candidateService.setBlacklisted(id, request.blacklisted(), isAdmin));
     }
 }

@@ -1,48 +1,58 @@
-# Prompt Log
+# Prompts Used — EP-30 Flagged Page Actions
 
-## MG-145 — Reorder questions when creating or editing an assessment
+## Session: 2026-06-05
 
-**OpenSpec propose prompt:**
+### Jira / Setup
 ```
-MG-145: Reorder questions when creating or editing an assessment.
-
-Context: This is a bug/missing feature in the assessment builder. Currently recruiters cannot change the order of questions once added to an assessment.
-
-What's needed:
-- Add up/down arrow controls (or drag-and-drop) to each question row in the assessment builder so recruiters can reorder questions
-- The order must be persisted — the AssessmentQuestion entity needs an orderIndex field stored in the DB
-- The frontend assessment-builder.component.ts renders question cards; each needs move-up/move-down buttons (or CDK drag-and-drop)
-- On save, the ordered list of question IDs is sent to PUT /api/assessments/{id}
-- The BE must store and return questions in orderIndex order
-- Seed data and existing assessments should default to their existing insertion order
-
-Keep the implementation minimal and consistent with existing patterns in the codebase (no new libraries unless drag-and-drop is already available via Angular CDK).
+Connect to the musical goggles jira board and look for epic 30 in the current sprint.
+Pull main.
+Move the epic to in progress and assign it to me.
+Create a new branch and implement the stories using the open spec workflow.
+Move each story as you progress, and assign it to me.
+Run open spec when needed.
+Append prompts used to prompt.md.
+Give a review of changes made for me to approve.
+Don't push until I approve the review.
 ```
 
-**OpenSpec apply prompt:**
+### OpenSpec Propose (opsx:propose)
 ```
-mg-145-reorder-assessment-questions
+EP-30 Flagged Page Actions — implement all 4 issues on the flagged submissions page:
+
+MG-151 (Bug): Fix row click navigation. The flagged page passes queryParams
+{submission: f.submissionId} but results.component.ts reads
+route.snapshot.queryParamMap.get('submissionId'). Fix: change results.component.ts
+to use 'submission' instead of 'submissionId'.
+
+MG-152 (Story): Add "Contact Candidate" action to the flagged page actions dropdown.
+When clicked, opens a small inline form/modal to compose a message (subject + body
+pre-filled, editable). On send, calls a new backend endpoint
+POST /api/candidates/{candidateId}/contact that sends an email via Spring Mail.
+Also sets an "action required" flag on the candidate (new boolean field actionRequired
+on Candidate) and blocks further assessment invitations for that candidate while the
+flag is active. FlagListItem needs candidateId added. Backend: new field on Candidate
+entity + DTO, new endpoint on CandidateController, new service method, migration.
+
+MG-153 (Story): Add "Blacklist" action to the flagged page actions dropdown.
+Toggling blacklist sets blacklisted: boolean on the Candidate. Removing from blacklist
+requires ADMIN role (recruiter can blacklist, only admin can un-blacklist). Backend:
+new blacklisted boolean field on Candidate entity + DTO, new endpoint
+PATCH /api/candidates/{id}/blacklist (body: {blacklisted: boolean}), role check for
+un-blacklist. Frontend: CandidateService.setBlacklist(), FlagListItem needs
+candidateId and candidateBlacklisted fields.
+
+MG-154 (Story): Add "Resolve Flag" action to the flagged page actions dropdown.
+Opens an inline form for resolution notes (required). Transitions the flag:
+FLAGGED -> UNDER_REVIEW -> RESOLVED in one user action (two-step pattern).
+After resolve, row is removed from the list.
+
+All actions live in a new actions dropdown on each row of
+flagged-submissions.component.ts. Dropdown options: "View Result", "Contact
+Candidate", "Blacklist"/"Unblacklist", "Resolve Flag", "Dismiss". Show relevant
+options based on flag status and user role.
 ```
 
----
-
-## MG-147 — Prevent sending a completed assessment invite
-
-**OpenSpec propose prompt:**
+### OpenSpec Apply (opsx:apply)
 ```
-MG-147: Prevent sending a completed assessment invite to a candidate who has already completed it.
-
-Context: This is a bug. Currently a recruiter can send the same assessment invite to a candidate who has already completed that assessment. This should not be allowed.
-
-What's needed:
-- FE: In candidates.component.ts, disable/hide the invite action for a candidate–assessment pair when the candidate's history shows that assessment as COMPLETED
-- BE: In the invitation creation flow (InvitationController / invitation service), validate that no COMPLETED or active submission already exists for the candidate + assessment pair; reject with 409 Conflict if it does
-- The check should be: if a CandidateSubmission exists for this candidate+assessment with status SUBMITTED or AUTO_SUBMITTED (i.e. completed), block the invite
-
-Keep changes minimal. Do not affect the ability to re-invite for assessments that are merely IN_PROGRESS or NOT_STARTED.
-```
-
-**OpenSpec apply prompt:**
-```
-mg-147-prevent-duplicate-completed-invite
+ep30-flagged-page-actions
 ```

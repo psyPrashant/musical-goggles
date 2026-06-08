@@ -5,22 +5,34 @@ import { vi } from 'vitest';
 import { FlaggedSubmissionsComponent } from './flagged-submissions.component';
 import { FlagService } from '../../core/flag/flag.service';
 import { AssessmentService } from '../../core/assessment/assessment.service';
+import { CandidateService } from '../../core/candidate/candidate.service';
 import { FlagListItem } from '../../core/flag/flag.model';
 
 const mockFlags: FlagListItem[] = [
-  { flagId: 'f1', submissionId: 's1', candidateName: 'Alice', assessmentName: 'Test A',
-    reason: 'COPIED_ANSWERS', status: 'FLAGGED', createdAt: '2026-06-01T10:00:00Z' },
-  { flagId: 'f2', submissionId: 's2', candidateName: 'Bob', assessmentName: 'Test B',
-    reason: 'TIMING_ANOMALY', status: 'RESOLVED', createdAt: '2026-06-02T10:00:00Z' },
-  { flagId: 'f3', submissionId: 's3', candidateName: 'Carol', assessmentName: 'Test C',
-    reason: 'OTHER', status: 'UNDER_REVIEW', createdAt: '2026-06-03T10:00:00Z' },
+  { flagId: 'f1', submissionId: 's1', candidateId: 'c1', candidateName: 'Alice', assessmentName: 'Test A',
+    reason: 'COPIED_ANSWERS', status: 'FLAGGED', createdAt: '2026-06-01T10:00:00Z',
+    candidateBlacklisted: false, candidateActionRequired: false },
+  { flagId: 'f2', submissionId: 's2', candidateId: 'c2', candidateName: 'Bob', assessmentName: 'Test B',
+    reason: 'TIMING_ANOMALY', status: 'RESOLVED', createdAt: '2026-06-02T10:00:00Z',
+    candidateBlacklisted: false, candidateActionRequired: false },
+  { flagId: 'f3', submissionId: 's3', candidateId: 'c3', candidateName: 'Carol', assessmentName: 'Test C',
+    reason: 'OTHER', status: 'UNDER_REVIEW', createdAt: '2026-06-03T10:00:00Z',
+    candidateBlacklisted: true, candidateActionRequired: false },
 ];
 
-function createComponent(flagSvcOverrides?: Partial<typeof flagSvc>) {
+let flagSvc: any;
+let candidateSvc: any;
+
+function createComponent(flagSvcOverrides?: Partial<typeof flagSvc>, candidateSvcOverrides?: Partial<typeof candidateSvc>) {
   flagSvc = {
     getAllFlags: vi.fn().mockReturnValue(of(mockFlags)),
     transitionFlag: vi.fn().mockReturnValue(of({})),
     ...flagSvcOverrides,
+  };
+  candidateSvc = {
+    contactCandidate: vi.fn().mockReturnValue(of(undefined)),
+    setBlacklist: vi.fn().mockReturnValue(of(undefined)),
+    ...candidateSvcOverrides,
   };
 
   TestBed.configureTestingModule({
@@ -29,14 +41,13 @@ function createComponent(flagSvcOverrides?: Partial<typeof flagSvc>) {
       provideRouter([]),
       { provide: FlagService, useValue: flagSvc },
       { provide: AssessmentService, useValue: { listAssessments: vi.fn().mockReturnValue(of([])) } },
+      { provide: CandidateService, useValue: candidateSvc },
     ],
   });
 
   const fixture = TestBed.createComponent(FlaggedSubmissionsComponent);
   return { fixture, component: fixture.componentInstance };
 }
-
-let flagSvc: any;
 
 describe('FlaggedSubmissionsComponent', () => {
   afterEach(() => TestBed.resetTestingModule());
@@ -47,16 +58,18 @@ describe('FlaggedSubmissionsComponent', () => {
 
     expect(flagSvc.getAllFlags).toHaveBeenCalled();
     expect(component.flags().length).toBe(3);
-    expect(component.filtered().length).toBe(3);
+    // f2 is RESOLVED — filtered() only shows FLAGGED and UNDER_REVIEW
+    expect(component.filtered().length).toBe(2);
   });
 
   it('filterReason filters by reason', () => {
     const { fixture, component } = createComponent();
     fixture.detectChanges();
 
-    component.filterReason.set('TIMING_ANOMALY');
+    // f3 (Carol, UNDER_REVIEW) has reason OTHER; TIMING_ANOMALY belongs to f2 which is RESOLVED and excluded
+    component.filterReason.set('COPIED_ANSWERS');
     expect(component.filtered().length).toBe(1);
-    expect(component.filtered()[0].candidateName).toBe('Bob');
+    expect(component.filtered()[0].candidateName).toBe('Alice');
   });
 
   it('clearFilters resets all filter signals', () => {
@@ -69,52 +82,38 @@ describe('FlaggedSubmissionsComponent', () => {
 
     expect(component.filterReason()).toBe('');
     expect(component.filterFromDate()).toBe('');
-    expect(component.filtered().length).toBe(3);
+    // f2 (RESOLVED) is excluded; f1 and f3 (open) remain
+    expect(component.filtered().length).toBe(2);
   });
 
-  // ── 7.1: Row navigation ──
+  // ── Dropdown ──────────────────────────────────────────────────────────────
 
-  it('rows are rendered with routerLink set to /results and correct submission queryParam', () => {
+  it('toggleDropdown opens and closes the dropdown for a flag', () => {
     const { fixture, component } = createComponent();
     fixture.detectChanges();
 
-    // Each filtered flag has a submissionId — verify the component data is wired correctly
-    // so the routerLink directive receives the right values.
-    const rows = fixture.nativeElement.querySelectorAll('.table-row');
-    expect(rows.length).toBe(3);
+    component.toggleDropdown('f1');
+    expect(component.openDropdownId()).toBe('f1');
 
-    // Verify the first flag's submissionId is 's1' (the value bound to queryParams)
-    expect(component.filtered()[0].submissionId).toBe('s1');
-    expect(component.filtered()[1].submissionId).toBe('s2');
-
-    // Verify the routerLink directive is wired by checking the bound queryParams data
-    expect(component.filtered().length).toBe(3);
+    component.toggleDropdown('f1');
+    expect(component.openDropdownId()).toBeNull();
   });
 
-  // ── 7.2: Dismiss click does not trigger row navigation ──
-
-  it('clicking Dismiss button calls dismissFlag but does not remove all rows (stopPropagation working)', () => {
-    const { fixture, component } = createComponent();
+  it('dropdown renders Actions button for each open-flag row', () => {
+    const { fixture } = createComponent();
     fixture.detectChanges();
 
-    const dismissBtn = fixture.nativeElement.querySelector('.btn-dismiss') as HTMLButtonElement;
-    dismissBtn?.click();
-    fixture.detectChanges();
-
-    // dismissFlag was triggered (f1 FLAGGED is removed after success), but other rows stay
-    // This confirms the dismiss action fired (not suppressed) while row nav was stopped
-    expect(flagSvc.transitionFlag).toHaveBeenCalled();
-    // f2 (RESOLVED) and f3 (UNDER_REVIEW) still present after f1 dismissed
-    expect(component.flags().some(f => f.flagId === 'f2')).toBe(true);
+    // f2 (RESOLVED) is excluded from filtered(), so only 2 rows rendered
+    const btns = fixture.nativeElement.querySelectorAll('.btn-actions');
+    expect(btns.length).toBe(2);
   });
 
-  // ── 7.3: dismissFlag removes row on success, shows error on failure ──
+  // ── Dismiss ───────────────────────────────────────────────────────────────
 
   it('dismissFlag removes the row from flags on success (UNDER_REVIEW → DISMISSED)', () => {
     const { fixture, component } = createComponent();
     fixture.detectChanges();
 
-    // f3 is UNDER_REVIEW
     component.dismissFlag(mockFlags[2]);
     fixture.detectChanges();
 
@@ -125,20 +124,7 @@ describe('FlaggedSubmissionsComponent', () => {
   });
 
   it('dismissFlag performs two-step transition for FLAGGED status', () => {
-    flagSvc = {
-      getAllFlags: vi.fn().mockReturnValue(of(mockFlags)),
-      transitionFlag: vi.fn().mockReturnValue(of({})),
-    };
-    TestBed.configureTestingModule({
-      imports: [FlaggedSubmissionsComponent],
-      providers: [
-        provideRouter([]),
-        { provide: FlagService, useValue: flagSvc },
-        { provide: AssessmentService, useValue: { listAssessments: vi.fn().mockReturnValue(of([])) } },
-      ],
-    });
-    const fixture = TestBed.createComponent(FlaggedSubmissionsComponent);
-    const component = fixture.componentInstance;
+    const { fixture, component } = createComponent();
     fixture.detectChanges();
 
     component.dismissFlag(mockFlags[0]); // f1 is FLAGGED
@@ -163,25 +149,86 @@ describe('FlaggedSubmissionsComponent', () => {
     expect(component.flags().find(f => f.flagId === 'f3')).toBeDefined();
   });
 
-  // ── 7.4: Dismiss button not shown for RESOLVED or DISMISSED rows ──
+  // ── Resolve ───────────────────────────────────────────────────────────────
 
-  it('Dismiss button is not rendered for RESOLVED rows', () => {
-    const { fixture } = createComponent();
+  it('submitResolve calls two-step transition to RESOLVED and removes row', () => {
+    const { fixture, component } = createComponent();
     fixture.detectChanges();
 
-    const rows = fixture.nativeElement.querySelectorAll('.table-row');
-    // f2 is RESOLVED (index 1)
-    const resolvedRow = rows[1];
-    const dismissBtn = resolvedRow?.querySelector('.btn-dismiss');
-    expect(dismissBtn).toBeNull();
+    component.openResolveForm(mockFlags[0]); // f1 FLAGGED
+    component.updateResolveNotes('Confirmed no cheating');
+    component.submitResolve(mockFlags[0]);
+
+    expect(flagSvc.transitionFlag).toHaveBeenNthCalledWith(1, 's1', 'f1', { status: 'UNDER_REVIEW' });
+    expect(flagSvc.transitionFlag).toHaveBeenNthCalledWith(2, 's1', 'f1', {
+      status: 'RESOLVED', resolutionNotes: 'Confirmed no cheating',
+    });
+    expect(component.flags().find(f => f.flagId === 'f1')).toBeUndefined();
   });
 
-  it('Dismiss button is shown for FLAGGED and UNDER_REVIEW rows', () => {
-    const { fixture } = createComponent();
+  it('submitResolve does nothing when notes are empty', () => {
+    const { fixture, component } = createComponent();
     fixture.detectChanges();
 
-    const btns = fixture.nativeElement.querySelectorAll('.btn-dismiss');
-    // f1 (FLAGGED) and f3 (UNDER_REVIEW) should have buttons; f2 (RESOLVED) should not
-    expect(btns.length).toBe(2);
+    component.openResolveForm(mockFlags[0]);
+    component.submitResolve(mockFlags[0]); // notes still empty
+
+    expect(flagSvc.transitionFlag).not.toHaveBeenCalled();
+  });
+
+  // ── Contact ───────────────────────────────────────────────────────────────
+
+  it('submitContact calls contactCandidate and sets actionRequired on success', () => {
+    const { fixture, component } = createComponent();
+    fixture.detectChanges();
+
+    component.openContactForm(mockFlags[0]);
+    component.updateContactMessage('Please review the assessment policy.');
+    component.submitContact(mockFlags[0]);
+
+    expect(candidateSvc.contactCandidate).toHaveBeenCalledWith('c1', {
+      subject: expect.any(String),
+      message: 'Please review the assessment policy.',
+    });
+    expect(component.flags().find(f => f.flagId === 'f1')?.candidateActionRequired).toBe(true);
+  });
+
+  it('submitContact shows error on failure without setting actionRequired', () => {
+    const { fixture, component } = createComponent(undefined, {
+      contactCandidate: vi.fn().mockReturnValue(throwError(() => new Error('fail'))),
+    });
+    fixture.detectChanges();
+
+    component.openContactForm(mockFlags[0]);
+    component.updateContactMessage('Hello');
+    component.submitContact(mockFlags[0]);
+
+    const f = component.activeForm();
+    expect(f?.type === 'contact' && (f as any).error).toBeTruthy();
+    expect(component.flags().find(f => f.flagId === 'f1')?.candidateActionRequired).toBe(false);
+  });
+
+  // ── Blacklist ─────────────────────────────────────────────────────────────
+
+  it('toggleBlacklist blacklists a candidate and updates flag state', () => {
+    const { fixture, component } = createComponent();
+    fixture.detectChanges();
+
+    component.toggleBlacklist(mockFlags[0]); // f1 not blacklisted
+
+    expect(candidateSvc.setBlacklist).toHaveBeenCalledWith('c1', true);
+    expect(component.flags().find(f => f.flagId === 'f1')?.candidateBlacklisted).toBe(true);
+  });
+
+  it('toggleBlacklist shows admin error on 403', () => {
+    const { fixture, component } = createComponent(undefined, {
+      setBlacklist: vi.fn().mockReturnValue(throwError(() => ({ status: 403 }))),
+    });
+    fixture.detectChanges();
+
+    component.toggleBlacklist(mockFlags[0]);
+
+    expect(component.blacklistError()?.flagId).toBe('f1');
+    expect(component.blacklistError()?.message).toContain('admins');
   });
 });

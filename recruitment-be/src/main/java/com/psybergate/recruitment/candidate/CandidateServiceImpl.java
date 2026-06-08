@@ -3,7 +3,9 @@ package com.psybergate.recruitment.candidate;
 import com.psybergate.recruitment.candidate.dto.CandidateHistoryItemResponse;
 import com.psybergate.recruitment.candidate.dto.CandidateRequest;
 import com.psybergate.recruitment.candidate.dto.CandidateResponse;
+import com.psybergate.recruitment.candidate.dto.ContactCandidateRequest;
 import com.psybergate.recruitment.domain.*;
+import com.psybergate.recruitment.email.EmailService;
 import com.psybergate.recruitment.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -25,6 +27,7 @@ public class CandidateServiceImpl implements CandidateService {
     @Autowired private CandidateSubmissionRepository submissionRepository;
     @Autowired private CandidateAnswerRepository answerRepository;
     @Autowired private AnswerScoreRepository scoreRepository;
+    @Autowired private EmailService emailService;
 
     @Override
     public CandidateResponse create(CandidateRequest request, UUID createdById) {
@@ -161,7 +164,28 @@ public class CandidateServiceImpl implements CandidateService {
         }).toList();
     }
 
+    @Override
+    public void contactCandidate(UUID candidateId, ContactCandidateRequest req) {
+        Candidate candidate = candidateRepository.findById(candidateId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Candidate not found"));
+        emailService.sendContactMessage(candidate, req.subject(), req.message());
+        candidate.setActionRequired(true);
+        candidateRepository.save(candidate);
+    }
+
+    @Override
+    public CandidateResponse setBlacklisted(UUID candidateId, boolean blacklisted, boolean isAdmin) {
+        if (!blacklisted && !isAdmin) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only admins can remove a candidate from the blacklist");
+        }
+        Candidate candidate = candidateRepository.findById(candidateId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Candidate not found"));
+        candidate.setBlacklisted(blacklisted);
+        return toResponse(candidateRepository.save(candidate));
+    }
+
     private CandidateResponse toResponse(Candidate c) {
-        return new CandidateResponse(c.getId(), c.getFirstName(), c.getLastName(), c.getEmail(), c.getCellPhone(), c.getCreatedAt());
+        return new CandidateResponse(c.getId(), c.getFirstName(), c.getLastName(), c.getEmail(), c.getCellPhone(),
+                c.getCreatedAt(), c.isActionRequired(), c.isBlacklisted());
     }
 }

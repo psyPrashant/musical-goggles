@@ -51,6 +51,14 @@ public class InvitationServiceImpl implements InvitationService {
         Candidate candidate = candidateRepository.findById(request.candidateId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Candidate not found"));
 
+        if (candidate.isBlacklisted()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "CANDIDATE_BLACKLISTED");
+        }
+
+        if (candidate.isActionRequired()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "CANDIDATE_ACTION_REQUIRED");
+        }
+
         // Global one-active-invite constraint: block if candidate already has any PENDING or SENT invite
         if (invitationRepository.countActiveInvitationsByCandidate(candidate.getId()) > 0) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "ACTIVE_INVITE_EXISTS");

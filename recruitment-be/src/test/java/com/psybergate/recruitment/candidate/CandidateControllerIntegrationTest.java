@@ -3,7 +3,9 @@ package com.psybergate.recruitment.candidate;
 import tools.jackson.databind.ObjectMapper;
 import com.psybergate.recruitment.AbstractIntegrationTest;
 import com.psybergate.recruitment.TestDatasourceInitializer;
+import com.psybergate.recruitment.candidate.dto.BlacklistRequest;
 import com.psybergate.recruitment.candidate.dto.CandidateRequest;
+import com.psybergate.recruitment.domain.Candidate;
 import com.psybergate.recruitment.domain.Role;
 import com.psybergate.recruitment.domain.User;
 import com.psybergate.recruitment.repository.CandidateRepository;
@@ -95,6 +97,56 @@ class CandidateControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void blacklistCandidate_asRecruiter_returns200() throws Exception {
+        Candidate candidate = createTestCandidate("blacklist-recruiter@ctest.dev");
+
+        mockMvc.perform(patch("/api/candidates/" + candidate.getId() + "/blacklist")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new BlacklistRequest(true))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.blacklisted").value(true));
+    }
+
+    @Test
+    void unblacklistCandidate_asRecruiter_returns403() throws Exception {
+        Candidate candidate = createTestCandidate("unblacklist-recruiter@ctest.dev");
+        candidate.setBlacklisted(true);
+        candidateRepository.save(candidate);
+
+        mockMvc.perform(patch("/api/candidates/" + candidate.getId() + "/blacklist")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new BlacklistRequest(false))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void unblacklistCandidate_asAdmin_returns200() throws Exception {
+        User admin = new User();
+        admin.setFirstName("Admin");
+        admin.setLastName("User");
+        admin.setEmail("admin-ctest@integration.dev");
+        admin.setPasswordHash(passwordEncoder.encode("pass"));
+        admin.setRole(Role.ADMIN);
+        admin = userRepository.save(admin);
+        String adminToken = jwtService.generateToken(admin.getId().toString(), Role.ADMIN, 1L);
+
+        Candidate candidate = createTestCandidate("unblacklist-admin@ctest.dev");
+        candidate.setBlacklisted(true);
+        candidateRepository.save(candidate);
+
+        mockMvc.perform(patch("/api/candidates/" + candidate.getId() + "/blacklist")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new BlacklistRequest(false))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.blacklisted").value(false));
+
+        userRepository.findByEmail("admin-ctest@integration.dev").ifPresent(userRepository::delete);
+    }
+
+    @Test
     void updateCandidate_withInvalidPhone_returns400() throws Exception {
         // Create first
         CandidateRequest create = new CandidateRequest("Dave", "Chen", "dave@ctest.dev", null);
@@ -111,5 +163,13 @@ class CandidateControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(update)))
                 .andExpect(status().isBadRequest());
+    }
+
+    private Candidate createTestCandidate(String email) {
+        Candidate c = new Candidate();
+        c.setFirstName("Test");
+        c.setLastName("Candidate");
+        c.setEmail(email);
+        return candidateRepository.save(c);
     }
 }

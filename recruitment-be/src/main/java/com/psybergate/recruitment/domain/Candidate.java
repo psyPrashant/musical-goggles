@@ -33,6 +33,12 @@ public class Candidate {
     @Column(name = "cell_phone")
     private String cellPhone;
 
+    @Column(name = "action_required", nullable = false)
+    private boolean actionRequired = false;
+
+    @Column(name = "blacklisted", nullable = false)
+    private boolean blacklisted = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
     private User createdBy;

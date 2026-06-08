@@ -5,6 +5,8 @@ export interface Candidate {
   email: string;
   cellPhone?: string | null;
   createdAt: string;
+  blacklisted: boolean;
+  actionRequired: boolean;
 }
 
 export interface CandidateRequest {

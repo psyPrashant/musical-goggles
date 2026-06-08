@@ -17,11 +17,14 @@ const mockFlag: FlagResponse = {
 const mockListItem: FlagListItem = {
   flagId: 'flag-1',
   submissionId: 'sub-1',
+  candidateId: 'cand-1',
   candidateName: 'Jane Doe',
   assessmentName: 'Test Assessment',
   reason: 'COPIED_ANSWERS',
   status: 'FLAGGED',
   createdAt: '2026-06-01T10:00:00Z',
+  candidateBlacklisted: false,
+  candidateActionRequired: false,
 };
 
 describe('FlagService', () => {

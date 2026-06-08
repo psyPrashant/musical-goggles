@@ -38,4 +38,12 @@ export class CandidateService {
   cancelInvitation(invitationId: string): Observable<void> {
     return this.http.delete<void>(`/api/invitations/${invitationId}`);
   }
+
+  contactCandidate(candidateId: string, req: { subject: string; message: string }): Observable<void> {
+    return this.http.post<void>(`/api/candidates/${candidateId}/contact`, req);
+  }
+
+  setBlacklist(candidateId: string, blacklisted: boolean): Observable<void> {
+    return this.http.patch<void>(`/api/candidates/${candidateId}/blacklist`, { blacklisted });
+  }
 }

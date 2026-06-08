@@ -11,16 +11,19 @@ import { Candidate, CandidateHistoryItem } from '../../core/candidate/candidate.
 const base: Candidate = {
   id: 'c1', firstName: 'Alice', lastName: 'Smith',
   email: 'alice@example.com', cellPhone: '+27 82 111 2222', createdAt: '2026-01-01T00:00:00Z',
+  blacklisted: false, actionRequired: false,
 };
 
 const noPhone: Candidate = {
   id: 'c2', firstName: 'Bob', lastName: 'Jones',
   email: 'bob@example.com', cellPhone: null, createdAt: '2026-01-02T00:00:00Z',
+  blacklisted: false, actionRequired: false,
 };
 
 const mockCandidate: Candidate = {
   id: 'c-1', firstName: 'Alice', lastName: 'Smith',
   email: 'alice@example.com', createdAt: '2026-01-01T00:00:00Z',
+  blacklisted: false, actionRequired: false,
 };
 
 const mockHistory: CandidateHistoryItem[] = [
