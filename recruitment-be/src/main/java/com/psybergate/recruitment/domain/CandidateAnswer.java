@@ -42,4 +42,7 @@ public class CandidateAnswer {
 
     @Column(name = "saved_at", nullable = false)
     private Instant savedAt;
+
+    @Column(name = "selected_language", length = 20)
+    private String selectedLanguage;
 }

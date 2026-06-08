@@ -183,7 +183,7 @@ class CandidateTakeControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk());
 
         SaveAnswersRequest req = new SaveAnswersRequest(List.of(
-                new AnswerInput(mcqQuestion.getId(), List.of(correctOption.getId()), null)
+                new AnswerInput(mcqQuestion.getId(), List.of(correctOption.getId()), null, null)
         ));
 
         mockMvc.perform(put("/api/take/answers")
@@ -202,7 +202,7 @@ class CandidateTakeControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk());
 
         SaveAnswersRequest req = new SaveAnswersRequest(List.of(
-                new AnswerInput(UUID.randomUUID(), null, "some text")
+                new AnswerInput(UUID.randomUUID(), null, "some text", null)
         ));
 
         mockMvc.perform(put("/api/take/answers")
@@ -232,7 +232,7 @@ class CandidateTakeControllerIntegrationTest extends AbstractIntegrationTest {
 
         String tooLong = "x".repeat(65_536);
         SaveAnswersRequest req = new SaveAnswersRequest(List.of(
-                new AnswerInput(textQ.getId(), null, tooLong)
+                new AnswerInput(textQ.getId(), null, tooLong, null)
         ));
 
         mockMvc.perform(put("/api/take/answers")
@@ -313,7 +313,7 @@ class CandidateTakeControllerIntegrationTest extends AbstractIntegrationTest {
 
         // Save draft
         SaveAnswersRequest saveReq = new SaveAnswersRequest(List.of(
-                new AnswerInput(mcqQuestion.getId(), List.of(correctOption.getId()), null)
+                new AnswerInput(mcqQuestion.getId(), List.of(correctOption.getId()), null, null)
         ));
         mockMvc.perform(put("/api/take/answers")
                         .header("Authorization", "Bearer " + candidateSessionToken)

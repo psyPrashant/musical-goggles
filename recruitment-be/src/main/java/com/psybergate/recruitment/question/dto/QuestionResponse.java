@@ -16,5 +16,10 @@ public record QuestionResponse(
         String languageHint,
         List<QuestionResponse> memberQuestions,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        String starterCode,
+        List<CodeTestCaseResponse> testCases,
+        String starterCodeJava,
+        String starterCodeCsharp,
+        String starterCodePython
 ) {}

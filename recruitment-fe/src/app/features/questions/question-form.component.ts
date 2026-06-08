@@ -1,12 +1,15 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { QuestionService } from '../../core/question/question.service';
 import { Question, QuestionType } from '../../core/question/question.model';
+import { TestCaseFormComponent } from './test-case-form.component';
+
+type StarterCodeLang = 'java' | 'csharp' | 'python';
 
 @Component({
   selector: 'app-question-form',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, TestCaseFormComponent],
   template: `
     <div class="page">
       <div class="page-header">
@@ -72,11 +75,35 @@ import { Question, QuestionType } from '../../core/question/question.model';
               <input formControlName="tagsRaw" class="field-input" placeholder="e.g. algorithms, java, sql"/>
             </div>
 
-            <!-- CODE_SUBMISSION: language hint -->
+            <!-- CODE_SUBMISSION: language hint, per-language starter code, test cases -->
             @if (form.get('type')?.value === 'CODE_SUBMISSION') {
               <div class="field">
-                <label class="field-label">Language Hint</label>
+                <label class="field-label">Language Hint <span class="field-hint-inline">(informational only)</span></label>
                 <input formControlName="languageHint" class="field-input" placeholder="e.g. java, python, javascript"/>
+              </div>
+
+              <div class="field">
+                <label class="field-label">Starter Code Templates <span class="field-hint-inline">(optional — pre-fills the editor per language)</span></label>
+                <div class="starter-tabs">
+                  @for (lang of starterCodeLangs; track lang.value) {
+                    <button type="button" class="starter-tab" [class.active]="activeStarterLang() === lang.value"
+                            (click)="activeStarterLang.set(lang.value)">{{ lang.label }}</button>
+                  }
+                </div>
+                @if (activeStarterLang() === 'java') {
+                  <textarea formControlName="starterCodeJava" class="field-textarea code-textarea" rows="8"
+                            placeholder="public class Solution {&#10;    public static void main(String[] args) {&#10;        // Write your solution here&#10;    }&#10;}"></textarea>
+                } @else if (activeStarterLang() === 'csharp') {
+                  <textarea formControlName="starterCodeCsharp" class="field-textarea code-textarea" rows="8"
+                            placeholder="using System;&#10;class Solution {&#10;    static void Main(string[] args) {&#10;        // Write your solution here&#10;    }&#10;}"></textarea>
+                } @else if (activeStarterLang() === 'python') {
+                  <textarea formControlName="starterCodePython" class="field-textarea code-textarea" rows="8"
+                            placeholder="# Write your solution here&#10;"></textarea>
+                }
+              </div>
+
+              <div class="field">
+                <app-test-case-form [formArray]="testCases" />
               </div>
             }
 
@@ -259,6 +286,7 @@ import { Question, QuestionType } from '../../core/question/question.model';
     }
     .field-textarea:focus { border-color: var(--accent); }
     .field-textarea::placeholder { color: var(--text-3); }
+    .code-textarea { font-family: var(--font-mono); font-size: 12.5px; }
 
     .field-err { font-size: 11.5px; color: var(--danger); margin-top: 4px; display: block; }
 
@@ -381,6 +409,22 @@ import { Question, QuestionType } from '../../core/question/question.model';
     .type-code_submission { background: rgba(168,85,247,0.13); color: #a855f7; }
     .type-group { background: rgba(20,184,166,0.13); color: #14b8a6; }
 
+    /* Starter code language tabs */
+    .starter-tabs {
+      display: flex; gap: 0; margin-bottom: 8px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      overflow: hidden; width: fit-content;
+    }
+    .starter-tab {
+      padding: 5px 16px; background: var(--bg-elevated); border: none;
+      color: var(--text-2); font-size: 12.5px; font-weight: 500; cursor: pointer;
+      font-family: var(--font); transition: all 100ms;
+      border-right: 1px solid var(--border);
+    }
+    .starter-tab:last-child { border-right: none; }
+    .starter-tab:hover { background: var(--bg-hover); color: var(--text-1); }
+    .starter-tab.active { background: var(--accent-subtle); color: var(--accent); font-weight: 700; }
+
     /* info / edit-blocked banner */
     .info-banner {
       display: flex; align-items: flex-start; gap: 8px;
@@ -413,6 +457,13 @@ export class QuestionFormComponent implements OnInit {
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
   readonly mcqError = signal<string | null>(null);
+  readonly activeStarterLang = signal<StarterCodeLang>('java');
+
+  readonly starterCodeLangs = [
+    { value: 'java' as StarterCodeLang,   label: 'Java'   },
+    { value: 'csharp' as StarterCodeLang, label: 'C#'     },
+    { value: 'python' as StarterCodeLang, label: 'Python' },
+  ];
 
   // ── GROUP-specific state ────────────────────────────────────────────────
   readonly allQuestions = signal<Question[]>([]);
@@ -438,7 +489,12 @@ export class QuestionFormComponent implements OnInit {
     body: ['', Validators.required],
     tagsRaw: [''],
     languageHint: [''],
+    starterCode: [''],           // legacy — kept for backward compat but not shown in UI
+    starterCodeJava: [''],
+    starterCodeCsharp: [''],
+    starterCodePython: [''],
     options: this.fb.array([this.makeOption('', true), this.makeOption('', false)]),
+    testCases: this.fb.array([]),
   });
 
   readonly typeOptions = [
@@ -450,6 +506,10 @@ export class QuestionFormComponent implements OnInit {
 
   get options(): FormArray {
     return this.form.get('options') as FormArray;
+  }
+
+  get testCases(): FormArray {
+    return this.form.get('testCases') as FormArray;
   }
 
   ngOnInit() {
@@ -464,16 +524,41 @@ export class QuestionFormComponent implements OnInit {
             this.form.patchValue({ type: q.type, title: q.title, body: q.body });
             return;
           }
+          // FIX: clear default placeholder MCQ options for all question types.
+          // The form initialises with type='MCQ' and two options that have Validators.required.
+          // If we leave them for non-MCQ questions the form stays invalid and submit() returns
+          // silently even though the user sees no error.
+          this.options.clear();
+
+          // For CODE_SUBMISSION: fall back to the legacy starterCode value when per-language
+          // templates haven't been set yet (questions created before this feature existed).
+          const legacyJava = q.starterCodeJava ?? (q.type === 'CODE_SUBMISSION' ? (q.starterCode ?? '') : '');
+
           this.form.patchValue({
             type: q.type,
             title: q.title,
             body: q.body,
             tagsRaw: q.tags.join(', '),
             languageHint: q.languageHint ?? '',
+            starterCode: q.starterCode ?? '',
+            starterCodeJava:   legacyJava,
+            starterCodeCsharp: q.starterCodeCsharp ?? '',
+            starterCodePython: q.starterCodePython ?? '',
           });
           if (q.type === 'MCQ' && q.options) {
-            this.options.clear();
             q.options.forEach(o => this.options.push(this.makeOption(o.text, o.correct)));
+          }
+          if (q.type === 'CODE_SUBMISSION' && q.testCases) {
+            this.testCases.clear();
+            q.testCases.forEach(tc => this.testCases.push(
+              this.fb.group({
+                description: [tc.description ?? ''],
+                stdin: [tc.stdin ?? ''],
+                expectedOutput: [tc.expectedOutput, Validators.required],
+                visible: [tc.visible],
+                runOnlyOnSubmit: [tc.runOnlyOnSubmit ?? false],
+              }),
+            ));
           }
         },
         error: () => this.error.set('Failed to load question.'),
@@ -494,6 +579,12 @@ export class QuestionFormComponent implements OnInit {
       }
     } else {
       this.options.clear();
+    }
+
+    if (type !== 'CODE_SUBMISSION') {
+      this.testCases.clear();
+      this.form.patchValue({ starterCode: '', starterCodeJava: '', starterCodeCsharp: '', starterCodePython: '' });
+      this.activeStarterLang.set('java');
     }
 
     if (type === 'GROUP') {
@@ -578,6 +669,21 @@ export class QuestionFormComponent implements OnInit {
       ...(type === 'MCQ' && { options: this.options.value }),
       ...(type === 'CODE_SUBMISSION' && {
         languageHint: this.form.get('languageHint')!.value ?? undefined,
+        starterCode: this.form.get('starterCode')!.value ?? undefined,
+        starterCodeJava: this.form.get('starterCodeJava')!.value || undefined,
+        starterCodeCsharp: this.form.get('starterCodeCsharp')!.value || undefined,
+        starterCodePython: this.form.get('starterCodePython')!.value || undefined,
+        testCases: this.testCases.controls.map((ctrl, i) => {
+          const g = ctrl as FormGroup;
+          return {
+            description: g.get('description')!.value || undefined,
+            stdin: g.get('stdin')!.value || undefined,
+            expectedOutput: g.get('expectedOutput')!.value,
+            visible: g.get('visible')!.value,
+            displayOrder: i,
+            runOnlyOnSubmit: g.get('runOnlyOnSubmit')!.value ?? false,
+          };
+        }),
       }),
       ...(type === 'GROUP' && {
         memberQuestionIds: this.memberQuestions().map(q => q.id),

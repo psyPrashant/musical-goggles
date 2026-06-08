@@ -6,6 +6,14 @@ export interface TakeOption {
   optionText: string;
 }
 
+export interface TakeTestCase {
+  id: string;
+  description: string | null;
+  stdin: string | null;
+  expectedOutput: string;
+  runOnlyOnSubmit?: boolean;
+}
+
 export interface TakeQuestion {
   id: string;
   displayOrder: number;
@@ -14,6 +22,31 @@ export interface TakeQuestion {
   body: string;
   options: TakeOption[] | null;
   subQuestions?: TakeQuestion[];
+  starterCode?: string | null;
+  visibleTestCases?: TakeTestCase[] | null;
+  starterTemplates?: Record<string, string> | null;
+}
+
+export interface RunCodeRequest {
+  questionId: string;
+  sourceCode: string;
+  language: string;
+}
+
+export interface TestCaseRunResult {
+  testCaseId: string;
+  description: string | null;
+  stdin: string | null;
+  expectedOutput: string;
+  actualOutput: string | null;
+  passed: boolean;
+  stderr: string | null;
+  judge0StatusId: number;
+  judge0StatusDescription: string;
+}
+
+export interface RunCodeResponse {
+  results: TestCaseRunResult[];
 }
 
 export interface TakeAnswer {
@@ -21,6 +54,7 @@ export interface TakeAnswer {
   selectedOptionIds: string[] | null;
   textContent: string | null;
   savedAt: string;
+  language?: string | null;
 }
 
 export interface AssessmentTakeResponse {
@@ -38,6 +72,7 @@ export interface AnswerInput {
   questionId: string;
   selectedOptionIds?: string[] | null;
   textContent?: string | null;
+  language?: string | null;
 }
 
 export interface SaveAnswersRequest {

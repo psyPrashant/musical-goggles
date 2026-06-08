@@ -3,6 +3,8 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   AssessmentTakeResponse,
+  RunCodeRequest,
+  RunCodeResponse,
   SaveAnswersRequest,
   SaveAnswersResponse,
   SubmitRequest,
@@ -27,6 +29,12 @@ export class CandidateTakeService {
 
   submit(sessionToken: string, req: SubmitRequest): Observable<SubmitResponse> {
     return this.http.post<SubmitResponse>('/api/take/submit', req, {
+      headers: new HttpHeaders({ Authorization: `Bearer ${sessionToken}` }),
+    });
+  }
+
+  runCode(sessionToken: string, req: RunCodeRequest): Observable<RunCodeResponse> {
+    return this.http.post<RunCodeResponse>('/api/take/run-code', req, {
       headers: new HttpHeaders({ Authorization: `Bearer ${sessionToken}` }),
     });
   }

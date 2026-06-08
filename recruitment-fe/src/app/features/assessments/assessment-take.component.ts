@@ -3,13 +3,15 @@ import { DatePipe } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { AssessmentService } from '../../core/assessment/assessment.service';
 import { AuthService } from '../../core/auth/auth.service';
-import { AssessmentPreview } from '../../core/assessment/assessment.model';
+import { AssessmentPreview, PreviewQuestion } from '../../core/assessment/assessment.model';
 import { CandidateTakeService } from '../../core/take/candidate-take.service';
-import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidate-take.model';
+import { AssessmentTakeResponse, SubmitResponse, TestCaseRunResult } from '../../core/take/candidate-take.model';
+import { CodeEditorComponent } from './code-editor.component';
+import { CodeRunResultsComponent } from './code-run-results.component';
 
 @Component({
   selector: 'app-assessment-take',
-  imports: [DatePipe],
+  imports: [DatePipe, CodeEditorComponent, CodeRunResultsComponent],
   template: `
     <div class="take-page">
       @if (loading()) {
@@ -114,6 +116,76 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
           <!-- Question panel -->
           <div class="question-panel">
             @if (currentQuestion(); as q) {
+
+              <!-- ═══ CODE_SUBMISSION: wide split-panel card ═══ -->
+              @if (q.type === 'CODE_SUBMISSION') {
+                <div class="code-question-card">
+                  <div class="progress-bar-wrap">
+                    <div class="progress-bar" [style.width]="progressPercent() + '%'"></div>
+                  </div>
+                  <div class="question-meta">
+                    <div class="q-position">
+                      <span class="q-num">Q{{ currentIndex() + 1 }}</span>
+                      <span class="q-total">of {{ preview()!.questions.length }}</span>
+                    </div>
+                    <span class="type-badge type-code_submission">Code</span>
+                    <span class="pts-badge">10 pts</span>
+                    <button class="flag-btn" [class.flagged]="flagged().has(q.id)" (click)="toggleFlag(q.id)" title="Flag for review">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
+                      </svg>
+                      {{ flagged().has(q.id) ? 'Flagged' : 'Flag' }}
+                    </button>
+                  </div>
+
+                  <div class="code-split">
+                    <!-- LEFT: description only -->
+                    <div class="code-split-desc">
+                      <p class="code-question-body">{{ q.body }}</p>
+                    </div>
+
+                    <!-- RIGHT: language tabs + editor + Test Code button + test cases + results -->
+                    <div class="code-split-editor">
+                      <!-- Language selector -->
+                      <div class="lang-tabs">
+                        @for (lang of languageOptions; track lang.value) {
+                          <button class="lang-tab"
+                                  [class.active]="selectedLanguage(q.id) === lang.value"
+                                  (click)="setLanguage(q.id, lang.value)">
+                            {{ lang.label }}
+                          </button>
+                        }
+                      </div>
+
+                      <!-- Monaco editor -->
+                      <app-code-editor
+                        [value]="getCode(q.id, selectedLanguage(q.id))"
+                        [language]="selectedLanguage(q.id)"
+                        (valueChange)="setCodeForLanguage(q.id, selectedLanguage(q.id), $event)">
+                      </app-code-editor>
+
+                      <!-- Test Code button bar -->
+                      <div class="code-actions">
+                        <button class="test-code-btn" (click)="runCode(q)" [disabled]="codeRunning()">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                          {{ codeRunning() ? 'Testing…' : 'Test Code' }}
+                        </button>
+                      </div>
+
+                      <!-- Test cases + results panel -->
+                      <app-code-run-results
+                        [testCases]="q.visibleTestCases ?? []"
+                        [results]="codeRunResults()[q.id] ?? []"
+                        [running]="codeRunning()"
+                        [runError]="codeRunError()[q.id] ?? null">
+                      </app-code-run-results>
+                    </div>
+                  </div>
+                </div>
+              }
+
+              <!-- ═══ All other question types: standard narrow card ═══ -->
+              @if (q.type !== 'CODE_SUBMISSION') {
               <div class="question-card">
                 <div class="progress-bar-wrap">
                   <div class="progress-bar" [style.width]="progressPercent() + '%'"></div>
@@ -158,22 +230,6 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
                               (input)="setAnswer(q.id, $any($event.target).value)"
                               placeholder="Type your answer here…"></textarea>
                     <span class="word-count">{{ wordCount(answers()[q.id]) }} words</span>
-                  </div>
-                }
-
-                @if (q.type === 'CODE_SUBMISSION') {
-                  <div class="code-answer">
-                    <div class="code-bar">
-                      @if (q.languageHint) {
-                        <span class="lang-tag">{{ q.languageHint }}</span>
-                      }
-                      <span class="code-hint">Paste or type your code below</span>
-                    </div>
-                    <textarea rows="12"
-                              class="answer-textarea code-textarea"
-                              [value]="answers()[q.id] ?? ''"
-                              (input)="setAnswer(q.id, $any($event.target).value)"
-                              placeholder="// Write your solution here…"></textarea>
                   </div>
                 }
 
@@ -234,6 +290,19 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
                   }
                 </div>
               </div>
+              } <!-- end @if q.type !== 'CODE_SUBMISSION' -->
+
+              <!-- Nav buttons for code questions (rendered outside the card) -->
+              @if (q.type === 'CODE_SUBMISSION') {
+                <div class="question-nav code-question-nav">
+                  <button class="nav-btn" (click)="prev()" [disabled]="currentIndex() === 0">← Previous</button>
+                  @if (currentIndex() < preview()!.questions.length - 1) {
+                    <button class="nav-btn primary" (click)="next()">Next →</button>
+                  } @else {
+                    <button class="nav-btn primary" (click)="confirmSubmit()">Submit →</button>
+                  }
+                </div>
+              }
             }
           </div>
         </div>
@@ -451,20 +520,86 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
 
     .word-count { font-size: 11.5px; color: var(--text-3); text-align: right; }
 
-    .code-answer { padding: 0 20px 20px; display: flex; flex-direction: column; gap: 8px; }
-
-    .code-bar {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 12px; background: var(--bg-elevated);
-      border: 1px solid var(--border); border-radius: var(--radius-sm);
+    /* ── Code question: wide split-panel card ─────────────────────────────── */
+    .code-question-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
     }
 
-    .lang-tag {
-      font-size: 11.5px; background: rgba(168,85,247,0.13); color: #a855f7;
-      padding: 2px 8px; border-radius: 999px; font-weight: 500;
+    .code-split {
+      display: flex; min-height: 540px; border-top: 1px solid var(--border);
     }
 
-    .code-hint { font-size: 12px; color: var(--text-3); }
+    /* LEFT column: description only */
+    .code-split-desc {
+      width: 35%; min-width: 240px; padding: 20px 24px;
+      border-right: 1px solid var(--border); overflow-y: auto;
+    }
+
+    .code-question-body {
+      font-size: 14px; color: var(--text-1); line-height: 1.65; margin: 0;
+    }
+
+    /* RIGHT column: language tabs + editor + actions + test cases */
+    .code-split-editor {
+      flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0;
+    }
+
+    /* Language selector tabs */
+    .lang-tabs {
+      display: flex; background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+
+    .lang-tab {
+      padding: 9px 20px; background: none; border: none;
+      border-right: 1px solid var(--border);
+      color: var(--text-2); font-size: 12.5px; font-weight: 500;
+      cursor: pointer; font-family: var(--font); transition: all 120ms;
+      position: relative;
+    }
+    .lang-tab:hover { color: var(--text-1); background: var(--bg-hover); }
+    .lang-tab.active {
+      color: var(--accent); font-weight: 700; background: var(--bg-card);
+    }
+    .lang-tab.active::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+      height: 2px; background: var(--accent);
+    }
+
+    /* Editor fills remaining height */
+    .code-split-editor app-code-editor {
+      flex: 1; display: block; min-height: 320px;
+    }
+
+    /* Test Code button bar */
+    .code-actions {
+      display: flex; justify-content: flex-end; align-items: center;
+      padding: 8px 14px; background: var(--bg-elevated);
+      border-top: 1px solid var(--border); flex-shrink: 0;
+    }
+
+    .test-code-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 8px 20px; background: var(--accent); color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font);
+      transition: background 120ms;
+    }
+    .test-code-btn:hover:not(:disabled) { background: var(--accent-hover); }
+    .test-code-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Nav row below code card */
+    .code-question-nav {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 0; margin-top: 0;
+    }
+
+    /* Responsive: stack columns on narrow screens */
+    @media (max-width: 900px) {
+      .code-split { flex-direction: column; min-height: auto; }
+      .code-split-desc { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+    }
 
     .group-sub-questions { display: flex; flex-direction: column; gap: 16px; padding: 0 20px 20px; }
 
@@ -560,9 +695,23 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
   readonly checkingPassword = signal(false);
 
   readonly currentIndex = signal(0);
+  /** Stores the most-recently-saved value for each question ID (for MCQ/TEXT autosave) */
   readonly answers = signal<Record<string, string | undefined>>({});
+  /** Stores code per-question per-language: key = `${questionId}__${lang}` */
+  readonly codeByLanguage = signal<Record<string, string>>({});
   readonly flagged = signal<Set<string>>(new Set());
   readonly timeLeft = signal(0);
+
+  readonly codeRunning = signal(false);
+  readonly codeRunResults = signal<Record<string, TestCaseRunResult[] | undefined>>({});
+  readonly codeRunError = signal<Record<string, string | null | undefined>>({});
+  readonly selectedLanguages = signal<Record<string, string | undefined>>({});
+
+  readonly languageOptions = [
+    { value: 'java',   label: 'Java'   },
+    { value: 'csharp', label: 'C#'     },
+    { value: 'python', label: 'Python' },
+  ] as const;
 
   private timerId: ReturnType<typeof setInterval> | null = null;
   private deadlineMs: number | null = null;
@@ -579,7 +728,8 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
     const p = this.preview();
     if (!p) return 0;
     const a = this.answers();
-    return p.questions.filter(q => this.isQuestionAnswered(q, a)).length;
+    const cbl = this.codeByLanguage();
+    return p.questions.filter(q => this.isQuestionAnswered(q, a, cbl)).length;
   });
 
   readonly progressPercent = computed(() => {
@@ -617,7 +767,6 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
     this.authSvc.validateCandidateToken(token).subscribe({
       next: res => {
         this.sessionToken.set(res.token);
-        // Check if password-protected before loading
         this.svc.getPreview(this.assessmentId, res.token).subscribe({
           next: p => {
             this.loading.set(false);
@@ -681,12 +830,11 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
   }
 
   private applyTakeResponse(data: AssessmentTakeResponse) {
-    // Map take response → AssessmentPreview for template compatibility
     this.preview.set({
       id: data.assessmentId,
       title: data.title,
       description: data.description,
-      timeLimitMinutes: 0, // not used for timer — we use deadline
+      timeLimitMinutes: 0,
       passwordRequired: false,
       questions: data.questions.map(q => ({
         id: q.id,
@@ -696,6 +844,9 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
           ? q.options.map(o => ({ id: o.id, text: o.optionText }))
           : null,
         languageHint: null,
+        starterCode: q.starterCode ?? null,
+        visibleTestCases: q.visibleTestCases ?? null,
+        starterTemplates: q.starterTemplates ?? null,
         subQuestions: q.subQuestions
           ? q.subQuestions.map(sub => ({
               id: sub.id,
@@ -710,25 +861,40 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
       })),
     });
 
-    // Pre-populate saved answers (task 7.3)
+    // Pre-populate saved answers
     const preloaded: Record<string, string> = {};
+    const preloadedCode: Record<string, string> = {};
+    const preloadedLangs: Record<string, string> = {};
+
     for (const ans of data.answers) {
       if (ans.selectedOptionIds && ans.selectedOptionIds.length > 0) {
         preloaded[ans.questionId] = ans.selectedOptionIds[0];
       } else if (ans.textContent) {
-        preloaded[ans.questionId] = ans.textContent;
+        // Determine if it's a code question
+        const q = data.questions.find(q => q.id === ans.questionId);
+        if (q?.type === 'CODE_SUBMISSION') {
+          const lang = ans.language ?? 'java';
+          preloadedCode[`${ans.questionId}__${lang}`] = ans.textContent;
+          preloadedLangs[ans.questionId] = lang;
+          preloaded[ans.questionId] = ans.textContent; // also keep in answers for autosave
+        } else {
+          preloaded[ans.questionId] = ans.textContent;
+        }
       }
     }
-    this.answers.set(preloaded);
 
-    // Init timer from server deadline (task 6.3)
+    this.answers.set(preloaded);
+    this.codeByLanguage.set(preloadedCode);
+    if (Object.keys(preloadedLangs).length > 0) {
+      this.selectedLanguages.set(preloadedLangs);
+    }
+
+    // Init timer from server deadline
     this.deadlineMs = new Date(data.deadline).getTime();
     const secsLeft = Math.max(0, Math.round((this.deadlineMs - Date.now()) / 1000));
-    // Override timeLimitMinutes-based percent using actual seconds
     const totalSecs = Math.round(
       (new Date(data.deadline).getTime() - new Date(data.startedAt).getTime()) / 1000
     );
-    // Patch preview timeLimitMinutes so timePercent() works
     this.preview.update(p => p ? { ...p, timeLimitMinutes: Math.ceil(totalSecs / 60) } : p);
     this.timeLeft.set(secsLeft);
     this.startTimer();
@@ -759,6 +925,21 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Get per-language code, falling back to the question's starter template for that language. */
+  getCode(questionId: string, lang: string): string {
+    const stored = this.codeByLanguage()[`${questionId}__${lang}`];
+    if (stored !== undefined) return stored;
+    const q = this.findQuestion(questionId) as PreviewQuestion | undefined;
+    return q?.starterTemplates?.[lang] ?? '';
+  }
+
+  /** Called when the Monaco editor content changes. Updates per-language store + triggers autosave. */
+  setCodeForLanguage(questionId: string, lang: string, code: string) {
+    this.codeByLanguage.update(m => ({ ...m, [`${questionId}__${lang}`]: code }));
+    this.answers.update(a => ({ ...a, [questionId]: code }));
+    this.scheduleAutosave(questionId);
+  }
+
   setAnswer(questionId: string, value: string) {
     this.answers.update(a => ({ ...a, [questionId]: value }));
     this.scheduleAutosave(questionId);
@@ -779,7 +960,6 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
     this.autosaveTimers.set(questionId, timer);
   }
 
-  /** Find a question by id, searching both top-level and sub-questions inside GROUP questions. */
   private findQuestion(questionId: string): any | undefined {
     const questions = this.preview()?.questions ?? [];
     for (const q of questions) {
@@ -802,7 +982,9 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
 
     const input = q.type === 'MCQ'
       ? { questionId, selectedOptionIds: value ? [value] : [] }
-      : { questionId, textContent: value ?? '' };
+      : q.type === 'CODE_SUBMISSION'
+        ? { questionId, textContent: value ?? '', language: this.selectedLanguage(questionId) }
+        : { questionId, textContent: value ?? '' };
 
     this.takeSvc.saveAnswers(token, { answers: [input] }).subscribe({
       error: err => {
@@ -813,17 +995,32 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
     });
   }
 
+  selectedLanguage(questionId: string): string {
+    return this.selectedLanguages()[questionId] ?? 'java' as string;
+  }
+
+  setLanguage(questionId: string, lang: string) {
+    this.selectedLanguages.update(m => ({ ...m, [questionId]: lang }));
+    // Persist language change with current code for the new language
+    this.scheduleAutosave(questionId);
+  }
+
   isAnswered(questionId: string): boolean {
     const p = this.preview();
     const q = p?.questions.find(q => q.id === questionId);
-    return this.isQuestionAnswered(q as any, this.answers());
+    return this.isQuestionAnswered(q as any, this.answers(), this.codeByLanguage());
   }
 
-  private isQuestionAnswered(q: any, a: Record<string, string | undefined>): boolean {
+  private isQuestionAnswered(q: any, a: Record<string, string | undefined>, cbl: Record<string, string>): boolean {
     if (!q) return false;
     if (q.type === 'GROUP' && q.subQuestions?.length) {
-      // GROUP is answered only when every sub-question has a non-empty answer
       return q.subQuestions.every((sub: any) => !!(a[sub.id]?.trim()));
+    }
+    if (q.type === 'CODE_SUBMISSION') {
+      // Answered if ANY language has non-empty code, or answers[q.id] has content
+      const lang = this.selectedLanguage(q.id);
+      const currentCode = cbl[`${q.id}__${lang}`] ?? a[q.id];
+      return !!(currentCode?.trim());
     }
     return !!(a[q.id]?.trim());
   }
@@ -834,6 +1031,34 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
       if (next.has(questionId)) next.delete(questionId);
       else next.add(questionId);
       return next;
+    });
+  }
+
+  runCode(q: PreviewQuestion) {
+    const token = this.sessionToken();
+    if (!token || this.codeRunning()) return;
+    const lang = this.selectedLanguage(q.id);
+    const code = this.getCode(q.id, lang);
+    if (!code.trim()) {
+      this.codeRunError.update(e => ({ ...e, [q.id]: 'Write some code before testing.' }));
+      return;
+    }
+    this.codeRunning.set(true);
+    this.codeRunError.update(e => ({ ...e, [q.id]: null }));
+    this.takeSvc.runCode(token, {
+      questionId: q.id,
+      sourceCode: code,
+      language: lang,
+    }).subscribe({
+      next: res => {
+        this.codeRunResults.update(r => ({ ...r, [q.id]: res.results }));
+        this.codeRunning.set(false);
+      },
+      error: err => {
+        const msg = err?.error?.detail ?? err?.error?.message ?? 'Failed to run tests. Check that the code execution service is running.';
+        this.codeRunError.update(e => ({ ...e, [q.id]: msg }));
+        this.codeRunning.set(false);
+      },
     });
   }
 
@@ -860,7 +1085,6 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
     const token = this.sessionToken();
     if (!token) return;
     this.stopTimer();
-    // Cancel pending autosaves before submitting
     this.autosaveTimers.forEach(t => clearTimeout(t));
     this.autosaveTimers.clear();
     this.submitting.set(true);

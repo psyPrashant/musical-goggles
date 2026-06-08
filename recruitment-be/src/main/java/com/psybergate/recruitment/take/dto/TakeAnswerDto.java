@@ -8,5 +8,6 @@ public record TakeAnswerDto(
         UUID questionId,
         List<UUID> selectedOptionIds,
         String textContent,
-        Instant savedAt
+        Instant savedAt,
+        String language
 ) {}

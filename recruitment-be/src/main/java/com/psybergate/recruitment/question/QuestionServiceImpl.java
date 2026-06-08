@@ -2,7 +2,6 @@ package com.psybergate.recruitment.question;
 
 import com.psybergate.recruitment.domain.*;
 import com.psybergate.recruitment.question.dto.*;
-import java.util.UUID;
 import com.psybergate.recruitment.repository.QuestionRepository;
 import com.psybergate.recruitment.repository.UserRepository;
 import com.psybergate.recruitment.tag.TagService;
@@ -98,6 +97,11 @@ public class QuestionServiceImpl implements QuestionService {
                 q.setTitle(req.title());
                 q.setBody(req.body());
                 q.setLanguageHint(req.languageHint());
+                q.setStarterCode(blankToNull(req.starterCode()));
+                q.setStarterCodeJava(blankToNull(req.starterCodeJava()));
+                q.setStarterCodeCsharp(blankToNull(req.starterCodeCsharp()));
+                q.setStarterCodePython(blankToNull(req.starterCodePython()));
+                applyTestCases(q, req.testCases());
                 yield q;
             }
             case GROUP -> buildGroup(req);
@@ -159,6 +163,11 @@ public class QuestionServiceImpl implements QuestionService {
             });
         } else if (question instanceof CodeSubmissionQuestion csq) {
             csq.setLanguageHint(req.languageHint());
+            csq.setStarterCode(blankToNull(req.starterCode()));
+            csq.setStarterCodeJava(blankToNull(req.starterCodeJava()));
+            csq.setStarterCodeCsharp(blankToNull(req.starterCodeCsharp()));
+            csq.setStarterCodePython(blankToNull(req.starterCodePython()));
+            applyTestCases(csq, req.testCases());
         }
     }
 
@@ -192,6 +201,8 @@ public class QuestionServiceImpl implements QuestionService {
     QuestionResponse toResponse(Question q) {
         List<QuestionOptionResponse> options = null;
         String languageHint = null;
+        String starterCode = null;
+        List<CodeTestCaseResponse> testCases = null;
         List<QuestionResponse> memberQuestions = null;
 
         if (q instanceof McqQuestion mcq) {
@@ -200,6 +211,13 @@ public class QuestionServiceImpl implements QuestionService {
                     .toList();
         } else if (q instanceof CodeSubmissionQuestion csq) {
             languageHint = csq.getLanguageHint();
+            starterCode = csq.getStarterCode();
+            testCases = csq.getTestCases().stream()
+                    .map(tc -> new CodeTestCaseResponse(
+                            tc.getId(), tc.getDescription(), tc.getStdin(),
+                            tc.getExpectedOutput(), tc.isVisible(), tc.getDisplayOrder(),
+                            tc.isRunOnlyOnSubmit()))
+                    .toList();
         } else if (q instanceof GroupQuestion gq) {
             memberQuestions = gq.getMembers().stream()
                     .map(m -> toResponse((Question) org.hibernate.Hibernate.unproxy(m.getQuestion())))
@@ -208,9 +226,39 @@ public class QuestionServiceImpl implements QuestionService {
 
         List<String> tags = q.getTags().stream().map(Tag::getName).sorted().toList();
 
+        String starterCodeJava = null;
+        String starterCodeCsharp = null;
+        String starterCodePython = null;
+        if (q instanceof CodeSubmissionQuestion csq) {
+            starterCodeJava = csq.getStarterCodeJava();
+            starterCodeCsharp = csq.getStarterCodeCsharp();
+            starterCodePython = csq.getStarterCodePython();
+        }
+
         return new QuestionResponse(
                 q.getId(), q.getType(), q.getTitle(), q.getBody(),
-                tags, options, languageHint, memberQuestions, q.getCreatedAt(), q.getUpdatedAt()
+                tags, options, languageHint, memberQuestions, q.getCreatedAt(), q.getUpdatedAt(),
+                starterCode, testCases, starterCodeJava, starterCodeCsharp, starterCodePython
         );
+    }
+
+    private static String blankToNull(String s) {
+        return (s == null || s.isBlank()) ? null : s;
+    }
+
+    private void applyTestCases(CodeSubmissionQuestion q, List<CodeTestCaseRequest> cases) {
+        q.getTestCases().clear();
+        if (cases == null || cases.isEmpty()) return;
+        for (CodeTestCaseRequest req : cases) {
+            CodeTestCase tc = new CodeTestCase();
+            tc.setQuestion(q);   // bidirectional back-reference — Hibernate needs this to set the FK on INSERT
+            tc.setDescription(req.description());
+            tc.setStdin(req.stdin());
+            tc.setExpectedOutput(req.expectedOutput());
+            tc.setVisible(req.visible());
+            tc.setDisplayOrder(req.displayOrder());
+            tc.setRunOnlyOnSubmit(req.runOnlyOnSubmit());
+            q.getTestCases().add(tc);
+        }
     }
 }

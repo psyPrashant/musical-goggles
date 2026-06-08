@@ -19,3 +19,11 @@ jwt:
 
 app:
   base-url: ${APP_BASE_URL:http://localhost:4200}
+  judge0:
+    base-url: ${JUDGE0_BASE_URL:http://localhost:2358}
+    api-key: ${JUDGE0_API_KEY:}
+    # Per-language Judge0 CE IDs — override for Judge0 Extra CE / RapidAPI (JAVA=91, CSHARP=29)
+    language-ids:
+      java: ${JUDGE0_LANG_JAVA:62}
+      csharp: ${JUDGE0_LANG_CSHARP:51}
+      python: ${JUDGE0_LANG_PYTHON:71}

@@ -15,5 +15,10 @@ public record QuestionRequest(
         List<String> tags,
         @Valid List<QuestionOptionRequest> options,
         String languageHint,
-        List<UUID> memberQuestionIds
+        List<UUID> memberQuestionIds,
+        String starterCode,
+        @Valid List<CodeTestCaseRequest> testCases,
+        String starterCodeJava,
+        String starterCodeCsharp,
+        String starterCodePython
 ) {}

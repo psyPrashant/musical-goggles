@@ -1,10 +1,6 @@
 package com.psybergate.recruitment.take;
 
-import com.psybergate.recruitment.take.dto.AssessmentTakeResponse;
-import com.psybergate.recruitment.take.dto.SaveAnswersRequest;
-import com.psybergate.recruitment.take.dto.SaveAnswersResponse;
-import com.psybergate.recruitment.take.dto.SubmitRequest;
-import com.psybergate.recruitment.take.dto.SubmitResponse;
+import com.psybergate.recruitment.take.dto.*;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +17,9 @@ public class CandidateTakeController {
 
     @Autowired
     private CandidateTakeService takeService;
+
+    @Autowired
+    private CodeRunService codeRunService;
 
     @GetMapping("/assessment")
     public ResponseEntity<AssessmentTakeResponse> loadAssessment(Authentication auth) {
@@ -45,5 +44,13 @@ public class CandidateTakeController {
         UUID candidateId = UUID.fromString(auth.getName());
         UUID assessmentId = UUID.fromString((String) auth.getCredentials());
         return ResponseEntity.ok(takeService.submitAssessment(candidateId, assessmentId, request.autoSubmitted()));
+    }
+
+    @PostMapping("/run-code")
+    public ResponseEntity<RunCodeResponse> runCode(
+            @RequestBody @Valid RunCodeRequest request,
+            Authentication auth) {
+        UUID assessmentId = UUID.fromString((String) auth.getCredentials());
+        return ResponseEntity.ok(codeRunService.run(assessmentId, request.questionId(), request.sourceCode(), request.language()));
     }
 }

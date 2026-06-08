@@ -1,4 +1,7 @@
 import { QuestionType } from '../question/question.model';
+import { TakeTestCase, TestCaseRunResult } from '../take/candidate-take.model';
+
+export type { TakeTestCase, TestCaseRunResult };
 
 export type AssessmentStatus = 'DRAFT' | 'PUBLISHED';
 
@@ -58,6 +61,9 @@ export interface PreviewQuestion {
   options: PreviewOption[] | null;
   languageHint: string | null;
   subQuestions?: PreviewQuestion[];
+  starterCode?: string | null;
+  visibleTestCases?: TakeTestCase[] | null;
+  starterTemplates?: Record<string, string> | null;
 }
 
 export interface AssessmentPreview {

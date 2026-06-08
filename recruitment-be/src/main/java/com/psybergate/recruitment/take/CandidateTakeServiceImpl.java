@@ -2,8 +2,10 @@ package com.psybergate.recruitment.take;
 
 import com.psybergate.recruitment.domain.*;
 import com.psybergate.recruitment.repository.*;
-import java.util.ArrayList;
 import com.psybergate.recruitment.take.dto.*;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -134,6 +136,9 @@ public class CandidateTakeServiceImpl implements CandidateTakeService {
             answer.setSelectedOptionIds(serializeOptionIds(input.selectedOptionIds()));
             answer.setTextContent(input.textContent());
             answer.setSavedAt(Instant.now());
+            if (input.language() != null && !input.language().isBlank()) {
+                answer.setSelectedLanguage(input.language());
+            }
 
             results.add(toAnswerDto(answerRepository.save(answer)));
         }
@@ -166,8 +171,9 @@ public class CandidateTakeServiceImpl implements CandidateTakeService {
                     invitationRepository.save(inv);
                 });
 
-        // Auto-mark MCQ answers within the same transaction
+        // Auto-mark MCQ and code answers within the same transaction
         markingService.autoMarkMcq(submission.getId());
+        markingService.autoMarkCode(submission.getId());
 
         return buildSubmitResponse(submission, assessment);
     }
@@ -255,11 +261,28 @@ public class CandidateTakeServiceImpl implements CandidateTakeService {
     private TakeQuestionDto buildTakeQuestionDto(Question q, int displayOrder) {
         List<TakeOptionDto> options = null;
         List<TakeQuestionDto> subQuestions = null;
+        String starterCode = null;
+        List<TakeTestCaseDto> visibleTestCases = null;
+        Map<String, String> starterTemplates = null;
 
         if (q instanceof McqQuestion mcq) {
             options = mcq.getOptions().stream()
                     .map(o -> new TakeOptionDto(o.getId(), o.getOptionText()))
                     .toList();
+        } else if (q instanceof CodeSubmissionQuestion csq) {
+            starterCode = csq.getStarterCode();
+            visibleTestCases = csq.getTestCases().stream()
+                    .filter(CodeTestCase::isVisible)
+                    .map(tc -> new TakeTestCaseDto(tc.getId(), tc.getDescription(), tc.getStdin(),
+                            tc.getExpectedOutput(), tc.isRunOnlyOnSubmit()))
+                    .toList();
+            // Build per-language starter templates map; fall back to legacy starterCode as java template
+            Map<String, String> tpl = new HashMap<>();
+            String javaCode = csq.getStarterCodeJava() != null ? csq.getStarterCodeJava() : csq.getStarterCode();
+            if (javaCode != null) tpl.put("java", javaCode);
+            if (csq.getStarterCodeCsharp() != null) tpl.put("csharp", csq.getStarterCodeCsharp());
+            if (csq.getStarterCodePython() != null) tpl.put("python", csq.getStarterCodePython());
+            starterTemplates = tpl.isEmpty() ? null : tpl;
         } else if (q instanceof GroupQuestion gq) {
             // GROUP: body is the preamble; members become sub-questions answered individually.
             subQuestions = new ArrayList<>();
@@ -277,7 +300,10 @@ public class CandidateTakeServiceImpl implements CandidateTakeService {
                 q.getTitle(),
                 q.getBody(),
                 options,
-                subQuestions
+                subQuestions,
+                starterCode,
+                visibleTestCases,
+                starterTemplates
         );
     }
 
@@ -286,7 +312,8 @@ public class CandidateTakeServiceImpl implements CandidateTakeService {
                 answer.getQuestionId(),
                 deserializeOptionIds(answer.getSelectedOptionIds()),
                 answer.getTextContent(),
-                answer.getSavedAt()
+                answer.getSavedAt(),
+                answer.getSelectedLanguage()
         );
     }
 
