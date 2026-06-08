@@ -52,9 +52,23 @@ The `recentActivity` array SHALL contain events derived from actual database rec
 
 #### Scenario: Activity events populated from invitations and submissions
 - **WHEN** the dashboard stats are fetched
-- **THEN** each activity event includes: `type` (e.g. `INVITATION_SENT`, `SUBMISSION_STARTED`, `SUBMISSION_COMPLETED`), `description` (human-readable label including candidate name), `meta` (contextual detail), and `occurredAt` (ISO-8601 timestamp)
+- **THEN** each activity event includes: `type` (e.g. `INVITATION_SENT`, `SUBMISSION_STARTED`, `SUBMISSION_COMPLETED`), `description` (human-readable label including candidate name), `meta` (contextual detail), `occurredAt` (ISO-8601 timestamp), and `submissionId` (nullable UUID)
 - **AND** events are sorted by `occurredAt` descending
 - **AND** the array is capped at 10 entries
+
+### Requirement: Activity events include submission reference
+The `ActivityEvent` response object SHALL include a nullable `submissionId` field (UUID) so the frontend can deep-link to the corresponding result.
+
+- For events of type `SUBMISSION_STARTED` and `SUBMISSION_COMPLETED`, the `submissionId` field SHALL be populated with the UUID of the relevant `CandidateSubmission`.
+- For events of type `INVITATION_SENT`, the `submissionId` field SHALL be `null`.
+
+#### Scenario: Submission event includes submissionId
+- **WHEN** the dashboard stats endpoint returns a recent activity event of type SUBMISSION_STARTED or SUBMISSION_COMPLETED
+- **THEN** the event's submissionId field is a non-null UUID matching the candidate's submission
+
+#### Scenario: Invitation event has null submissionId
+- **WHEN** the dashboard stats endpoint returns a recent activity event of type INVITATION_SENT
+- **THEN** the event's submissionId field is null
 
 ### Requirement: Dashboard UI shows live stats from API
 The dashboard component SHALL replace all hardcoded values with live data from `GET /api/dashboard/stats`. A loading state SHALL be shown while the request is in flight. The pipeline bar SHALL include a "Flagged" stage displaying the `pipeline.flagged` count.

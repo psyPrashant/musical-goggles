@@ -88,7 +88,7 @@ class InvitationControllerIntegrationTest extends AbstractIntegrationTest {
         submission.setSubmittedAt(Instant.now());
         submissionRepository.save(submission);
 
-        InviteRequest req = new InviteRequest(candidate.getId(), assessment.getId(), null);
+        InviteRequest req = new InviteRequest(candidate.getId(), assessment.getId());
 
         mockMvc.perform(post("/api/invitations")
                         .header("Authorization", "Bearer " + token)
@@ -113,7 +113,7 @@ class InvitationControllerIntegrationTest extends AbstractIntegrationTest {
         submission.setSubmittedAt(Instant.now());
         submissionRepository.save(submission);
 
-        InviteRequest req = new InviteRequest(candidate.getId(), assessment.getId(), null);
+        InviteRequest req = new InviteRequest(candidate.getId(), assessment.getId());
 
         mockMvc.perform(post("/api/invitations")
                         .header("Authorization", "Bearer " + token)
@@ -148,7 +148,7 @@ class InvitationControllerIntegrationTest extends AbstractIntegrationTest {
         submission.setStartedAt(Instant.now().minusSeconds(600));
         submissionRepository.save(submission);
 
-        InviteRequest req = new InviteRequest(candidate.getId(), assessment.getId(), null);
+        InviteRequest req = new InviteRequest(candidate.getId(), assessment.getId());
 
         // IN_PROGRESS must NOT trigger ASSESSMENT_ALREADY_COMPLETED guard.
         // The request is blocked by ACTIVE_INVITE_EXISTS (the earlier guard), which does not
