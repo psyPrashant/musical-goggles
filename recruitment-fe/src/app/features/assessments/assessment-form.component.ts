@@ -51,7 +51,7 @@ import { AssessmentService } from '../../core/assessment/assessment.service';
   styles: [`
     .page { padding: 1.5rem; max-width: 600px; margin: 0 auto; }
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-    .btn-link { color: #2563eb; text-decoration: none; }
+    .btn-link { color: var(--accent); text-decoration: none; }
     .form-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
     .field { display: flex; flex-direction: column; gap: 0.4rem; }
     label { font-weight: 600; font-size: 0.9rem; }
@@ -59,7 +59,7 @@ import { AssessmentService } from '../../core/assessment/assessment.service';
     input, textarea { padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem; }
     .field-error { color: #b91c1c; font-size: 0.8rem; margin: 0; }
     .form-actions { display: flex; gap: 0.75rem; padding-top: 0.5rem; }
-    .btn-primary { background: #2563eb; color: #fff; padding: 0.5rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+    .btn-primary { background: var(--accent); color: #fff; padding: 0.5rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
     .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-secondary { background: #e5e7eb; color: #374151; padding: 0.5rem 1.25rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
     .error { color: #b91c1c; }
