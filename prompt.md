@@ -125,3 +125,60 @@ EP-37: Flagged Submissions & Assessment Attempt Navigation Fixes. Four issues:
 4. MG-177 (Bug): Candidate history uses [attr.href] causing full page reload.
    Fix: inject Router, replace with router.navigate().
 ```
+
+---
+
+# Prompts Used — ACTION_REQUIRED flag status
+
+## Session: 2026-06-09
+
+```
+add action required enum to status, change status from flagged to action required
+```
+
+```
+don't show flagged status when status is action required
+```
+
+---
+
+# Prompts Used — EP-35 (already implemented)
+
+## Session: 2026-06-09
+
+```
+look at epic 35 and implement what is not yet implemented. ensure no duplication of
+code or features. follow the same process as before.
+```
+
+Result: Both stories (MG-169, MG-170) were already fully implemented via EP-30/EP-37.
+Closed all three issues in Jira as Done. No code changes made.
+
+---
+
+# Prompts Used — Flag history on candidates page improvements
+
+## Session: 2026-06-09
+
+```
+flag history on candidates page should indicate the same assessment - expand row,
+maybe. assessment should link to the assessment on results page.
+```
+
+---
+
+# Prompts Used — Merge, archive, PR
+
+## Session: 2026-06-09
+
+```
+pull from main and resolve conflicts. rerun tests.
+```
+
+```
+archive specs and recommit
+```
+
+```
+also append prompts to prompt.md
+```
