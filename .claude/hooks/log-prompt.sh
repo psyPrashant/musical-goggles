@@ -34,14 +34,15 @@ CLAUDE_PENDING_AUTHOR="$AUTHOR" \
 CLAUDE_PENDING_TIMESTAMP="$TIMESTAMP" \
 CLAUDE_PENDING_CWD="$CWD" \
 $PYTHON -c "
-import os, json
+import os, json, tempfile
 data = {
     'prompt': os.environ['CLAUDE_PENDING_PROMPT'],
     'author': os.environ['CLAUDE_PENDING_AUTHOR'],
     'timestamp': os.environ['CLAUDE_PENDING_TIMESTAMP'],
     'cwd': os.environ['CLAUDE_PENDING_CWD'],
 }
-with open('/tmp/claude-pending-prompt.json', 'w') as f:
+pending_file = os.path.join(tempfile.gettempdir(), 'claude-pending-prompt.json')
+with open(pending_file, 'w', encoding='utf-8') as f:
     json.dump(data, f)
 "
 

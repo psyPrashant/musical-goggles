@@ -1038,3 +1038,10 @@ Ask clarifying questions
 ---
 
 
+## 2026-06-09 12:26:30 | hendrik.muller
+
+> i dont see token usage being recorded
+
+---
+
+

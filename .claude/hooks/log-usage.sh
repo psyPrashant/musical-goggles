@@ -7,9 +7,6 @@
 # Pricing: Claude Sonnet 4.6 — $3.00/1M input, $15.00/1M output,
 #          $3.75/1M cache-creation, $0.30/1M cache-read
 
-PENDING_FILE="/tmp/claude-pending-prompt.json"
-[ ! -f "$PENDING_FILE" ] && exit 0
-
 # On Windows, 'python3' is a broken Store redirect; use the 'py' launcher instead.
 if command -v py &>/dev/null && py -3 --version &>/dev/null 2>&1; then
   PYTHON="py -3"
@@ -21,14 +18,35 @@ else
   exit 0
 fi
 
-STOP_INPUT_FILE="/tmp/claude-stop-input.json"
+# Resolve temp dir via Python so it matches where log-prompt.sh writes on Windows.
+TMPDIR=$($PYTHON -c "import tempfile; print(tempfile.gettempdir())" 2>/dev/null)
+POSIX_TMPDIR=$(cygpath -u "$TMPDIR" 2>/dev/null || echo "$TMPDIR")
+PENDING_FILE="$POSIX_TMPDIR/claude-pending-prompt.json"
+[ ! -f "$PENDING_FILE" ] && exit 0
+
+STOP_INPUT_FILE="$POSIX_TMPDIR/claude-stop-input.json"
 cat > "$STOP_INPUT_FILE"
 
 $PYTHON - "$STOP_INPUT_FILE" "$PENDING_FILE" << 'PYEOF'
-import sys, json, os, re
+import sys, json, os, re, tempfile
 
 stop_input_file = sys.argv[1]
 pending_file = sys.argv[2]
+
+# Resolve Windows-safe paths in case bash passed POSIX paths Python can't open.
+def to_native(p):
+    if os.name == 'nt' and p.startswith('/'):
+        try:
+            import subprocess
+            result = subprocess.run(['cygpath', '-w', p], capture_output=True, text=True)
+            if result.returncode == 0:
+                return result.stdout.strip()
+        except Exception:
+            pass
+    return p
+
+stop_input_file = to_native(stop_input_file)
+pending_file = to_native(pending_file)
 
 try:
     with open(stop_input_file, encoding='utf-8') as f:
