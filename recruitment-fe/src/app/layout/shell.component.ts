@@ -12,16 +12,14 @@ import { ThemeService } from '../core/theme/theme.service';
     <div class="shell">
       <aside class="sidebar">
         <div class="sidebar-logo">
-          <div class="logo-mark">
-            <svg width="20" height="20" viewBox="0 0 18 18" fill="none">
-              <path d="M3 3h6a3 3 0 0 1 0 6H3V3z" fill="white" fill-opacity="0.92"/>
-              <path d="M3 9h5l5 6H8L3 9z" fill="white" fill-opacity="0.55"/>
-            </svg>
-          </div>
-          <div class="logo-text">
-            <span class="logo-brand">PSYBERGATE</span>
-            <span class="logo-sub">Recruitment Portal</span>
-          </div>
+          <img
+            class="logo-img"
+            [src]="theme.isDark()
+              ? 'https://psybergate.co.za/wp-content/uploads/2018/09/psybergate-wht-footer.png'
+              : 'https://psybergate.co.za/wp-content/uploads/2018/09/psybergate-60.png'"
+            alt="Psybergate"
+          />
+          <span class="logo-sub">Recruitment Portal</span>
         </div>
 
         <nav class="sidebar-nav">
@@ -154,15 +152,11 @@ import { ThemeService } from '../core/theme/theme.service';
       flex-shrink: 0;
     }
 
-    .logo-mark {
-      width: 34px;
-      height: 34px;
-      border-radius: 8px;
-      background: var(--accent);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .logo-img {
+      height: 28px;
+      width: auto;
       flex-shrink: 0;
+      object-fit: contain;
     }
 
     .logo-text {
@@ -179,7 +173,7 @@ import { ThemeService } from '../core/theme/theme.service';
 
     .logo-sub {
       font-size: 9.5px;
-      color: var(--text-3);
+      color: var(--accent);
       letter-spacing: 0.07em;
       text-transform: uppercase;
     }
