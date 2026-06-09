@@ -1,7 +1,8 @@
 #!/bin/bash
 # log-usage.sh
-# Stop hook: reads the pending prompt file + token usage, writes a complete entry to prompts.md
-# and updates the running summary section.
+# Stop hook: reads transcript JSONL for token usage (the stop payload does NOT include usage
+# data — it only provides session_id, stop_hook_active, and transcript_path), then writes a
+# complete entry to prompts.md and refreshes the running Summary block.
 #
 # Pricing: Claude Sonnet 4.6 — $3.00/1M input, $15.00/1M output,
 #          $3.75/1M cache-creation, $0.30/1M cache-read
@@ -9,7 +10,10 @@
 PENDING_FILE="/tmp/claude-pending-prompt.json"
 [ ! -f "$PENDING_FILE" ] && exit 0
 
-if command -v python3 &>/dev/null; then
+# On Windows, 'python3' is a broken Store redirect; use the 'py' launcher instead.
+if command -v py &>/dev/null && py -3 --version &>/dev/null 2>&1; then
+  PYTHON="py -3"
+elif command -v python3 &>/dev/null && python3 --version &>/dev/null 2>&1; then
   PYTHON=python3
 elif command -v python &>/dev/null; then
   PYTHON=python
@@ -27,7 +31,7 @@ stop_input_file = sys.argv[1]
 pending_file = sys.argv[2]
 
 try:
-    with open(stop_input_file) as f:
+    with open(stop_input_file, encoding='utf-8') as f:
         stop_data = json.load(f)
     os.remove(stop_input_file)
 except Exception:
@@ -37,14 +41,47 @@ except Exception:
         pass
     sys.exit(0)
 
-usage = stop_data.get('usage', {})
-input_tokens = usage.get('input_tokens', 0)
-output_tokens = usage.get('output_tokens', 0)
-cache_creation_tokens = usage.get('cache_creation_input_tokens', 0)
-cache_read_tokens = usage.get('cache_read_input_tokens', 0)
+# The stop hook payload contains transcript_path (not usage data).
+# Read token usage from the JSONL transcript instead.
+transcript_path = stop_data.get('transcript_path', '')
+
+input_tokens = 0
+output_tokens = 0
+cache_creation_tokens = 0
+cache_read_tokens = 0
+
+if transcript_path and os.path.exists(transcript_path):
+    try:
+        with open(transcript_path, encoding='utf-8') as f:
+            lines = [line.strip() for line in f if line.strip()]
+
+        # Find the last user-turn index so we only count the current turn's tokens.
+        last_user_idx = -1
+        for i, line in enumerate(lines):
+            try:
+                entry = json.loads(line)
+                if entry.get('type') == 'user':
+                    last_user_idx = i
+            except Exception:
+                pass
+
+        # Sum assistant entries that came after the last user message.
+        for line in lines[last_user_idx + 1:]:
+            try:
+                entry = json.loads(line)
+                if entry.get('type') == 'assistant':
+                    usage = entry.get('message', {}).get('usage', {})
+                    input_tokens += usage.get('input_tokens', 0)
+                    output_tokens += usage.get('output_tokens', 0)
+                    cache_creation_tokens += usage.get('cache_creation_input_tokens', 0)
+                    cache_read_tokens += usage.get('cache_read_input_tokens', 0)
+            except Exception:
+                pass
+    except Exception:
+        pass
 
 try:
-    with open(pending_file) as f:
+    with open(pending_file, encoding='utf-8') as f:
         pending = json.load(f)
     prompt = pending['prompt']
     author = pending['author']
@@ -74,10 +111,10 @@ cost = (
 log_file = os.path.join(cwd, 'prompts.md')
 
 if not os.path.exists(log_file):
-    with open(log_file, 'w') as f:
+    with open(log_file, 'w', encoding='utf-8') as f:
         f.write('# Prompt Log\n\n')
 
-with open(log_file, 'r') as f:
+with open(log_file, 'r', encoding='utf-8') as f:
     content = f.read()
 
 entry = (
@@ -89,7 +126,7 @@ entry = (
     f"---\n\n"
 )
 
-# Tally totals from existing entries (only entries that already have token fields)
+# Tally totals from existing entries (only entries that already have token fields).
 total_input = sum(int(m.group(1)) for m in re.finditer(r'- inputTokens: (\d+)', content))
 total_output = sum(int(m.group(1)) for m in re.finditer(r'- outputTokens: (\d+)', content))
 total_cost = sum(float(m.group(1)) for m in re.finditer(r'- estimatedCostUSD: ([\d.]+)', content))
@@ -106,14 +143,14 @@ summary = (
     f"---\n\n"
 )
 
-# Remove old summary block, then prepend fresh one after the header
+# Remove old summary block, then prepend a fresh one after the header.
 content_no_summary = re.sub(r'## Summary\n\n(?:.*?\n)*?---\n\n', '', content, flags=re.DOTALL)
 if content_no_summary.startswith('# Prompt Log\n\n'):
     body = content_no_summary[len('# Prompt Log\n\n'):]
 else:
     body = content_no_summary
 
-with open(log_file, 'w') as f:
+with open(log_file, 'w', encoding='utf-8') as f:
     f.write('# Prompt Log\n\n' + summary + entry + body)
 
 PYEOF
