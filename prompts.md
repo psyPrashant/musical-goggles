@@ -1,34 +1,5 @@
 # Prompt Log
 
-## Summary
-
-- totalInputTokens: 3
-- totalOutputTokens: 2218
-- totalEstimatedCostUSD: 0.184288
-
----
-
-## 2026-06-09 12:33 | USER-PC
-
-> usage is still not recorded if my personal skill is in the way remove it
-
-- inputTokens: 1
-- outputTokens: 46
-- estimatedCostUSD: 0.045030
-
----
-
-## 2026-06-09 12:31 | USER-PC
-
-> would this hook work for me and the other devs working on this project
-
-- inputTokens: 2
-- outputTokens: 2172
-- estimatedCostUSD: 0.139258
-
----
-
-
 ## 2026-05-27 12:04 | prashant.kessa
 
 > testing if the prompt hook works
@@ -1093,4 +1064,106 @@ Ask clarifying questions
 
 ---
 
+
+## 2026-06-09 12:36:04 | hendrik.muller
+
+> the token usage to be appended to the bottom not the top
+
+---
+
+
+## 2026-06-09 12:36 | USER-PC
+
+> the token usage to be appended to the bottom not the top
+
+- inputTokens: 1
+- outputTokens: 36
+- estimatedCostUSD: 0.039280
+
+---
+
+## 2026-06-09 12:37:05 | hendrik.muller
+
+> we dont need a summeray
+
+---
+
+
+## 2026-06-09 12:37 | USER-PC
+
+> we dont need a summeray
+
+- inputTokens: 1
+- outputTokens: 26
+- estimatedCostUSD: 0.039115
+
+---
+
+## 2026-06-09 12:38:59 | hendrik.muller
+
+> my person skill is still writing to promptsmd can you remove thast skill
+
+---
+
+
+## 2026-06-09 12:38 | USER-PC
+
+> my person skill is still writing to promptsmd can you remove thast skill
+
+- inputTokens: 1
+- outputTokens: 47
+- estimatedCostUSD: 0.041720
+
+---
+
+## 2026-06-09 12:41:53 | hendrik.muller
+
+> can you update the so the token usage is next to the name
+
+---
+
+
+## 2026-06-09 12:41 | USER-PC | in: 1 out: 59 $0.0429
+
+> can you update the so the token usage is next to the name
+
+---
+
+## 2026-06-09 12:44:38 | hendrik.muller
+
+> can you remove the dollar cost
+
+---
+
+
+## 2026-06-09 12:44 | USER-PC | in: 1 out: 53
+
+> can you remove the dollar cost
+
+---
+
+## 2026-06-09 12:45:28 | hendrik.muller
+
+> im still getting double entries
+
+---
+
+
+## 2026-06-09 12:45 | USER-PC | in: 1 out: 90
+
+> im still getting double entries
+
+---
+
+## 2026-06-09 12:48 | USER-PC | in: 6 out: 962
+
+> is there a way for it to say hendrik.muller just for me instead of USER-PC , without the hook affecting other devs
+
+---
+
+## 2026-06-09 12:49 | USER-PC | in: 1 out: 42
+
+> export for me
+
+---
 
