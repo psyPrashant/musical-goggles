@@ -1,5 +1,7 @@
 package com.psybergate.recruitment.candidate.dto;
 
+import com.psybergate.recruitment.domain.FlagStatus;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -11,5 +13,6 @@ public record CandidateResponse(
         String cellPhone,
         Instant createdAt,
         boolean actionRequired,
-        boolean blacklisted
+        boolean blacklisted,
+        FlagStatus activeFlagStatus
 ) {}

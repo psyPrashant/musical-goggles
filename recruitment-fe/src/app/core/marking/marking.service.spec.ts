@@ -19,6 +19,7 @@ const mockSummary: SubmissionSummary = {
   totalScore: 7,
   maxScore: 2,
   flagStatus: null,
+  candidateBlacklisted: false,
 };
 
 const mockResult: ResultSummary = {

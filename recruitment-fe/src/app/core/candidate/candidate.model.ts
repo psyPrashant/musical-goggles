@@ -7,6 +7,7 @@ export interface Candidate {
   createdAt: string;
   blacklisted: boolean;
   actionRequired: boolean;
+  activeFlagStatus?: 'FLAGGED' | 'UNDER_REVIEW' | null;
 }
 
 export interface CandidateRequest {

@@ -56,3 +56,45 @@ options based on flag status and user role.
 ```
 ep30-flagged-page-actions
 ```
+
+---
+
+# Prompts Used — EP-37 Flagged Submissions & Assessment Attempt Navigation Fixes
+
+## Session: 2026-06-09
+
+### Jira / Setup
+```
+Connect to the musical goggles jira board and look for epic 37 in the current sprint.
+Pull main.
+Move the epic to in progress and assign it to me.
+Create a new branch and implement the stories using the open spec workflow.
+Move each story as you progress, and assign it to me.
+Run open spec when needed.
+Append prompts used to prompt.md.
+Give a review of changes made for me to approve.
+Run docker rebuild images and deploy.
+Don't push until I approve the review.
+```
+
+### OpenSpec Fast-Forward (openspec-ff-change)
+```
+EP-37: Flagged Submissions & Assessment Attempt Navigation Fixes. Four issues:
+
+1. MG-174 (Bug): Resolved/dismissed flags disappear from list after action.
+   Fix: retain rows, update status in-place, add status filter (default: all).
+   Root: filtered() computed filters out non-FLAGGED statuses; resolve/dismiss
+   handlers remove via filter() instead of map().
+
+2. MG-175 (Bug): Clicking flagged row passes ?submission= but results.component
+   reads queryParamMap.get('submissionId') — wrong key, submission never auto-selects.
+   Fix: change results.component.ts to read 'submission'.
+
+3. MG-176 (Story): Add Flag History panel to results/attempt page showing all flags
+   for the selected submission (FLAGGED, RESOLVED, DISMISSED) with reason, status,
+   date, raised-by. Load via flagSvc.getCandidateFlags(candidateId) filtered by
+   submissionId.
+
+4. MG-177 (Bug): Candidate history uses [attr.href] causing full page reload.
+   Fix: inject Router, replace with router.navigate().
+```

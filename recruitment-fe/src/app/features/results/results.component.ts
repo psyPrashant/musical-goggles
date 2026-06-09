@@ -46,6 +46,11 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                 <div class="sub-info">
                   <div class="sub-name-row">
                     <span class="sub-name">{{ s.candidateName }}</span>
+                    @if (s.candidateBlacklisted) {
+                      <span class="sub-bl-symbol" title="Blacklisted">⊘</span>
+                    }
+                  </div>
+                  <div class="sub-tags">
                     <span class="sub-status" [class]="statusClass(s)">{{ statusLabel(s) }}</span>
                     @if ((s.status === 'SUBMITTED' || s.status === 'AUTO_SUBMITTED') && s.markedCount < s.totalAnswers) {
                       <span class="pending-badge">⏳ Pending</span>
@@ -129,7 +134,12 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
               <div class="detail-header">
                 <div class="detail-avatar" [style.background]="avatarColor(result()!.candidateName)">{{ initials(result()!.candidateName) }}</div>
                 <div class="detail-candidate-info">
-                  <span class="detail-name">{{ result()!.candidateName }}</span>
+                  <div class="detail-name-row">
+                    <span class="detail-name">{{ result()!.candidateName }}</span>
+                    @if (selectedSummary()?.candidateBlacklisted) {
+                      <span class="detail-bl-tag">Blacklisted</span>
+                    }
+                  </div>
                   <span class="detail-assessment">{{ result()!.assessmentTitle }}</span>
                   <span class="detail-submitted">Submitted: {{ formatDate(result()!.submittedAt) }}</span>
                 </div>
@@ -428,8 +438,10 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
     }
 
     .sub-info { flex: 1; min-width: 0; }
-    .sub-name-row { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+    .sub-name-row { display: flex; align-items: center; gap: 5px; margin-bottom: 2px; }
     .sub-name { font-size: 13px; font-weight: 600; color: var(--text-1); }
+    .sub-bl-symbol { font-size: 13px; color: var(--danger); flex-shrink: 0; }
+    .sub-tags { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 2px; }
 
     .sub-status { font-size: 10px; padding: 1px 6px; border-radius: 999px; font-weight: 500; }
     .status-submitted { background: var(--success-subtle); color: var(--success); }
@@ -464,7 +476,9 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
     }
 
     .detail-candidate-info { flex: 1; }
-    .detail-name { display: block; font-size: 15px; font-weight: 600; color: var(--text-1); }
+    .detail-name-row { display: flex; align-items: center; gap: 8px; }
+    .detail-name { font-size: 15px; font-weight: 600; color: var(--text-1); }
+    .detail-bl-tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--danger-subtle); color: var(--danger); white-space: nowrap; }
     .detail-assessment { display: block; font-size: 12px; color: var(--text-2); margin-top: 2px; }
     .detail-submitted { display: block; font-size: 11px; color: var(--text-3); margin-top: 2px; }
 

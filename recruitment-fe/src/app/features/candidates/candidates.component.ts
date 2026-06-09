@@ -174,6 +174,12 @@ import { FlagListItem } from '../../core/flag/flag.model';
                       } @else {
                         {{ entry.assessmentName }}
                       }
+                      @if (historyFlags().some(f => f.submissionId === entry.submissionId)) {
+                        <span class="history-flag-icon" title="This assessment was flagged">⚑</span>
+                      }
+                      @if (historyCandidate()?.blacklisted) {
+                        <span class="history-bl-icon" title="Candidate is blacklisted">⊘</span>
+                      }
                     </div>
                     <div class="history-date">
                       {{ formatFlagDate(entry.status === 'SUBMITTED' || entry.status === 'AUTO_SUBMITTED' ? (entry.submittedAt ?? entry.invitedAt) : entry.invitedAt) }}
@@ -238,6 +244,9 @@ import { FlagListItem } from '../../core/flag/flag.model';
                     <div class="flag-history-main">
                       <span class="flag-history-assessment">{{ f.assessmentName }}</span>
                       <span class="flag-status-badge status-{{ f.status.toLowerCase().replace('_','-') }}">{{ f.status }}</span>
+                      @if (f.candidateActionRequired) {
+                        <span class="action-req-badge">⚠ Action Req.</span>
+                      }
                     </div>
                     <div class="flag-history-meta">{{ reasonLabel(f.reason) }} · {{ formatFlagDate(f.createdAt) }}</div>
                   </div>
@@ -305,6 +314,23 @@ import { FlagListItem } from '../../core/flag/flag.model';
                   This candidate has been blacklisted and cannot be invited to do another assessment.
                 </div>
               }
+              @if (!inviteCandidate()?.blacklisted && inviteCandidate()?.activeFlagStatus) {
+                @if (inviteCandidate()!.actionRequired) {
+                  <div class="flag-notice">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
+                    </svg>
+                    This candidate has been flagged. Awaiting response from candidate. A new assessment cannot be sent until resolved.
+                  </div>
+                } @else {
+                  <div class="flag-notice">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
+                    </svg>
+                    This candidate has been flagged and cannot be sent a new assessment at this time.
+                  </div>
+                }
+              }
               @if (knownEmailNotice()) {
                 <div class="known-email-notice">{{ knownEmailNotice() }}</div>
               }
@@ -330,7 +356,7 @@ import { FlagListItem } from '../../core/flag/flag.model';
               <div class="field">
                 <label class="field-label">Assessment <span class="required">*</span></label>
                 <select class="field-select" [value]="inviteAssessment()" (change)="inviteAssessment.set($any($event.target).value)"
-                        [disabled]="!!inviteCandidate()?.blacklisted">
+                        [disabled]="!!inviteCandidate()?.blacklisted || !!inviteCandidate()?.activeFlagStatus">
                   <option value="">Select an assessment…</option>
                   @for (a of assessments(); track a.id) {
                     <option [value]="a.id" [disabled]="inviteCompletedIds().has(a.id)">
@@ -345,7 +371,7 @@ import { FlagListItem } from '../../core/flag/flag.model';
             </div>
             <div class="modal-footer">
               <button class="btn btn-ghost" (click)="closeInvite()">Cancel</button>
-              <button class="btn btn-primary" (click)="sendInvite()" [disabled]="inviteSending() || !!inviteCandidate()?.blacklisted || !inviteAssessment() || (!inviteCandidate() && (!inviteEmail() || !inviteFirstName() || !inviteLastName()))">
+              <button class="btn btn-primary" (click)="sendInvite()" [disabled]="inviteSending() || !!inviteCandidate()?.blacklisted || !!inviteCandidate()?.activeFlagStatus || !inviteAssessment() || (!inviteCandidate() && (!inviteEmail() || !inviteFirstName() || !inviteLastName()))">
                 @if (inviteSending()) { Sending… } @else {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -451,6 +477,14 @@ import { FlagListItem } from '../../core/flag/flag.model';
     }
     .blacklist-notice svg { flex-shrink: 0; margin-top: 1px; }
 
+    .flag-notice {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 10px 12px; background: var(--warning-subtle);
+      border: 1px solid rgba(245,158,11,.25); border-radius: var(--radius-sm);
+      font-size: 13px; color: var(--warning); line-height: 1.45;
+    }
+    .flag-notice svg { flex-shrink: 0; margin-top: 1px; }
+
     .assessment-cell { font-size: 12.5px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     .date-cell { font-size: 12px; color: var(--text-3); }
@@ -509,6 +543,7 @@ import { FlagListItem } from '../../core/flag/flag.model';
     .flag-history-main { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
     .flag-history-assessment { font-size: 13px; font-weight: 500; color: var(--text-1); flex: 1; }
     .flag-history-meta { font-size: 11.5px; color: var(--text-3); }
+    .action-req-badge { font-size: 10.5px; font-weight: 600; padding: 2px 6px; border-radius: 999px; background: var(--warning-subtle); color: var(--warning); white-space: nowrap; }
     .flag-status-badge { display: inline-flex; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 500; }
     .status-flagged { background: var(--danger-subtle); color: var(--danger); }
     .status-under-review { background: var(--warning-subtle); color: var(--warning); }
@@ -547,9 +582,11 @@ import { FlagListItem } from '../../core/flag/flag.model';
     }
     .history-table-row:last-child { border-bottom: none; }
     .history-table-row:hover { background: var(--bg-hover); }
-    .history-name { font-size: 13px; font-weight: 500; color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .history-name { font-size: 13px; font-weight: 500; color: var(--text-1); display: flex; align-items: center; gap: 6px; overflow: hidden; }
     .history-link { color: var(--accent); text-decoration: none; }
     .history-link:hover { text-decoration: underline; }
+    .history-flag-icon { font-size: 13px; color: var(--warning); flex-shrink: 0; }
+    .history-bl-icon { font-size: 13px; color: var(--danger); flex-shrink: 0; }
     .history-date { font-size: 12px; color: var(--text-3); }
     .history-score { font-size: 12.5px; font-weight: 600; color: var(--text-1); }
     .score-pending { font-size: 11.5px; color: var(--text-3); font-weight: 400; font-style: italic; }
@@ -698,6 +735,9 @@ export class CandidatesComponent implements OnInit {
   readonly flagHistoryCandidate = signal<Candidate | null>(null);
   readonly candidateFlags = signal<FlagListItem[]>([]);
   readonly flagHistoryLoading = signal(false);
+
+  // Flags loaded for the assessment history modal (for icon correlation)
+  readonly historyFlags = signal<FlagListItem[]>([]);
 
   // ── Computed ─────────────────────────────────────────────────────────────────
   readonly selectedAssessment = computed(() =>
@@ -898,12 +938,16 @@ export class CandidatesComponent implements OnInit {
     this.historyCandidate.set(c);
     this.showAssessmentHistory.set(true);
     this.historyItems.set([]);
+    this.historyFlags.set([]);
     this.historyStatusFilter.set('');
     this.historySortAsc.set(false);
     this.historyLoading.set(true);
     this.candidateSvc.getHistory(c.id).subscribe({
       next: items => { this.historyItems.set(items); this.historyLoading.set(false); },
       error: () => this.historyLoading.set(false),
+    });
+    this.flagSvc.getCandidateFlags(c.id).subscribe({
+      next: flags => this.historyFlags.set(flags),
     });
   }
 

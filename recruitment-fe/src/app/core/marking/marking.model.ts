@@ -18,6 +18,7 @@ export interface SubmissionSummary {
   totalScore: number;
   maxScore: number;
   flagStatus: FlagStatus | null;
+  candidateBlacklisted: boolean;
 }
 
 export interface ResultQuestion {

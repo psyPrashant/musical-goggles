@@ -85,6 +85,18 @@ type ActiveForm =
                 <div class="cell-date">{{ formatDate(f.createdAt) }}</div>
                 <div class="cell">
                   <span class="status-badge" [class]="statusClass(f.status)">{{ f.status }}</span>
+                  @if (f.candidateActionRequired) {
+                    <span class="action-req-badge">⚠ Action Req.</span>
+                  }
+                  @if ((flagHistoryMap().get(f.submissionId)?.length ?? 0) > 1) {
+                    <button class="btn-history-icon" title="View flag history"
+                            (click)="$event.stopPropagation(); openHistorySubmissionId.set(openHistorySubmissionId() === f.submissionId ? null : f.submissionId)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                      </svg>
+                    </button>
+                  }
                 </div>
                 <div class="cell-actions" (click)="$event.stopPropagation()">
                   <!-- Actions dropdown trigger -->
@@ -161,6 +173,18 @@ type ActiveForm =
                   }
                 </div>
               </div>
+              @if (openHistorySubmissionId() === f.submissionId) {
+                <div class="flag-history-panel" (click)="$event.stopPropagation()">
+                  <div class="flag-history-title">Flag History</div>
+                  @for (h of (flagHistoryMap().get(f.submissionId) ?? []).slice().sort((a,b) => a.createdAt.localeCompare(b.createdAt)); track h.flagId) {
+                    <div class="flag-history-entry">
+                      <span class="fh-reason">{{ reasonLabel(h.reason) }}</span>
+                      <span class="status-badge" [class]="statusClass(h.status)">{{ h.status }}</span>
+                      <span class="fh-date">{{ formatDate(h.createdAt) }}</span>
+                    </div>
+                  }
+                </div>
+              }
             }
           </div>
         }
@@ -299,6 +323,15 @@ type ActiveForm =
       cursor: pointer; font-family: var(--font);
     }
 
+    .action-req-badge { font-size: 10.5px; font-weight: 600; padding: 2px 6px; border-radius: 999px; background: var(--warning-subtle); color: var(--warning); white-space: nowrap; margin-left: 4px; }
+    .btn-history-icon { background: none; border: none; cursor: pointer; color: var(--text-3); padding: 2px; margin-left: 4px; line-height: 1; }
+    .btn-history-icon:hover { color: var(--accent); }
+    .flag-history-panel { border-top: 1px solid var(--border); padding: 10px 16px; background: var(--bg-elevated); }
+    .flag-history-title { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+    .flag-history-entry { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+    .flag-history-entry:last-child { border-bottom: none; }
+    .fh-reason { flex: 1; color: var(--text-2); }
+    .fh-date { color: var(--text-3); font-size: 11.5px; }
     .inline-error { font-size: 11.5px; color: var(--danger); }
     .inline-success { font-size: 11.5px; color: var(--success); }
 
@@ -319,6 +352,7 @@ export class FlaggedSubmissionsComponent implements OnInit {
   readonly blacklistError = signal<{ flagId: string; message: string } | null>(null);
   readonly openDropdownId = signal<string | null>(null);
   readonly activeForm = signal<ActiveForm | null>(null);
+  readonly openHistorySubmissionId = signal<string | null>(null);
 
   readonly filterReason = signal<FlagReason | ''>('');
   readonly filterAssessmentId = signal('');
@@ -326,13 +360,31 @@ export class FlaggedSubmissionsComponent implements OnInit {
   readonly filterToDate = signal('');
   readonly filterStatus = signal<FlagStatus | ''>('');
 
+  readonly flagHistoryMap = computed(() => {
+    const map = new Map<string, FlagListItem[]>();
+    for (const f of this.flags()) {
+      const existing = map.get(f.submissionId) ?? [];
+      map.set(f.submissionId, [...existing, f]);
+    }
+    return map;
+  });
+
+  readonly deduplicatedFlags = computed(() => {
+    const latest: FlagListItem[] = [];
+    for (const [, group] of this.flagHistoryMap()) {
+      const sorted = [...group].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      latest.push(sorted[0]);
+    }
+    return latest;
+  });
+
   readonly filtered = computed(() => {
     const reason = this.filterReason();
     const assessmentId = this.filterAssessmentId();
     const from = this.filterFromDate();
     const to = this.filterToDate();
     const status = this.filterStatus();
-    return this.flags().filter(f => {
+    return this.deduplicatedFlags().filter(f => {
       if (status && f.status !== status) return false;
       if (reason && f.reason !== reason) return false;
       if (assessmentId && !f.assessmentName.includes(assessmentId)) return false;
