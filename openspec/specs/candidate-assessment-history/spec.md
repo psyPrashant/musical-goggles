@@ -65,15 +65,15 @@ The system SHALL provide client-side controls to filter the history list by stat
 - **THEN** entries are reordered oldest first
 
 ### Requirement: Click-through to submission detail
-The system SHALL allow a recruiter to navigate directly to the full submission detail from a completed history entry.
+The system SHALL allow a recruiter to navigate directly to the full submission detail from a completed history entry. Navigation SHALL use SPA router navigation (not a full page reload via `href`). The Results page SHALL be opened at `/results?submission={submissionId}`.
 
 #### Scenario: Click-through on completed entry
-- **WHEN** recruiter clicks a history entry that has a submission
-- **THEN** the system navigates to the Results page pre-selecting that submission
+- **WHEN** recruiter clicks a history entry that has a submission (status SUBMITTED or AUTO_SUBMITTED)
+- **THEN** the system navigates via the Angular router to `/results?submission={submissionId}` without a full page reload
 
 #### Scenario: No click-through for pending entries
 - **WHEN** a history entry has no submission (status=PENDING or EXPIRED)
-- **THEN** no navigation link is shown for that entry
+- **THEN** no navigation action is available for that entry
 
 ### Requirement: Role context per history entry
 The system SHALL display a linked job/role name on each history entry. When no job is linked to the assessment, the entry SHALL display "No linked role".
@@ -82,4 +82,10 @@ The system SHALL display a linked job/role name on each history entry. When no j
 - **WHEN** an assessment has no associated job role
 - **THEN** the history entry SHALL display "No linked role" as the role context field
 
+### Requirement: Flags loaded when assessment history modal opens
+When the assessment history modal is opened, the system SHALL load candidate flags (if not already cached) so flag icons can be correlated with history entries by `submissionId`.
+
+#### Scenario: Flags loaded on history modal open
+- **WHEN** a recruiter opens the assessment history modal for a candidate
+- **THEN** `getCandidateFlags(candidateId)` is called and cached for that candidate's session
 

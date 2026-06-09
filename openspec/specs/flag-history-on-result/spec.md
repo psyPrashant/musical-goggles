@@ -1,5 +1,8 @@
-## ADDED Requirements
+# flag-history-on-result Specification
 
+## Purpose
+TBD - created by archiving change ep37-flagged-navigation-fixes. Update Purpose after archive.
+## Requirements
 ### Requirement: Flag History panel on the assessment attempt/result page
 The Results page detail panel SHALL include a "Flag History" section at the bottom when a submission is selected. The section SHALL list all flags ever raised for that submission (FLAGGED, UNDER_REVIEW, RESOLVED, DISMISSED). Each entry SHALL show: reason label, status badge, date raised, raised by (username), and resolution notes (when present). The section SHALL be hidden or show "No flags raised" when no flags exist for the submission.
 
@@ -22,3 +25,4 @@ The Results page detail panel SHALL include a "Flag History" section at the bott
 #### Scenario: Flag history loads when submission is selected
 - **WHEN** a staff member clicks a submission in the left panel
 - **THEN** the Flag History section loads flags for that submission (not a previously selected one)
+
