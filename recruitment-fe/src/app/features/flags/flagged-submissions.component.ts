@@ -51,6 +51,7 @@ type ActiveForm =
             <option value="">All statuses</option>
             <option value="FLAGGED">Flagged</option>
             <option value="UNDER_REVIEW">Under Review</option>
+            <option value="ACTION_REQUIRED">Action Required</option>
             <option value="RESOLVED">Resolved</option>
             <option value="DISMISSED">Dismissed</option>
           </select>
@@ -84,7 +85,7 @@ type ActiveForm =
                 <div class="cell">{{ reasonLabel(f.reason) }}</div>
                 <div class="cell-date">{{ formatDate(f.createdAt) }}</div>
                 <div class="cell">
-                  <span class="status-badge" [class]="statusClass(f.status)">{{ f.status }}</span>
+                  <span class="status-badge" [class]="statusClass(f.status)">{{ statusLabel(f.status) }}</span>
                   @if (f.candidateActionRequired) {
                     <span class="action-req-badge">⚠ Action Req.</span>
                   }
@@ -113,7 +114,7 @@ type ActiveForm =
                         <button class="dropdown-item" (click)="toggleBlacklist(f)">
                           {{ f.candidateBlacklisted ? 'Unblacklist' : 'Blacklist' }}
                         </button>
-                        @if (f.status === 'FLAGGED' || f.status === 'UNDER_REVIEW') {
+                        @if (f.status === 'FLAGGED' || f.status === 'UNDER_REVIEW' || f.status === 'ACTION_REQUIRED') {
                           <button class="dropdown-item" (click)="openResolveForm(f)">Resolve Flag</button>
                           <button class="dropdown-item danger" (click)="dismissFlag(f); closeDropdown()">
                             {{ dismissingFlagId() === f.flagId ? 'Dismissing…' : 'Dismiss' }}
@@ -179,7 +180,7 @@ type ActiveForm =
                   @for (h of (flagHistoryMap().get(f.submissionId) ?? []).slice().sort((a,b) => a.createdAt.localeCompare(b.createdAt)); track h.flagId) {
                     <div class="flag-history-entry">
                       <span class="fh-reason">{{ reasonLabel(h.reason) }}</span>
-                      <span class="status-badge" [class]="statusClass(h.status)">{{ h.status }}</span>
+                      <span class="status-badge" [class]="statusClass(h.status)">{{ statusLabel(h.status) }}</span>
                       <span class="fh-date">{{ formatDate(h.createdAt) }}</span>
                     </div>
                   }
@@ -265,6 +266,7 @@ type ActiveForm =
     }
     .status-flagged { background: var(--danger-subtle); color: var(--danger); }
     .status-under-review { background: var(--warning-subtle); color: var(--warning); }
+    .status-action-required { background: rgba(234,88,12,.12); color: #ea580c; }
     .status-resolved { background: var(--success-subtle); color: var(--success); }
     .status-dismissed { background: rgba(148,163,184,.12); color: var(--text-2); }
 
@@ -448,9 +450,15 @@ export class FlaggedSubmissionsComponent implements OnInit {
     this.candidateSvc.contactCandidate(flag.candidateId, { subject: f.subject, message: f.message }).subscribe({
       next: () => {
         this.activeForm.set({ ...f, sending: false, success: true, error: null });
-        this.flags.update(list => list.map(item =>
-          item.flagId === flag.flagId ? { ...item, candidateActionRequired: true } : item
-        ));
+        this.flagSvc.transitionFlag(flag.submissionId, flag.flagId, { status: 'ACTION_REQUIRED' }).subscribe({
+          next: () => {
+            this.flags.update(list => list.map(item =>
+              item.flagId === flag.flagId
+                ? { ...item, candidateActionRequired: true, status: 'ACTION_REQUIRED' as FlagStatus }
+                : item
+            ));
+          },
+        });
       },
       error: () => {
         const cur = this.activeForm();
@@ -566,7 +574,18 @@ export class FlaggedSubmissionsComponent implements OnInit {
   }
 
   statusClass(status: string): string {
-    return 'status-badge status-' + status.toLowerCase().replace('_', '-');
+    return 'status-badge status-' + status.toLowerCase().replace(/_/g, '-');
+  }
+
+  statusLabel(status: FlagStatus): string {
+    const map: Record<FlagStatus, string> = {
+      FLAGGED: 'Flagged',
+      UNDER_REVIEW: 'Under Review',
+      ACTION_REQUIRED: 'Action Required',
+      RESOLVED: 'Resolved',
+      DISMISSED: 'Dismissed',
+    };
+    return map[status] ?? status;
   }
 
   formatDate(iso: string): string {

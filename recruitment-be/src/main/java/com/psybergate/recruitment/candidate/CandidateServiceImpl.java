@@ -51,7 +51,7 @@ public class CandidateServiceImpl implements CandidateService {
         List<Candidate> candidates = candidateRepository.findAll();
         if (candidates.isEmpty()) return List.of();
         List<UUID> candidateIds = candidates.stream().map(Candidate::getId).toList();
-        List<FlagStatus> activeStatuses = List.of(FlagStatus.FLAGGED, FlagStatus.UNDER_REVIEW);
+        List<FlagStatus> activeStatuses = List.of(FlagStatus.FLAGGED, FlagStatus.UNDER_REVIEW, FlagStatus.ACTION_REQUIRED);
         Map<UUID, FlagStatus> activeFlagByCandidateId = flagRepository
                 .findActiveFlagStatusByCandidateIds(candidateIds, activeStatuses)
                 .stream()

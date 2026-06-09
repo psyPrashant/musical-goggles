@@ -55,8 +55,8 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                     @if ((s.status === 'SUBMITTED' || s.status === 'AUTO_SUBMITTED') && s.markedCount < s.totalAnswers) {
                       <span class="pending-badge">⏳ Pending</span>
                     }
-                    @if (s.flagStatus === 'FLAGGED' || s.flagStatus === 'UNDER_REVIEW') {
-                      <span class="flag-badge">⚑ Flagged</span>
+                    @if (s.flagStatus === 'FLAGGED' || s.flagStatus === 'UNDER_REVIEW' || s.flagStatus === 'ACTION_REQUIRED') {
+                      <span class="flag-badge">⚑ {{ s.flagStatus === 'ACTION_REQUIRED' ? 'Action Required' : 'Flagged' }}</span>
                     }
                   </div>
                   <span class="sub-date">{{ formatDate(s.submittedAt) }}</span>
@@ -151,7 +151,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                   </span>
                   <div class="answered-stat">{{ result()!.answeredCount }}/{{ totalQuestionCount() }} answered</div>
                   @if (activeFlag()) {
-                    <span class="flag-badge-detail">⚑ {{ activeFlag()!.status === 'FLAGGED' ? 'Flagged' : 'Under Review' }}</span>
+                    <span class="flag-badge-detail">⚑ {{ activeFlag()!.status === 'FLAGGED' ? 'Flagged' : activeFlag()!.status === 'ACTION_REQUIRED' ? 'Action Required' : 'Under Review' }}</span>
                   }
                 </div>
               </div>
@@ -655,6 +655,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
     .flag-history-notes { font-size: 11.5px; color: var(--text-3); margin-top: 3px; font-style: italic; }
     .fh-status-flagged { background: var(--warning-subtle); color: var(--warning); }
     .fh-status-under_review { background: var(--info-subtle); color: var(--info); }
+    .fh-status-action_required { background: rgba(234,88,12,.12); color: #ea580c; }
     .fh-status-resolved { background: var(--success-subtle); color: var(--success); }
     .fh-status-dismissed { background: var(--bg-elevated); color: var(--text-3); }
     .audit-action { font-size: 12.5px; color: var(--text-1); font-weight: 500; display: flex; align-items: center; gap: 6px; }
@@ -796,7 +797,7 @@ export class ResultsComponent implements OnInit {
         next: r => { this.result.set(r); this.loadingResult.set(false); },
         error: () => this.loadingResult.set(false),
       });
-      if (s.flagStatus === 'FLAGGED' || s.flagStatus === 'UNDER_REVIEW') {
+      if (s.flagStatus === 'FLAGGED' || s.flagStatus === 'UNDER_REVIEW' || s.flagStatus === 'ACTION_REQUIRED') {
         this.loadActiveFlagForSubmission(s.submissionId, s.flagStatus as FlagStatus);
       }
       this.flagSvc.getCandidateFlags(s.candidateId).subscribe({

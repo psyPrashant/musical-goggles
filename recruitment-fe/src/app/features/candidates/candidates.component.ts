@@ -243,7 +243,7 @@ import { FlagListItem } from '../../core/flag/flag.model';
                   <div class="flag-history-row">
                     <div class="flag-history-main">
                       <span class="flag-history-assessment">{{ f.assessmentName }}</span>
-                      <span class="flag-status-badge status-{{ f.status.toLowerCase().replace('_','-') }}">{{ f.status }}</span>
+                      <span class="flag-status-badge status-{{ f.status.toLowerCase().replace(/_/g, '-') }}">{{ flagStatusLabel(f.status) }}</span>
                       @if (f.candidateActionRequired) {
                         <span class="action-req-badge">⚠ Action Req.</span>
                       }
@@ -315,7 +315,7 @@ import { FlagListItem } from '../../core/flag/flag.model';
                 </div>
               }
               @if (!inviteCandidate()?.blacklisted && inviteCandidate()?.activeFlagStatus) {
-                @if (inviteCandidate()!.actionRequired) {
+                @if (inviteCandidate()!.activeFlagStatus === 'ACTION_REQUIRED' || inviteCandidate()!.actionRequired) {
                   <div class="flag-notice">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
@@ -547,6 +547,7 @@ import { FlagListItem } from '../../core/flag/flag.model';
     .flag-status-badge { display: inline-flex; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 500; }
     .status-flagged { background: var(--danger-subtle); color: var(--danger); }
     .status-under-review { background: var(--warning-subtle); color: var(--warning); }
+    .status-action-required { background: rgba(234,88,12,.12); color: #ea580c; }
     .status-resolved { background: var(--success-subtle); color: var(--success); }
     .status-dismissed { background: rgba(148,163,184,.12); color: var(--text-2); }
 
@@ -996,6 +997,14 @@ export class CandidatesComponent implements OnInit {
       next: flags => { this.candidateFlags.set(flags); this.flagHistoryLoading.set(false); },
       error: () => this.flagHistoryLoading.set(false),
     });
+  }
+
+  flagStatusLabel(status: string): string {
+    const map: Record<string, string> = {
+      FLAGGED: 'Flagged', UNDER_REVIEW: 'Under Review',
+      ACTION_REQUIRED: 'Action Required', RESOLVED: 'Resolved', DISMISSED: 'Dismissed',
+    };
+    return map[status] ?? status;
   }
 
   reasonLabel(reason: string): string {

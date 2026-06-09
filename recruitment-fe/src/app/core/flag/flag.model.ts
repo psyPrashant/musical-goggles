@@ -1,4 +1,4 @@
-export type FlagStatus = 'FLAGGED' | 'UNDER_REVIEW' | 'RESOLVED' | 'DISMISSED';
+export type FlagStatus = 'FLAGGED' | 'UNDER_REVIEW' | 'ACTION_REQUIRED' | 'RESOLVED' | 'DISMISSED';
 export type FlagReason =
   | 'COPIED_ANSWERS'
   | 'TIMING_ANOMALY'

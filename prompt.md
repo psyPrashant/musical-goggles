@@ -77,6 +77,33 @@ Run docker rebuild images and deploy.
 Don't push until I approve the review.
 ```
 
+---
+
+# Prompts Used — EP-37 Extension: Flagged Candidate Display (MG-178 to MG-182)
+
+## Session: 2026-06-09
+
+### Story creation + Jira
+```
+Add new stories for the following and then implement as before:
+- For a candidate with a flagged assessment: should not be able to send invite...
+- The flagged page should only show the latest flagged status per assessment...
+- A resolved blacklisted assessment should have the no symbol on results page...
+- The results list tags need to be reformatted to avoid tags being cut off...
+```
+
+### OpenSpec Fast-Forward (openspec-ff-change)
+```
+EP-37 extension — flagged candidate display and invite restrictions (MG-178 to MG-182).
+- MG-178: Block invites for flagged candidates; contextual warnings.
+- MG-179: Action Required state surfaced in flag history and flagged-submissions rows.
+- MG-180: ⚑ and ⊘ icons on candidate assessment history entries.
+- MG-181: Flagged page deduplication (one row per submission); document icon for history.
+- MG-182: Results page ⊘ and Blacklisted tag; tags reflowed below name.
+```
+
+---
+
 ### OpenSpec Fast-Forward (openspec-ff-change)
 ```
 EP-37: Flagged Submissions & Assessment Attempt Navigation Fixes. Four issues:
