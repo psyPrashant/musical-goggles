@@ -1,46 +1,49 @@
 #!/bin/bash
 # log-prompt.sh
-# Appends every user prompt to prompts.md at the project root.
+# Saves prompt metadata to a pending temp file; log-usage.sh (Stop hook) completes the entry.
 #
 # Optional: set PROMPT_LOG_AUTHOR in your shell profile to override the username.
 #   export PROMPT_LOG_AUTHOR="Prashant"
 
 AUTHOR="${PROMPT_LOG_AUTHOR:-$(whoami)}"
 
-# Read prompt from stdin (Claude passes JSON on stdin)
+# On Windows, 'python3' is a broken Store redirect; use the 'py' launcher instead.
+if command -v py &>/dev/null && py -3 --version &>/dev/null 2>&1; then
+  PYTHON="py -3"
+elif command -v python3 &>/dev/null && python3 --version &>/dev/null 2>&1; then
+  PYTHON=python3
+elif command -v python &>/dev/null; then
+  PYTHON=python
+else
+  exit 0
+fi
+
 read -r INPUT
 
-if command -v python3 &>/dev/null; then
-  PROMPT=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('prompt',''))")
-elif command -v python &>/dev/null; then
-  PROMPT=$(echo "$INPUT" | python -c "import sys,json; d=json.load(sys.stdin); print(d.get('prompt',''))")
-else
-  PROMPT=$(echo "$INPUT" | grep -o '"prompt":"[^"]*"' | sed 's/"prompt":"//;s/"//')
-fi
+PROMPT=$(echo "$INPUT" | $PYTHON -c "import sys,json; d=json.load(sys.stdin); print(d.get('prompt',''))")
 
 [ -z "$PROMPT" ] && exit 0
 
-# Normalise path (Windows backslashes → forward slashes)
 CWD="${CLAUDE_CWD:-$PWD}"
 CWD="${CWD//\\//}"
 
-LOG_FILE="$CWD/prompts.md"
-
-# Create the file with a header if it doesn't exist yet
-if [ ! -f "$LOG_FILE" ]; then
-  echo "# Prompt Log" > "$LOG_FILE"
-  echo "" >> "$LOG_FILE"
-fi
-
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M')
 
-{
-  echo "## $TIMESTAMP | $AUTHOR"
-  echo ""
-  echo "> $PROMPT"
-  echo ""
-  echo "---"
-  echo ""
-} >> "$LOG_FILE"
+CLAUDE_PENDING_PROMPT="$PROMPT" \
+CLAUDE_PENDING_AUTHOR="$AUTHOR" \
+CLAUDE_PENDING_TIMESTAMP="$TIMESTAMP" \
+CLAUDE_PENDING_CWD="$CWD" \
+$PYTHON -c "
+import os, json, tempfile
+data = {
+    'prompt': os.environ['CLAUDE_PENDING_PROMPT'],
+    'author': os.environ['CLAUDE_PENDING_AUTHOR'],
+    'timestamp': os.environ['CLAUDE_PENDING_TIMESTAMP'],
+    'cwd': os.environ['CLAUDE_PENDING_CWD'],
+}
+pending_file = os.path.join(tempfile.gettempdir(), 'claude-pending-prompt.json')
+with open(pending_file, 'w', encoding='utf-8') as f:
+    json.dump(data, f)
+"
 
 exit 0
