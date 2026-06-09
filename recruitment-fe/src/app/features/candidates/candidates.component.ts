@@ -239,16 +239,42 @@ import { FlagListItem } from '../../core/flag/flag.model';
               <p class="invite-success">No flags recorded.</p>
             } @else {
               <div class="flag-history-list">
-                @for (f of candidateFlags(); track f.flagId) {
-                  <div class="flag-history-row">
-                    <div class="flag-history-main">
-                      <span class="flag-history-assessment">{{ f.assessmentName }}</span>
-                      <span class="flag-status-badge status-{{ f.status.toLowerCase().replace(/_/g, '-') }}">{{ flagStatusLabel(f.status) }}</span>
-                      @if (f.candidateActionRequired && f.status !== 'ACTION_REQUIRED') {
-                        <span class="action-req-badge">⚠ Action Req.</span>
+                @for (group of flagsBySubmission(); track group.latest.submissionId) {
+                  <div class="fh-group">
+                    <!-- Assessment row (collapsed header) -->
+                    <div class="fh-group-header"
+                         (click)="flagGroupExpandedId.set(flagGroupExpandedId() === group.latest.submissionId ? null : group.latest.submissionId)">
+                      <button class="fh-expand-btn" [class.expanded]="flagGroupExpandedId() === group.latest.submissionId">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                      </button>
+                      <span class="fh-assessment-link" (click)="$event.stopPropagation(); viewFlagSubmission(group.latest.submissionId)">
+                        {{ group.latest.assessmentName }}
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:3px;opacity:.6">
+                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                      </span>
+                      <span class="flag-status-badge status-{{ group.latest.status.toLowerCase().replace(/_/g, '-') }}">{{ flagStatusLabel(group.latest.status) }}</span>
+                      @if (group.all.length > 1) {
+                        <span class="fh-count">{{ group.all.length }} flags</span>
                       }
                     </div>
-                    <div class="flag-history-meta">{{ reasonLabel(f.reason) }} · {{ formatFlagDate(f.createdAt) }}</div>
+                    <!-- Expanded flag entries -->
+                    @if (flagGroupExpandedId() === group.latest.submissionId) {
+                      <div class="fh-entries">
+                        @for (f of group.all; track f.flagId) {
+                          <div class="fh-entry">
+                            <span class="fh-entry-reason">{{ reasonLabel(f.reason) }}</span>
+                            <span class="flag-status-badge status-{{ f.status.toLowerCase().replace(/_/g, '-') }}">{{ flagStatusLabel(f.status) }}</span>
+                            @if (f.candidateActionRequired && f.status !== 'ACTION_REQUIRED') {
+                              <span class="action-req-badge">⚠ Action Req.</span>
+                            }
+                            <span class="fh-entry-date">{{ formatFlagDate(f.createdAt) }}</span>
+                          </div>
+                        }
+                      </div>
+                    }
                   </div>
                 }
               </div>
@@ -538,11 +564,33 @@ import { FlagListItem } from '../../core/flag/flag.model';
     .draft-confirm svg { flex-shrink: 0; margin-top: 2px; }
     .draft-confirm-text { font-size: 13.5px; color: var(--text-1); line-height: 1.55; margin: 0; }
 
-    .flag-history-list { display: flex; flex-direction: column; gap: 8px; }
-    .flag-history-row { padding: 10px 12px; background: var(--bg-elevated); border-radius: var(--radius-sm); border: 1px solid var(--border); }
-    .flag-history-main { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-    .flag-history-assessment { font-size: 13px; font-weight: 500; color: var(--text-1); flex: 1; }
-    .flag-history-meta { font-size: 11.5px; color: var(--text-3); }
+    .flag-history-list { display: flex; flex-direction: column; gap: 6px; }
+    .fh-group { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+    .fh-group-header {
+      display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+      background: var(--bg-elevated); cursor: pointer; user-select: none;
+    }
+    .fh-group-header:hover { background: var(--bg-hover); }
+    .fh-expand-btn {
+      background: none; border: none; padding: 0; cursor: pointer; color: var(--text-3);
+      display: flex; align-items: center; flex-shrink: 0; transition: transform 150ms;
+    }
+    .fh-expand-btn.expanded { transform: rotate(90deg); }
+    .fh-assessment-link {
+      font-size: 13px; font-weight: 500; color: var(--accent); flex: 1;
+      display: flex; align-items: center; cursor: pointer;
+    }
+    .fh-assessment-link:hover { text-decoration: underline; }
+    .fh-count { font-size: 11px; color: var(--text-3); white-space: nowrap; }
+    .fh-entries { border-top: 1px solid var(--border); }
+    .fh-entry {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 12px 7px 32px; background: var(--bg-card);
+      border-bottom: 1px solid var(--border); font-size: 12px;
+    }
+    .fh-entry:last-child { border-bottom: none; }
+    .fh-entry-reason { flex: 1; color: var(--text-2); }
+    .fh-entry-date { font-size: 11.5px; color: var(--text-3); white-space: nowrap; }
     .action-req-badge { font-size: 10.5px; font-weight: 600; padding: 2px 6px; border-radius: 999px; background: var(--warning-subtle); color: var(--warning); white-space: nowrap; }
     .flag-status-badge { display: inline-flex; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 500; }
     .status-flagged { background: var(--danger-subtle); color: var(--danger); }
@@ -736,6 +784,23 @@ export class CandidatesComponent implements OnInit {
   readonly flagHistoryCandidate = signal<Candidate | null>(null);
   readonly candidateFlags = signal<FlagListItem[]>([]);
   readonly flagHistoryLoading = signal(false);
+  readonly flagGroupExpandedId = signal<string | null>(null);
+
+  readonly flagsBySubmission = computed(() => {
+    const map = new Map<string, FlagListItem[]>();
+    for (const f of this.candidateFlags()) {
+      const existing = map.get(f.submissionId) ?? [];
+      map.set(f.submissionId, [...existing, f]);
+    }
+    // Sort each group newest-first; return as array of [latest, allFlags]
+    const groups: { latest: FlagListItem; all: FlagListItem[] }[] = [];
+    for (const [, flags] of map) {
+      const sorted = [...flags].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      groups.push({ latest: sorted[0], all: sorted });
+    }
+    // Sort groups by latest flag date descending
+    return groups.sort((a, b) => b.latest.createdAt.localeCompare(a.latest.createdAt));
+  });
 
   // Flags loaded for the assessment history modal (for icon correlation)
   readonly historyFlags = signal<FlagListItem[]>([]);
@@ -992,6 +1057,7 @@ export class CandidatesComponent implements OnInit {
     this.flagHistoryCandidate.set(c);
     this.showFlagHistory.set(true);
     this.candidateFlags.set([]);
+    this.flagGroupExpandedId.set(null);
     this.flagHistoryLoading.set(true);
     this.flagSvc.getCandidateFlags(c.id).subscribe({
       next: flags => { this.candidateFlags.set(flags); this.flagHistoryLoading.set(false); },
@@ -1022,6 +1088,11 @@ export class CandidatesComponent implements OnInit {
 
   viewSubmission(submissionId: string) {
     this.showAssessmentHistory.set(false);
+    this.router.navigate(['/results'], { queryParams: { submission: submissionId } });
+  }
+
+  viewFlagSubmission(submissionId: string) {
+    this.showFlagHistory.set(false);
     this.router.navigate(['/results'], { queryParams: { submission: submissionId } });
   }
 
