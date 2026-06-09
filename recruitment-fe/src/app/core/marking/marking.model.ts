@@ -1,7 +1,7 @@
 export type SubmissionStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'SUBMITTED' | 'AUTO_SUBMITTED';
 export type MarkingStatus = 'FULLY_MARKED' | 'PENDING_REVIEW';
 export type QuestionType = 'MCQ' | 'TEXT' | 'CODE_SUBMISSION' | 'GROUP';
-export type FlagStatus = 'FLAGGED' | 'UNDER_REVIEW' | 'RESOLVED' | 'DISMISSED';
+export type FlagStatus = 'FLAGGED' | 'UNDER_REVIEW' | 'ACTION_REQUIRED' | 'RESOLVED' | 'DISMISSED';
 
 export interface SubmissionSummary {
   submissionId: string | null;
@@ -18,6 +18,7 @@ export interface SubmissionSummary {
   totalScore: number;
   maxScore: number;
   flagStatus: FlagStatus | null;
+  candidateBlacklisted: boolean;
 }
 
 export interface ResultQuestion {

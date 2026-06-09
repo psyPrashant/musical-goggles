@@ -58,32 +58,41 @@ describe('FlaggedSubmissionsComponent', () => {
 
     expect(flagSvc.getAllFlags).toHaveBeenCalled();
     expect(component.flags().length).toBe(3);
-    // f2 is RESOLVED — filtered() only shows FLAGGED and UNDER_REVIEW
-    expect(component.filtered().length).toBe(2);
+    // all statuses shown by default — no status filter applied
+    expect(component.filtered().length).toBe(3);
   });
 
   it('filterReason filters by reason', () => {
     const { fixture, component } = createComponent();
     fixture.detectChanges();
 
-    // f3 (Carol, UNDER_REVIEW) has reason OTHER; TIMING_ANOMALY belongs to f2 which is RESOLVED and excluded
     component.filterReason.set('COPIED_ANSWERS');
     expect(component.filtered().length).toBe(1);
     expect(component.filtered()[0].candidateName).toBe('Alice');
   });
 
-  it('clearFilters resets all filter signals', () => {
+  it('filterStatus filters by status', () => {
+    const { fixture, component } = createComponent();
+    fixture.detectChanges();
+
+    component.filterStatus.set('RESOLVED');
+    expect(component.filtered().length).toBe(1);
+    expect(component.filtered()[0].candidateName).toBe('Bob');
+  });
+
+  it('clearFilters resets all filter signals including status', () => {
     const { fixture, component } = createComponent();
     fixture.detectChanges();
 
     component.filterReason.set('COPIED_ANSWERS');
+    component.filterStatus.set('FLAGGED');
     component.filterFromDate.set('2026-06-01');
     component.clearFilters();
 
     expect(component.filterReason()).toBe('');
+    expect(component.filterStatus()).toBe('');
     expect(component.filterFromDate()).toBe('');
-    // f2 (RESOLVED) is excluded; f1 and f3 (open) remain
-    expect(component.filtered().length).toBe(2);
+    expect(component.filtered().length).toBe(3);
   });
 
   // ── Dropdown ──────────────────────────────────────────────────────────────
@@ -99,18 +108,18 @@ describe('FlaggedSubmissionsComponent', () => {
     expect(component.openDropdownId()).toBeNull();
   });
 
-  it('dropdown renders Actions button for each open-flag row', () => {
+  it('dropdown renders Actions button for each flag row', () => {
     const { fixture } = createComponent();
     fixture.detectChanges();
 
-    // f2 (RESOLVED) is excluded from filtered(), so only 2 rows rendered
+    // all 3 flags shown by default (no status filter)
     const btns = fixture.nativeElement.querySelectorAll('.btn-actions');
-    expect(btns.length).toBe(2);
+    expect(btns.length).toBe(3);
   });
 
   // ── Dismiss ───────────────────────────────────────────────────────────────
 
-  it('dismissFlag removes the row from flags on success (UNDER_REVIEW → DISMISSED)', () => {
+  it('dismissFlag updates status to DISMISSED in-place (UNDER_REVIEW → DISMISSED)', () => {
     const { fixture, component } = createComponent();
     fixture.detectChanges();
 
@@ -120,10 +129,12 @@ describe('FlaggedSubmissionsComponent', () => {
     expect(flagSvc.transitionFlag).toHaveBeenCalledWith('s3', 'f3', {
       status: 'DISMISSED', resolutionNotes: 'Dismissed from flagged list',
     });
-    expect(component.flags().find(f => f.flagId === 'f3')).toBeUndefined();
+    const updated = component.flags().find(f => f.flagId === 'f3');
+    expect(updated).toBeDefined();
+    expect(updated?.status).toBe('DISMISSED');
   });
 
-  it('dismissFlag performs two-step transition for FLAGGED status', () => {
+  it('dismissFlag performs two-step transition for FLAGGED status and updates in-place', () => {
     const { fixture, component } = createComponent();
     fixture.detectChanges();
 
@@ -133,7 +144,9 @@ describe('FlaggedSubmissionsComponent', () => {
     expect(flagSvc.transitionFlag).toHaveBeenNthCalledWith(2, 's1', 'f1', {
       status: 'DISMISSED', resolutionNotes: 'Dismissed from flagged list',
     });
-    expect(component.flags().find(f => f.flagId === 'f1')).toBeUndefined();
+    const updated = component.flags().find(f => f.flagId === 'f1');
+    expect(updated).toBeDefined();
+    expect(updated?.status).toBe('DISMISSED');
   });
 
   it('dismissFlag sets dismissError on failure', () => {
@@ -151,7 +164,7 @@ describe('FlaggedSubmissionsComponent', () => {
 
   // ── Resolve ───────────────────────────────────────────────────────────────
 
-  it('submitResolve calls two-step transition to RESOLVED and removes row', () => {
+  it('submitResolve calls two-step transition to RESOLVED and updates row in-place', () => {
     const { fixture, component } = createComponent();
     fixture.detectChanges();
 
@@ -163,7 +176,9 @@ describe('FlaggedSubmissionsComponent', () => {
     expect(flagSvc.transitionFlag).toHaveBeenNthCalledWith(2, 's1', 'f1', {
       status: 'RESOLVED', resolutionNotes: 'Confirmed no cheating',
     });
-    expect(component.flags().find(f => f.flagId === 'f1')).toBeUndefined();
+    const updated = component.flags().find(f => f.flagId === 'f1');
+    expect(updated).toBeDefined();
+    expect(updated?.status).toBe('RESOLVED');
   });
 
   it('submitResolve does nothing when notes are empty', () => {

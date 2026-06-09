@@ -5,6 +5,7 @@ import com.psybergate.recruitment.candidate.dto.CandidateRequest;
 import com.psybergate.recruitment.candidate.dto.CandidateResponse;
 import com.psybergate.recruitment.candidate.dto.ContactCandidateRequest;
 import com.psybergate.recruitment.domain.*;
+import com.psybergate.recruitment.repository.SubmissionFlagRepository;
 import com.psybergate.recruitment.email.EmailService;
 import com.psybergate.recruitment.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,7 @@ public class CandidateServiceImpl implements CandidateService {
     @Autowired private CandidateAnswerRepository answerRepository;
     @Autowired private AnswerScoreRepository scoreRepository;
     @Autowired private EmailService emailService;
+    @Autowired private SubmissionFlagRepository flagRepository;
 
     @Override
     public CandidateResponse create(CandidateRequest request, UUID createdById) {
@@ -46,7 +48,19 @@ public class CandidateServiceImpl implements CandidateService {
     @Override
     @Transactional(readOnly = true)
     public List<CandidateResponse> findAll() {
-        return candidateRepository.findAll().stream().map(this::toResponse).toList();
+        List<Candidate> candidates = candidateRepository.findAll();
+        if (candidates.isEmpty()) return List.of();
+        List<UUID> candidateIds = candidates.stream().map(Candidate::getId).toList();
+        List<FlagStatus> activeStatuses = List.of(FlagStatus.FLAGGED, FlagStatus.UNDER_REVIEW, FlagStatus.ACTION_REQUIRED);
+        Map<UUID, FlagStatus> activeFlagByCandidateId = flagRepository
+                .findActiveFlagStatusByCandidateIds(candidateIds, activeStatuses)
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (UUID) row[0],
+                        row -> (FlagStatus) row[1],
+                        (a, b) -> a // keep first (most recent) per candidate
+                ));
+        return candidates.stream().map(c -> toResponse(c, activeFlagByCandidateId.get(c.getId()))).toList();
     }
 
     @Override
@@ -186,6 +200,11 @@ public class CandidateServiceImpl implements CandidateService {
 
     private CandidateResponse toResponse(Candidate c) {
         return new CandidateResponse(c.getId(), c.getFirstName(), c.getLastName(), c.getEmail(), c.getCellPhone(),
-                c.getCreatedAt(), c.isActionRequired(), c.isBlacklisted());
+                c.getCreatedAt(), c.isActionRequired(), c.isBlacklisted(), null);
+    }
+
+    private CandidateResponse toResponse(Candidate c, FlagStatus activeFlagStatus) {
+        return new CandidateResponse(c.getId(), c.getFirstName(), c.getLastName(), c.getEmail(), c.getCellPhone(),
+                c.getCreatedAt(), c.isActionRequired(), c.isBlacklisted(), activeFlagStatus);
     }
 }

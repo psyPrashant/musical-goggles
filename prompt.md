@@ -56,3 +56,129 @@ options based on flag status and user role.
 ```
 ep30-flagged-page-actions
 ```
+
+---
+
+# Prompts Used — EP-37 Flagged Submissions & Assessment Attempt Navigation Fixes
+
+## Session: 2026-06-09
+
+### Jira / Setup
+```
+Connect to the musical goggles jira board and look for epic 37 in the current sprint.
+Pull main.
+Move the epic to in progress and assign it to me.
+Create a new branch and implement the stories using the open spec workflow.
+Move each story as you progress, and assign it to me.
+Run open spec when needed.
+Append prompts used to prompt.md.
+Give a review of changes made for me to approve.
+Run docker rebuild images and deploy.
+Don't push until I approve the review.
+```
+
+---
+
+# Prompts Used — EP-37 Extension: Flagged Candidate Display (MG-178 to MG-182)
+
+## Session: 2026-06-09
+
+### Story creation + Jira
+```
+Add new stories for the following and then implement as before:
+- For a candidate with a flagged assessment: should not be able to send invite...
+- The flagged page should only show the latest flagged status per assessment...
+- A resolved blacklisted assessment should have the no symbol on results page...
+- The results list tags need to be reformatted to avoid tags being cut off...
+```
+
+### OpenSpec Fast-Forward (openspec-ff-change)
+```
+EP-37 extension — flagged candidate display and invite restrictions (MG-178 to MG-182).
+- MG-178: Block invites for flagged candidates; contextual warnings.
+- MG-179: Action Required state surfaced in flag history and flagged-submissions rows.
+- MG-180: ⚑ and ⊘ icons on candidate assessment history entries.
+- MG-181: Flagged page deduplication (one row per submission); document icon for history.
+- MG-182: Results page ⊘ and Blacklisted tag; tags reflowed below name.
+```
+
+---
+
+### OpenSpec Fast-Forward (openspec-ff-change)
+```
+EP-37: Flagged Submissions & Assessment Attempt Navigation Fixes. Four issues:
+
+1. MG-174 (Bug): Resolved/dismissed flags disappear from list after action.
+   Fix: retain rows, update status in-place, add status filter (default: all).
+   Root: filtered() computed filters out non-FLAGGED statuses; resolve/dismiss
+   handlers remove via filter() instead of map().
+
+2. MG-175 (Bug): Clicking flagged row passes ?submission= but results.component
+   reads queryParamMap.get('submissionId') — wrong key, submission never auto-selects.
+   Fix: change results.component.ts to read 'submission'.
+
+3. MG-176 (Story): Add Flag History panel to results/attempt page showing all flags
+   for the selected submission (FLAGGED, RESOLVED, DISMISSED) with reason, status,
+   date, raised-by. Load via flagSvc.getCandidateFlags(candidateId) filtered by
+   submissionId.
+
+4. MG-177 (Bug): Candidate history uses [attr.href] causing full page reload.
+   Fix: inject Router, replace with router.navigate().
+```
+
+---
+
+# Prompts Used — ACTION_REQUIRED flag status
+
+## Session: 2026-06-09
+
+```
+add action required enum to status, change status from flagged to action required
+```
+
+```
+don't show flagged status when status is action required
+```
+
+---
+
+# Prompts Used — EP-35 (already implemented)
+
+## Session: 2026-06-09
+
+```
+look at epic 35 and implement what is not yet implemented. ensure no duplication of
+code or features. follow the same process as before.
+```
+
+Result: Both stories (MG-169, MG-170) were already fully implemented via EP-30/EP-37.
+Closed all three issues in Jira as Done. No code changes made.
+
+---
+
+# Prompts Used — Flag history on candidates page improvements
+
+## Session: 2026-06-09
+
+```
+flag history on candidates page should indicate the same assessment - expand row,
+maybe. assessment should link to the assessment on results page.
+```
+
+---
+
+# Prompts Used — Merge, archive, PR
+
+## Session: 2026-06-09
+
+```
+pull from main and resolve conflicts. rerun tests.
+```
+
+```
+archive specs and recommit
+```
+
+```
+also append prompts to prompt.md
+```

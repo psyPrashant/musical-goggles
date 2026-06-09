@@ -1,5 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { Router } from '@angular/router';
 import { AssessmentService } from '../../core/assessment/assessment.service';
 import { Assessment } from '../../core/assessment/assessment.model';
 import { CandidateService } from '../../core/candidate/candidate.service';
@@ -167,11 +168,17 @@ import { FlagListItem } from '../../core/flag/flag.model';
                   <div class="history-table-row">
                     <div class="history-name">
                       @if (entry.submissionId && (entry.status === 'SUBMITTED' || entry.status === 'AUTO_SUBMITTED')) {
-                        <a class="history-link" [attr.href]="'/results?submission=' + entry.submissionId">
+                        <span class="history-link" (click)="viewSubmission(entry.submissionId)">
                           {{ entry.assessmentName }}
-                        </a>
+                        </span>
                       } @else {
                         {{ entry.assessmentName }}
+                      }
+                      @if (historyFlags().some(f => f.submissionId === entry.submissionId)) {
+                        <span class="history-flag-icon" title="This assessment was flagged">⚑</span>
+                      }
+                      @if (historyCandidate()?.blacklisted) {
+                        <span class="history-bl-icon" title="Candidate is blacklisted">⊘</span>
                       }
                     </div>
                     <div class="history-date">
@@ -232,13 +239,42 @@ import { FlagListItem } from '../../core/flag/flag.model';
               <p class="invite-success">No flags recorded.</p>
             } @else {
               <div class="flag-history-list">
-                @for (f of candidateFlags(); track f.flagId) {
-                  <div class="flag-history-row">
-                    <div class="flag-history-main">
-                      <span class="flag-history-assessment">{{ f.assessmentName }}</span>
-                      <span class="flag-status-badge status-{{ f.status.toLowerCase().replace('_','-') }}">{{ f.status }}</span>
+                @for (group of flagsBySubmission(); track group.latest.submissionId) {
+                  <div class="fh-group">
+                    <!-- Assessment row (collapsed header) -->
+                    <div class="fh-group-header"
+                         (click)="flagGroupExpandedId.set(flagGroupExpandedId() === group.latest.submissionId ? null : group.latest.submissionId)">
+                      <button class="fh-expand-btn" [class.expanded]="flagGroupExpandedId() === group.latest.submissionId">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                      </button>
+                      <span class="fh-assessment-link" (click)="$event.stopPropagation(); viewFlagSubmission(group.latest.submissionId)">
+                        {{ group.latest.assessmentName }}
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:3px;opacity:.6">
+                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                      </span>
+                      <span class="flag-status-badge status-{{ group.latest.status.toLowerCase().replace(/_/g, '-') }}">{{ flagStatusLabel(group.latest.status) }}</span>
+                      @if (group.all.length > 1) {
+                        <span class="fh-count">{{ group.all.length }} flags</span>
+                      }
                     </div>
-                    <div class="flag-history-meta">{{ reasonLabel(f.reason) }} · {{ formatFlagDate(f.createdAt) }}</div>
+                    <!-- Expanded flag entries -->
+                    @if (flagGroupExpandedId() === group.latest.submissionId) {
+                      <div class="fh-entries">
+                        @for (f of group.all; track f.flagId) {
+                          <div class="fh-entry">
+                            <span class="fh-entry-reason">{{ reasonLabel(f.reason) }}</span>
+                            <span class="flag-status-badge status-{{ f.status.toLowerCase().replace(/_/g, '-') }}">{{ flagStatusLabel(f.status) }}</span>
+                            @if (f.candidateActionRequired && f.status !== 'ACTION_REQUIRED') {
+                              <span class="action-req-badge">⚠ Action Req.</span>
+                            }
+                            <span class="fh-entry-date">{{ formatFlagDate(f.createdAt) }}</span>
+                          </div>
+                        }
+                      </div>
+                    }
                   </div>
                 }
               </div>
@@ -304,6 +340,23 @@ import { FlagListItem } from '../../core/flag/flag.model';
                   This candidate has been blacklisted and cannot be invited to do another assessment.
                 </div>
               }
+              @if (!inviteCandidate()?.blacklisted && inviteCandidate()?.activeFlagStatus) {
+                @if (inviteCandidate()!.activeFlagStatus === 'ACTION_REQUIRED' || inviteCandidate()!.actionRequired) {
+                  <div class="flag-notice">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
+                    </svg>
+                    This candidate has been flagged. Awaiting response from candidate. A new assessment cannot be sent until resolved.
+                  </div>
+                } @else {
+                  <div class="flag-notice">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
+                    </svg>
+                    This candidate has been flagged and cannot be sent a new assessment at this time.
+                  </div>
+                }
+              }
               @if (knownEmailNotice()) {
                 <div class="known-email-notice">{{ knownEmailNotice() }}</div>
               }
@@ -329,7 +382,7 @@ import { FlagListItem } from '../../core/flag/flag.model';
               <div class="field">
                 <label class="field-label">Assessment <span class="required">*</span></label>
                 <select class="field-select" [value]="inviteAssessment()" (change)="inviteAssessment.set($any($event.target).value)"
-                        [disabled]="!!inviteCandidate()?.blacklisted">
+                        [disabled]="!!inviteCandidate()?.blacklisted || !!inviteCandidate()?.activeFlagStatus">
                   <option value="">Select an assessment…</option>
                   @for (a of assessments(); track a.id) {
                     <option [value]="a.id" [disabled]="inviteCompletedIds().has(a.id)">
@@ -344,7 +397,7 @@ import { FlagListItem } from '../../core/flag/flag.model';
             </div>
             <div class="modal-footer">
               <button class="btn btn-ghost" (click)="closeInvite()">Cancel</button>
-              <button class="btn btn-primary" (click)="sendInvite()" [disabled]="inviteSending() || !!inviteCandidate()?.blacklisted || !inviteAssessment() || (!inviteCandidate() && (!inviteEmail() || !inviteFirstName() || !inviteLastName()))">
+              <button class="btn btn-primary" (click)="sendInvite()" [disabled]="inviteSending() || !!inviteCandidate()?.blacklisted || !!inviteCandidate()?.activeFlagStatus || !inviteAssessment() || (!inviteCandidate() && (!inviteEmail() || !inviteFirstName() || !inviteLastName()))">
                 @if (inviteSending()) { Sending… } @else {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -450,6 +503,14 @@ import { FlagListItem } from '../../core/flag/flag.model';
     }
     .blacklist-notice svg { flex-shrink: 0; margin-top: 1px; }
 
+    .flag-notice {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 10px 12px; background: var(--warning-subtle);
+      border: 1px solid rgba(245,158,11,.25); border-radius: var(--radius-sm);
+      font-size: 13px; color: var(--warning); line-height: 1.45;
+    }
+    .flag-notice svg { flex-shrink: 0; margin-top: 1px; }
+
     .assessment-cell { font-size: 12.5px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     .date-cell { font-size: 12px; color: var(--text-3); }
@@ -503,14 +564,38 @@ import { FlagListItem } from '../../core/flag/flag.model';
     .draft-confirm svg { flex-shrink: 0; margin-top: 2px; }
     .draft-confirm-text { font-size: 13.5px; color: var(--text-1); line-height: 1.55; margin: 0; }
 
-    .flag-history-list { display: flex; flex-direction: column; gap: 8px; }
-    .flag-history-row { padding: 10px 12px; background: var(--bg-elevated); border-radius: var(--radius-sm); border: 1px solid var(--border); }
-    .flag-history-main { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-    .flag-history-assessment { font-size: 13px; font-weight: 500; color: var(--text-1); flex: 1; }
-    .flag-history-meta { font-size: 11.5px; color: var(--text-3); }
+    .flag-history-list { display: flex; flex-direction: column; gap: 6px; }
+    .fh-group { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+    .fh-group-header {
+      display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+      background: var(--bg-elevated); cursor: pointer; user-select: none;
+    }
+    .fh-group-header:hover { background: var(--bg-hover); }
+    .fh-expand-btn {
+      background: none; border: none; padding: 0; cursor: pointer; color: var(--text-3);
+      display: flex; align-items: center; flex-shrink: 0; transition: transform 150ms;
+    }
+    .fh-expand-btn.expanded { transform: rotate(90deg); }
+    .fh-assessment-link {
+      font-size: 13px; font-weight: 500; color: var(--accent); flex: 1;
+      display: flex; align-items: center; cursor: pointer;
+    }
+    .fh-assessment-link:hover { text-decoration: underline; }
+    .fh-count { font-size: 11px; color: var(--text-3); white-space: nowrap; }
+    .fh-entries { border-top: 1px solid var(--border); }
+    .fh-entry {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 12px 7px 32px; background: var(--bg-card);
+      border-bottom: 1px solid var(--border); font-size: 12px;
+    }
+    .fh-entry:last-child { border-bottom: none; }
+    .fh-entry-reason { flex: 1; color: var(--text-2); }
+    .fh-entry-date { font-size: 11.5px; color: var(--text-3); white-space: nowrap; }
+    .action-req-badge { font-size: 10.5px; font-weight: 600; padding: 2px 6px; border-radius: 999px; background: var(--warning-subtle); color: var(--warning); white-space: nowrap; }
     .flag-status-badge { display: inline-flex; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 500; }
     .status-flagged { background: var(--danger-subtle); color: var(--danger); }
     .status-under-review { background: var(--warning-subtle); color: var(--warning); }
+    .status-action-required { background: rgba(234,88,12,.12); color: #ea580c; }
     .status-resolved { background: var(--success-subtle); color: var(--success); }
     .status-dismissed { background: rgba(148,163,184,.12); color: var(--text-2); }
 
@@ -546,9 +631,11 @@ import { FlagListItem } from '../../core/flag/flag.model';
     }
     .history-table-row:last-child { border-bottom: none; }
     .history-table-row:hover { background: var(--bg-hover); }
-    .history-name { font-size: 13px; font-weight: 500; color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .history-name { font-size: 13px; font-weight: 500; color: var(--text-1); display: flex; align-items: center; gap: 6px; overflow: hidden; }
     .history-link { color: var(--accent); text-decoration: none; }
     .history-link:hover { text-decoration: underline; }
+    .history-flag-icon { font-size: 13px; color: var(--warning); flex-shrink: 0; }
+    .history-bl-icon { font-size: 13px; color: var(--danger); flex-shrink: 0; }
     .history-date { font-size: 12px; color: var(--text-3); }
     .history-score { font-size: 12.5px; font-weight: 600; color: var(--text-1); }
     .score-pending { font-size: 11.5px; color: var(--text-3); font-weight: 400; font-style: italic; }
@@ -622,6 +709,7 @@ export class CandidatesComponent implements OnInit {
   private readonly candidateSvc = inject(CandidateService);
   private readonly toastSvc = inject(ToastService);
   private readonly flagSvc = inject(FlagService);
+  private readonly router = inject(Router);
 
   // ── List state ──────────────────────────────────────────────────────────────
   readonly candidates = signal<Candidate[]>([]);
@@ -696,6 +784,26 @@ export class CandidatesComponent implements OnInit {
   readonly flagHistoryCandidate = signal<Candidate | null>(null);
   readonly candidateFlags = signal<FlagListItem[]>([]);
   readonly flagHistoryLoading = signal(false);
+  readonly flagGroupExpandedId = signal<string | null>(null);
+
+  readonly flagsBySubmission = computed(() => {
+    const map = new Map<string, FlagListItem[]>();
+    for (const f of this.candidateFlags()) {
+      const existing = map.get(f.submissionId) ?? [];
+      map.set(f.submissionId, [...existing, f]);
+    }
+    // Sort each group newest-first; return as array of [latest, allFlags]
+    const groups: { latest: FlagListItem; all: FlagListItem[] }[] = [];
+    for (const [, flags] of map) {
+      const sorted = [...flags].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      groups.push({ latest: sorted[0], all: sorted });
+    }
+    // Sort groups by latest flag date descending
+    return groups.sort((a, b) => b.latest.createdAt.localeCompare(a.latest.createdAt));
+  });
+
+  // Flags loaded for the assessment history modal (for icon correlation)
+  readonly historyFlags = signal<FlagListItem[]>([]);
 
   // ── Computed ─────────────────────────────────────────────────────────────────
   readonly selectedAssessment = computed(() =>
@@ -896,12 +1004,16 @@ export class CandidatesComponent implements OnInit {
     this.historyCandidate.set(c);
     this.showAssessmentHistory.set(true);
     this.historyItems.set([]);
+    this.historyFlags.set([]);
     this.historyStatusFilter.set('');
     this.historySortAsc.set(false);
     this.historyLoading.set(true);
     this.candidateSvc.getHistory(c.id).subscribe({
       next: items => { this.historyItems.set(items); this.historyLoading.set(false); },
       error: () => this.historyLoading.set(false),
+    });
+    this.flagSvc.getCandidateFlags(c.id).subscribe({
+      next: flags => this.historyFlags.set(flags),
     });
   }
 
@@ -945,11 +1057,20 @@ export class CandidatesComponent implements OnInit {
     this.flagHistoryCandidate.set(c);
     this.showFlagHistory.set(true);
     this.candidateFlags.set([]);
+    this.flagGroupExpandedId.set(null);
     this.flagHistoryLoading.set(true);
     this.flagSvc.getCandidateFlags(c.id).subscribe({
       next: flags => { this.candidateFlags.set(flags); this.flagHistoryLoading.set(false); },
       error: () => this.flagHistoryLoading.set(false),
     });
+  }
+
+  flagStatusLabel(status: string): string {
+    const map: Record<string, string> = {
+      FLAGGED: 'Flagged', UNDER_REVIEW: 'Under Review',
+      ACTION_REQUIRED: 'Action Required', RESOLVED: 'Resolved', DISMISSED: 'Dismissed',
+    };
+    return map[status] ?? status;
   }
 
   reasonLabel(reason: string): string {
@@ -963,6 +1084,16 @@ export class CandidatesComponent implements OnInit {
   formatFlagDate(iso: string): string {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('en-ZA', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  viewSubmission(submissionId: string) {
+    this.showAssessmentHistory.set(false);
+    this.router.navigate(['/results'], { queryParams: { submission: submissionId } });
+  }
+
+  viewFlagSubmission(submissionId: string) {
+    this.showFlagHistory.set(false);
+    this.router.navigate(['/results'], { queryParams: { submission: submissionId } });
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────────

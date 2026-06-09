@@ -21,4 +21,7 @@ public interface SubmissionFlagRepository extends JpaRepository<SubmissionFlag, 
 
     @Query("SELECT COUNT(DISTINCT f.submissionId) FROM SubmissionFlag f WHERE f.status IN :statuses")
     long countDistinctSubmissionIdByStatusIn(@Param("statuses") Collection<FlagStatus> statuses);
+
+    @Query("SELECT cs.candidateId, f.status FROM SubmissionFlag f JOIN CandidateSubmission cs ON f.submissionId = cs.id WHERE cs.candidateId IN :candidateIds AND f.status IN :statuses ORDER BY f.createdAt DESC")
+    List<Object[]> findActiveFlagStatusByCandidateIds(@Param("candidateIds") Collection<UUID> candidateIds, @Param("statuses") Collection<FlagStatus> statuses);
 }

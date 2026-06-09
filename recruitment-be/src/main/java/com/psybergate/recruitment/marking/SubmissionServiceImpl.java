@@ -399,10 +399,12 @@ public class SubmissionServiceImpl implements SubmissionService {
                     int totalAnswerable = totalAnswerableByAssessment.getOrDefault(s.getAssessmentId(), 0);
                     FlagStatus flagStatus = flagStatusBySubmission.get(s.getId());
                     String assessmentTitle = assessmentTitleById.getOrDefault(s.getAssessmentId(), "");
+                    boolean blacklisted = Optional.ofNullable(candidateMap.get(s.getCandidateId()))
+                            .map(Candidate::isBlacklisted).orElse(false);
                     return new SubmissionSummaryResponse(
                             s.getId(), s.getInvitationId(), s.getCandidateId(), name,
                             s.getAssessmentId(), assessmentTitle,
-                            s.getStatus(), s.getSubmittedAt(), answered, totalAnswerable, marked, score, maxScore, flagStatus
+                            s.getStatus(), s.getSubmittedAt(), answered, totalAnswerable, marked, score, maxScore, flagStatus, blacklisted
                     );
                 })
                 .toList();
@@ -419,7 +421,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                     return new SubmissionSummaryResponse(
                             null, inv.getId(), c.getId(), name,
                             assessmentId, assessmentTitle,
-                            SubmissionStatus.NOT_STARTED, null, 0, 0, 0, 0, 0, null
+                            SubmissionStatus.NOT_STARTED, null, 0, 0, 0, 0, 0, null, c.isBlacklisted()
                     );
                 })
                 .toList();

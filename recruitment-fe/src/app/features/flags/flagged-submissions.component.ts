@@ -2,7 +2,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { switchMap } from 'rxjs';
 import { FlagService } from '../../core/flag/flag.service';
-import { FlagListItem, FlagReason } from '../../core/flag/flag.model';
+import { FlagListItem, FlagReason, FlagStatus } from '../../core/flag/flag.model';
 import { AssessmentService } from '../../core/assessment/assessment.service';
 import { Assessment } from '../../core/assessment/assessment.model';
 import { CandidateService } from '../../core/candidate/candidate.service';
@@ -47,6 +47,15 @@ type ActiveForm =
           <input type="date" class="field-input" [value]="filterToDate()"
                  (change)="filterToDate.set($any($event.target).value)" placeholder="To date" />
 
+          <select class="field-select" [value]="filterStatus()" (change)="filterStatus.set($any($event.target).value)">
+            <option value="">All statuses</option>
+            <option value="FLAGGED">Flagged</option>
+            <option value="UNDER_REVIEW">Under Review</option>
+            <option value="ACTION_REQUIRED">Action Required</option>
+            <option value="RESOLVED">Resolved</option>
+            <option value="DISMISSED">Dismissed</option>
+          </select>
+
           <button class="btn-ghost" (click)="clearFilters()">Clear</button>
         </div>
 
@@ -76,7 +85,19 @@ type ActiveForm =
                 <div class="cell">{{ reasonLabel(f.reason) }}</div>
                 <div class="cell-date">{{ formatDate(f.createdAt) }}</div>
                 <div class="cell">
-                  <span class="status-badge" [class]="statusClass(f.status)">{{ f.status }}</span>
+                  <span class="status-badge" [class]="statusClass(f.status)">{{ statusLabel(f.status) }}</span>
+                  @if (f.candidateActionRequired && f.status !== 'ACTION_REQUIRED') {
+                    <span class="action-req-badge">⚠ Action Req.</span>
+                  }
+                  @if ((flagHistoryMap().get(f.submissionId)?.length ?? 0) > 1) {
+                    <button class="btn-history-icon" title="View flag history"
+                            (click)="$event.stopPropagation(); openHistorySubmissionId.set(openHistorySubmissionId() === f.submissionId ? null : f.submissionId)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                      </svg>
+                    </button>
+                  }
                 </div>
                 <div class="cell-actions" (click)="$event.stopPropagation()">
                   <!-- Actions dropdown trigger -->
@@ -93,7 +114,7 @@ type ActiveForm =
                         <button class="dropdown-item" (click)="toggleBlacklist(f)">
                           {{ f.candidateBlacklisted ? 'Unblacklist' : 'Blacklist' }}
                         </button>
-                        @if (f.status === 'FLAGGED' || f.status === 'UNDER_REVIEW') {
+                        @if (f.status === 'FLAGGED' || f.status === 'UNDER_REVIEW' || f.status === 'ACTION_REQUIRED') {
                           <button class="dropdown-item" (click)="openResolveForm(f)">Resolve Flag</button>
                           <button class="dropdown-item danger" (click)="dismissFlag(f); closeDropdown()">
                             {{ dismissingFlagId() === f.flagId ? 'Dismissing…' : 'Dismiss' }}
@@ -153,6 +174,18 @@ type ActiveForm =
                   }
                 </div>
               </div>
+              @if (openHistorySubmissionId() === f.submissionId) {
+                <div class="flag-history-panel" (click)="$event.stopPropagation()">
+                  <div class="flag-history-title">Flag History</div>
+                  @for (h of (flagHistoryMap().get(f.submissionId) ?? []).slice().sort((a,b) => a.createdAt.localeCompare(b.createdAt)); track h.flagId) {
+                    <div class="flag-history-entry">
+                      <span class="fh-reason">{{ reasonLabel(h.reason) }}</span>
+                      <span class="status-badge" [class]="statusClass(h.status)">{{ statusLabel(h.status) }}</span>
+                      <span class="fh-date">{{ formatDate(h.createdAt) }}</span>
+                    </div>
+                  }
+                </div>
+              }
             }
           </div>
         }
@@ -233,6 +266,7 @@ type ActiveForm =
     }
     .status-flagged { background: var(--danger-subtle); color: var(--danger); }
     .status-under-review { background: var(--warning-subtle); color: var(--warning); }
+    .status-action-required { background: rgba(234,88,12,.12); color: #ea580c; }
     .status-resolved { background: var(--success-subtle); color: var(--success); }
     .status-dismissed { background: rgba(148,163,184,.12); color: var(--text-2); }
 
@@ -291,6 +325,15 @@ type ActiveForm =
       cursor: pointer; font-family: var(--font);
     }
 
+    .action-req-badge { font-size: 10.5px; font-weight: 600; padding: 2px 6px; border-radius: 999px; background: var(--warning-subtle); color: var(--warning); white-space: nowrap; margin-left: 4px; }
+    .btn-history-icon { background: none; border: none; cursor: pointer; color: var(--text-3); padding: 2px; margin-left: 4px; line-height: 1; }
+    .btn-history-icon:hover { color: var(--accent); }
+    .flag-history-panel { border-top: 1px solid var(--border); padding: 10px 16px; background: var(--bg-elevated); }
+    .flag-history-title { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+    .flag-history-entry { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+    .flag-history-entry:last-child { border-bottom: none; }
+    .fh-reason { flex: 1; color: var(--text-2); }
+    .fh-date { color: var(--text-3); font-size: 11.5px; }
     .inline-error { font-size: 11.5px; color: var(--danger); }
     .inline-success { font-size: 11.5px; color: var(--success); }
 
@@ -311,19 +354,40 @@ export class FlaggedSubmissionsComponent implements OnInit {
   readonly blacklistError = signal<{ flagId: string; message: string } | null>(null);
   readonly openDropdownId = signal<string | null>(null);
   readonly activeForm = signal<ActiveForm | null>(null);
+  readonly openHistorySubmissionId = signal<string | null>(null);
 
   readonly filterReason = signal<FlagReason | ''>('');
   readonly filterAssessmentId = signal('');
   readonly filterFromDate = signal('');
   readonly filterToDate = signal('');
+  readonly filterStatus = signal<FlagStatus | ''>('');
+
+  readonly flagHistoryMap = computed(() => {
+    const map = new Map<string, FlagListItem[]>();
+    for (const f of this.flags()) {
+      const existing = map.get(f.submissionId) ?? [];
+      map.set(f.submissionId, [...existing, f]);
+    }
+    return map;
+  });
+
+  readonly deduplicatedFlags = computed(() => {
+    const latest: FlagListItem[] = [];
+    for (const [, group] of this.flagHistoryMap()) {
+      const sorted = [...group].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      latest.push(sorted[0]);
+    }
+    return latest;
+  });
 
   readonly filtered = computed(() => {
     const reason = this.filterReason();
     const assessmentId = this.filterAssessmentId();
     const from = this.filterFromDate();
     const to = this.filterToDate();
-    return this.flags().filter(f => {
-      if (f.status !== 'FLAGGED' && f.status !== 'UNDER_REVIEW') return false;
+    const status = this.filterStatus();
+    return this.deduplicatedFlags().filter(f => {
+      if (status && f.status !== status) return false;
       if (reason && f.reason !== reason) return false;
       if (assessmentId && !f.assessmentName.includes(assessmentId)) return false;
       if (from && f.createdAt < from) return false;
@@ -386,9 +450,15 @@ export class FlaggedSubmissionsComponent implements OnInit {
     this.candidateSvc.contactCandidate(flag.candidateId, { subject: f.subject, message: f.message }).subscribe({
       next: () => {
         this.activeForm.set({ ...f, sending: false, success: true, error: null });
-        this.flags.update(list => list.map(item =>
-          item.flagId === flag.flagId ? { ...item, candidateActionRequired: true } : item
-        ));
+        this.flagSvc.transitionFlag(flag.submissionId, flag.flagId, { status: 'ACTION_REQUIRED' }).subscribe({
+          next: () => {
+            this.flags.update(list => list.map(item =>
+              item.flagId === flag.flagId
+                ? { ...item, candidateActionRequired: true, status: 'ACTION_REQUIRED' as FlagStatus }
+                : item
+            ));
+          },
+        });
       },
       error: () => {
         const cur = this.activeForm();
@@ -425,7 +495,9 @@ export class FlaggedSubmissionsComponent implements OnInit {
     resolve$.subscribe({
       next: () => {
         this.activeForm.set(null);
-        this.flags.update(list => list.filter(item => item.flagId !== flag.flagId));
+        this.flags.update(list => list.map(item =>
+          item.flagId === flag.flagId ? { ...item, status: 'RESOLVED' as FlagStatus } : item
+        ));
       },
       error: () => {
         const cur = this.activeForm();
@@ -471,7 +543,9 @@ export class FlaggedSubmissionsComponent implements OnInit {
     dismiss$.subscribe({
       next: () => {
         this.dismissingFlagId.set(null);
-        this.flags.update(list => list.filter(f => f.flagId !== flag.flagId));
+        this.flags.update(list => list.map(item =>
+          item.flagId === flag.flagId ? { ...item, status: 'DISMISSED' as FlagStatus } : item
+        ));
       },
       error: () => {
         this.dismissingFlagId.set(null);
@@ -485,6 +559,7 @@ export class FlaggedSubmissionsComponent implements OnInit {
     this.filterAssessmentId.set('');
     this.filterFromDate.set('');
     this.filterToDate.set('');
+    this.filterStatus.set('');
   }
 
   reasonLabel(reason: FlagReason): string {
@@ -499,7 +574,18 @@ export class FlaggedSubmissionsComponent implements OnInit {
   }
 
   statusClass(status: string): string {
-    return 'status-badge status-' + status.toLowerCase().replace('_', '-');
+    return 'status-badge status-' + status.toLowerCase().replace(/_/g, '-');
+  }
+
+  statusLabel(status: FlagStatus): string {
+    const map: Record<FlagStatus, string> = {
+      FLAGGED: 'Flagged',
+      UNDER_REVIEW: 'Under Review',
+      ACTION_REQUIRED: 'Action Required',
+      RESOLVED: 'Resolved',
+      DISMISSED: 'Dismissed',
+    };
+    return map[status] ?? status;
   }
 
   formatDate(iso: string): string {

@@ -10,11 +10,11 @@ import { ReminderService } from '../../core/reminder/reminder.service';
 
 const mockSubmissions: SubmissionSummary[] = [
   { submissionId: 's1', invitationId: 'inv1', candidateId: 'c1', candidateName: 'Alice Smith', assessmentId: 'a1', assessmentTitle: 'Assessment 1', status: 'SUBMITTED',
-    submittedAt: '2026-05-29T10:00:00Z', answeredCount: 2, totalAnswers: 2, markedCount: 0, totalScore: 0, maxScore: 2, flagStatus: null },
+    submittedAt: '2026-05-29T10:00:00Z', answeredCount: 2, totalAnswers: 2, markedCount: 0, totalScore: 0, maxScore: 2, flagStatus: null, candidateBlacklisted: false },
   { submissionId: 's2', invitationId: 'inv2', candidateId: 'c2', candidateName: 'Bob Jones', assessmentId: 'a2', assessmentTitle: 'Assessment 2', status: 'IN_PROGRESS',
-    submittedAt: null, answeredCount: 1, totalAnswers: 3, markedCount: 0, totalScore: 0, maxScore: 3, flagStatus: 'FLAGGED' },
+    submittedAt: null, answeredCount: 1, totalAnswers: 3, markedCount: 0, totalScore: 0, maxScore: 3, flagStatus: 'FLAGGED', candidateBlacklisted: false },
   { submissionId: null, invitationId: 'inv3', candidateId: 'c3', candidateName: 'Carol White', assessmentId: 'a3', assessmentTitle: 'Assessment 3', status: 'NOT_STARTED',
-    submittedAt: null, answeredCount: 0, totalAnswers: 0, markedCount: 0, totalScore: 0, maxScore: 0, flagStatus: null },
+    submittedAt: null, answeredCount: 0, totalAnswers: 0, markedCount: 0, totalScore: 0, maxScore: 0, flagStatus: null, candidateBlacklisted: false },
 ];
 
 const mockResult: ResultSummary = {
@@ -48,6 +48,7 @@ describe('ResultsComponent', () => {
       createFlag: vi.fn().mockReturnValue(of({ flagId: 'f1', submissionId: 's1', reason: 'COPIED_ANSWERS', status: 'FLAGGED', resolutionNotes: null, createdBy: 'u1', createdAt: '2026-06-01T10:00:00Z' })),
       transitionFlag: vi.fn().mockReturnValue(of({})),
       getAuditTrail: vi.fn().mockReturnValue(of([])),
+      getCandidateFlags: vi.fn().mockReturnValue(of([])),
     };
     const reminderSvc = {
       sendReminder: vi.fn().mockReturnValue(of({ id: 'r1', sentAt: '2026-06-02T08:00:00Z', sendType: 'MANUAL', sentBy: 'u1' })),
