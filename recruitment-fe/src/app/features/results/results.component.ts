@@ -55,8 +55,11 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                     @if ((s.status === 'SUBMITTED' || s.status === 'AUTO_SUBMITTED') && s.markedCount < s.totalAnswers) {
                       <span class="pending-badge">⏳ Pending</span>
                     }
-                    @if (s.flagStatus === 'FLAGGED' || s.flagStatus === 'UNDER_REVIEW' || s.flagStatus === 'ACTION_REQUIRED') {
-                      <span class="flag-badge">⚑ {{ s.flagStatus === 'ACTION_REQUIRED' ? 'Action Required' : 'Flagged' }}</span>
+                    @if (s.flagStatus === 'FLAGGED' || s.flagStatus === 'UNDER_REVIEW') {
+                      <span class="flag-badge">⚑ Flagged</span>
+                    }
+                    @if (s.flagStatus === 'ACTION_REQUIRED') {
+                      <span class="flag-badge flag-badge-action">⚠ Action Required</span>
                     }
                   </div>
                   <span class="sub-date">{{ formatDate(s.submittedAt) }}</span>
@@ -603,6 +606,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
 
     .pending-badge { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--warning-subtle); color: var(--warning); font-weight: 600; flex-shrink: 0; }
     .flag-badge { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--danger-subtle); color: var(--danger); font-weight: 600; flex-shrink: 0; }
+    .flag-badge-action { background: rgba(234,88,12,.12); color: #ea580c; }
     .flag-badge-detail { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--danger-subtle); color: var(--danger); }
 
     .flag-section {

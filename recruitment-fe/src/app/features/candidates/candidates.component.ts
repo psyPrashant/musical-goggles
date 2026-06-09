@@ -244,7 +244,7 @@ import { FlagListItem } from '../../core/flag/flag.model';
                     <div class="flag-history-main">
                       <span class="flag-history-assessment">{{ f.assessmentName }}</span>
                       <span class="flag-status-badge status-{{ f.status.toLowerCase().replace(/_/g, '-') }}">{{ flagStatusLabel(f.status) }}</span>
-                      @if (f.candidateActionRequired) {
+                      @if (f.candidateActionRequired && f.status !== 'ACTION_REQUIRED') {
                         <span class="action-req-badge">⚠ Action Req.</span>
                       }
                     </div>

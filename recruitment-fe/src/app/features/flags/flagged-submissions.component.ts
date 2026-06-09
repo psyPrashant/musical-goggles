@@ -86,7 +86,7 @@ type ActiveForm =
                 <div class="cell-date">{{ formatDate(f.createdAt) }}</div>
                 <div class="cell">
                   <span class="status-badge" [class]="statusClass(f.status)">{{ statusLabel(f.status) }}</span>
-                  @if (f.candidateActionRequired) {
+                  @if (f.candidateActionRequired && f.status !== 'ACTION_REQUIRED') {
                     <span class="action-req-badge">⚠ Action Req.</span>
                   }
                   @if ((flagHistoryMap().get(f.submissionId)?.length ?? 0) > 1) {
