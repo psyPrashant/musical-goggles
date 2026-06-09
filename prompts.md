@@ -1,5 +1,6 @@
 # Prompt Log
 
+
 ## 2026-05-27 12:04 | prashant.kessa
 
 > testing if the prompt hook works
@@ -1003,6 +1004,34 @@ Ask clarifying questions
 
 
 ## 2026-06-09 12:13:07 | hendrik.muller
+
+> commit and push
+
+---
+
+
+## 2026-06-09 12:15:40 | hendrik.muller
+
+> is token usage being recorded
+
+---
+
+
+## 2026-06-09 12:23:00 | hendrik.muller
+
+> check prompts.md should just log propmts and usage
+
+---
+
+
+## 2026-06-09 12:24:18 | hendrik.muller
+
+> is usage being recored
+
+---
+
+
+## 2026-06-09 12:25:33 | hendrik.muller
 
 > commit and push
 
