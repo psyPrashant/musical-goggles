@@ -1141,3 +1141,33 @@ after creating a ticket, assign it to me (Prashant Kessa) and move it to in prog
 
 ---
 
+## 2026-06-09 12:12 | prashant.kessa
+
+> look at the jira board Musical Goggles and work on epic 36, switch to a new branch and use the openspec workflow
+
+---
+
+## 2026-06-09 12:34 | prashant.kessa
+
+> the logo and text above the nav bar looks squished - remove the "Psybergate" text so its just the logo and then the "Recruitment portal"
+
+---
+
+## 2026-06-09 12:35 | prashant.kessa
+
+> also in darkmode, the logo becomes black and white - dont do that. keep the colour
+
+---
+
+## 2026-06-09 12:35 | prashant.kessa
+
+> actually undo that - keep it black and white but update the recruitment portal text to be orange
+
+---
+
+## 2026-06-09 12:36 | prashant.kessa
+
+> commit, archive the specs, push and create a pr
+
+---
+
