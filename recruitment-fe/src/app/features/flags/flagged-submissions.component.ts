@@ -2,7 +2,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { switchMap } from 'rxjs';
 import { FlagService } from '../../core/flag/flag.service';
-import { FlagListItem, FlagReason } from '../../core/flag/flag.model';
+import { FlagListItem, FlagReason, FlagStatus } from '../../core/flag/flag.model';
 import { AssessmentService } from '../../core/assessment/assessment.service';
 import { Assessment } from '../../core/assessment/assessment.model';
 import { CandidateService } from '../../core/candidate/candidate.service';
@@ -46,6 +46,14 @@ type ActiveForm =
                  (change)="filterFromDate.set($any($event.target).value)" placeholder="From date" />
           <input type="date" class="field-input" [value]="filterToDate()"
                  (change)="filterToDate.set($any($event.target).value)" placeholder="To date" />
+
+          <select class="field-select" [value]="filterStatus()" (change)="filterStatus.set($any($event.target).value)">
+            <option value="">All statuses</option>
+            <option value="FLAGGED">Flagged</option>
+            <option value="UNDER_REVIEW">Under Review</option>
+            <option value="RESOLVED">Resolved</option>
+            <option value="DISMISSED">Dismissed</option>
+          </select>
 
           <button class="btn-ghost" (click)="clearFilters()">Clear</button>
         </div>
@@ -316,14 +324,16 @@ export class FlaggedSubmissionsComponent implements OnInit {
   readonly filterAssessmentId = signal('');
   readonly filterFromDate = signal('');
   readonly filterToDate = signal('');
+  readonly filterStatus = signal<FlagStatus | ''>('');
 
   readonly filtered = computed(() => {
     const reason = this.filterReason();
     const assessmentId = this.filterAssessmentId();
     const from = this.filterFromDate();
     const to = this.filterToDate();
+    const status = this.filterStatus();
     return this.flags().filter(f => {
-      if (f.status !== 'FLAGGED' && f.status !== 'UNDER_REVIEW') return false;
+      if (status && f.status !== status) return false;
       if (reason && f.reason !== reason) return false;
       if (assessmentId && !f.assessmentName.includes(assessmentId)) return false;
       if (from && f.createdAt < from) return false;
@@ -425,7 +435,9 @@ export class FlaggedSubmissionsComponent implements OnInit {
     resolve$.subscribe({
       next: () => {
         this.activeForm.set(null);
-        this.flags.update(list => list.filter(item => item.flagId !== flag.flagId));
+        this.flags.update(list => list.map(item =>
+          item.flagId === flag.flagId ? { ...item, status: 'RESOLVED' as FlagStatus } : item
+        ));
       },
       error: () => {
         const cur = this.activeForm();
@@ -471,7 +483,9 @@ export class FlaggedSubmissionsComponent implements OnInit {
     dismiss$.subscribe({
       next: () => {
         this.dismissingFlagId.set(null);
-        this.flags.update(list => list.filter(f => f.flagId !== flag.flagId));
+        this.flags.update(list => list.map(item =>
+          item.flagId === flag.flagId ? { ...item, status: 'DISMISSED' as FlagStatus } : item
+        ));
       },
       error: () => {
         this.dismissingFlagId.set(null);
@@ -485,6 +499,7 @@ export class FlaggedSubmissionsComponent implements OnInit {
     this.filterAssessmentId.set('');
     this.filterFromDate.set('');
     this.filterToDate.set('');
+    this.filterStatus.set('');
   }
 
   reasonLabel(reason: FlagReason): string {

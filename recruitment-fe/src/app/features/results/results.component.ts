@@ -3,7 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { MarkingService } from '../../core/marking/marking.service';
 import { ResultQuestion, ResultSummary, SubmissionSummary } from '../../core/marking/marking.model';
 import { FlagService } from '../../core/flag/flag.service';
-import { FlagAuditEntry, FlagReason, FlagResponse, FlagStatus } from '../../core/flag/flag.model';
+import { FlagAuditEntry, FlagListItem, FlagReason, FlagResponse, FlagStatus } from '../../core/flag/flag.model';
 import { ReminderService } from '../../core/reminder/reminder.service';
 import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
 
@@ -241,6 +241,24 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                         {{ r.sentBy ? 'by recruiter' : 'by system' }}
                       </span>
                       <span class="audit-meta">{{ formatDate(r.sentAt) }}</span>
+                    </div>
+                  }
+                }
+              </div>
+
+              <!-- Submission flag history -->
+              <div class="audit-section">
+                <div class="audit-title">Flag History</div>
+                @if (submissionFlags().length === 0) {
+                  <div class="audit-empty">No flags raised</div>
+                } @else {
+                  @for (f of submissionFlags(); track f.flagId) {
+                    <div class="flag-history-entry">
+                      <div class="flag-history-row">
+                        <span class="flag-history-reason">{{ flagReasonLabel(f.reason) }}</span>
+                        <span class="flag-history-status" [class]="'fh-status-' + f.status.toLowerCase()">{{ f.status }}</span>
+                        <span class="audit-meta">{{ formatDate(f.createdAt) }}</span>
+                      </div>
                     </div>
                   }
                 }
@@ -615,6 +633,16 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
     .audit-title { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
     .audit-entry { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--border); }
     .audit-entry:last-child { border-bottom: none; }
+    .flag-history-entry { padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .flag-history-entry:last-child { border-bottom: none; }
+    .flag-history-row { display: flex; align-items: center; gap: 8px; }
+    .flag-history-reason { font-size: 12px; color: var(--text-1); flex: 1; }
+    .flag-history-status { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; }
+    .flag-history-notes { font-size: 11.5px; color: var(--text-3); margin-top: 3px; font-style: italic; }
+    .fh-status-flagged { background: var(--warning-subtle); color: var(--warning); }
+    .fh-status-under_review { background: var(--info-subtle); color: var(--info); }
+    .fh-status-resolved { background: var(--success-subtle); color: var(--success); }
+    .fh-status-dismissed { background: var(--bg-elevated); color: var(--text-3); }
     .audit-action { font-size: 12.5px; color: var(--text-1); font-weight: 500; display: flex; align-items: center; gap: 6px; }
     .audit-meta { font-size: 11.5px; color: var(--text-3); }
     .audit-empty { font-size: 12px; color: var(--text-3); font-style: italic; }
@@ -664,6 +692,9 @@ export class ResultsComponent implements OnInit {
   readonly flagSaving = signal(false);
   readonly showResolveForm = signal<FlagStatus | null>(null);
   readonly resolveNotes = signal('');
+
+  // Flag history for selected submission
+  readonly submissionFlags = signal<FlagListItem[]>([]);
 
   // Reminder state
   readonly showReminderConfirm = signal(false);
@@ -718,7 +749,7 @@ export class ResultsComponent implements OnInit {
       next: list => {
         this.submissions.set(list);
         this.loadingList.set(false);
-        const targetId = this.route.snapshot.queryParamMap.get('submissionId');
+        const targetId = this.route.snapshot.queryParamMap.get('submission');
         if (targetId) {
           const match = list.find(s => s.submissionId === targetId);
           if (match) this.selectSubmission(match);
@@ -743,6 +774,7 @@ export class ResultsComponent implements OnInit {
     this.reminderSending.set(false);
     this.reminderSuccess.set(false);
     this.reminderHistory.set([]);
+    this.submissionFlags.set([]);
     // NOT_STARTED candidates have no submission to load
     if (s.status !== 'NOT_STARTED' && s.submissionId) {
       this.loadingResult.set(true);
@@ -753,6 +785,9 @@ export class ResultsComponent implements OnInit {
       if (s.flagStatus === 'FLAGGED' || s.flagStatus === 'UNDER_REVIEW') {
         this.loadActiveFlagForSubmission(s.submissionId, s.flagStatus as FlagStatus);
       }
+      this.flagSvc.getCandidateFlags(s.candidateId).subscribe({
+        next: flags => this.submissionFlags.set(flags.filter(f => f.submissionId === s.submissionId)),
+      });
     }
     // Load reminder history via invitationId
     this.reminderSvc.getReminderHistory(s.invitationId).subscribe({
@@ -921,6 +956,17 @@ export class ResultsComponent implements OnInit {
   formatDate(iso: string | null): string {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('en-ZA', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  flagReasonLabel(reason: FlagReason): string {
+    const map: Record<FlagReason, string> = {
+      COPIED_ANSWERS: 'Copied Answers',
+      TIMING_ANOMALY: 'Timing Anomaly',
+      AI_GENERATED_CONTENT: 'AI-Generated Content',
+      SUSPICIOUS_BEHAVIOUR: 'Suspicious Behaviour',
+      OTHER: 'Other',
+    };
+    return map[reason] ?? reason;
   }
 
   scorePercent(s: SubmissionSummary): string {

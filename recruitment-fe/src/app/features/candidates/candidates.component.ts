@@ -1,5 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { Router } from '@angular/router';
 import { AssessmentService } from '../../core/assessment/assessment.service';
 import { Assessment } from '../../core/assessment/assessment.model';
 import { CandidateService } from '../../core/candidate/candidate.service';
@@ -167,9 +168,9 @@ import { FlagListItem } from '../../core/flag/flag.model';
                   <div class="history-table-row">
                     <div class="history-name">
                       @if (entry.submissionId && (entry.status === 'SUBMITTED' || entry.status === 'AUTO_SUBMITTED')) {
-                        <a class="history-link" [attr.href]="'/results?submission=' + entry.submissionId">
+                        <span class="history-link" (click)="viewSubmission(entry.submissionId)">
                           {{ entry.assessmentName }}
-                        </a>
+                        </span>
                       } @else {
                         {{ entry.assessmentName }}
                       }
@@ -622,6 +623,7 @@ export class CandidatesComponent implements OnInit {
   private readonly candidateSvc = inject(CandidateService);
   private readonly toastSvc = inject(ToastService);
   private readonly flagSvc = inject(FlagService);
+  private readonly router = inject(Router);
 
   // ── List state ──────────────────────────────────────────────────────────────
   readonly candidates = signal<Candidate[]>([]);
@@ -963,6 +965,11 @@ export class CandidatesComponent implements OnInit {
   formatFlagDate(iso: string): string {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('en-ZA', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  viewSubmission(submissionId: string) {
+    this.showAssessmentHistory.set(false);
+    this.router.navigate(['/results'], { queryParams: { submission: submissionId } });
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────────

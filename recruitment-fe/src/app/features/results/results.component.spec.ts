@@ -48,6 +48,7 @@ describe('ResultsComponent', () => {
       createFlag: vi.fn().mockReturnValue(of({ flagId: 'f1', submissionId: 's1', reason: 'COPIED_ANSWERS', status: 'FLAGGED', resolutionNotes: null, createdBy: 'u1', createdAt: '2026-06-01T10:00:00Z' })),
       transitionFlag: vi.fn().mockReturnValue(of({})),
       getAuditTrail: vi.fn().mockReturnValue(of([])),
+      getCandidateFlags: vi.fn().mockReturnValue(of([])),
     };
     const reminderSvc = {
       sendReminder: vi.fn().mockReturnValue(of({ id: 'r1', sentAt: '2026-06-02T08:00:00Z', sendType: 'MANUAL', sentBy: 'u1' })),
