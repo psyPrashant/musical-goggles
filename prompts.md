@@ -1,5 +1,33 @@
 # Prompt Log
 
+## Summary
+
+- totalInputTokens: 3
+- totalOutputTokens: 2218
+- totalEstimatedCostUSD: 0.184288
+
+---
+
+## 2026-06-09 12:33 | USER-PC
+
+> usage is still not recorded if my personal skill is in the way remove it
+
+- inputTokens: 1
+- outputTokens: 46
+- estimatedCostUSD: 0.045030
+
+---
+
+## 2026-06-09 12:31 | USER-PC
+
+> would this hook work for me and the other devs working on this project
+
+- inputTokens: 2
+- outputTokens: 2172
+- estimatedCostUSD: 0.139258
+
+---
+
 
 ## 2026-05-27 12:04 | prashant.kessa
 
@@ -1041,6 +1069,27 @@ Ask clarifying questions
 ## 2026-06-09 12:26:30 | hendrik.muller
 
 > i dont see token usage being recorded
+
+---
+
+
+## 2026-06-09 12:31:49 | hendrik.muller
+
+> would this hook work for me and the other devs working on this project
+
+---
+
+
+## 2026-06-09 12:33:37 | hendrik.muller
+
+> usage is still not recorded if my personal skill is in the way remove it
+
+---
+
+
+## 2026-06-09 12:35:02 | hendrik.muller
+
+> commit
 
 ---
 
