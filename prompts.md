@@ -922,3 +922,33 @@ lots of pain and suffering, prompt hooks breaking
 ---
 
 
+## 2026-06-09 12:53 | USER-PC | in: 1 out: 50
+
+> commit push make PR
+
+---
+
+## 2026-06-09 12:54 | USER-PC | in: 3 out: 187
+
+> what the in token and out tokens, do in token count towards uasge limit
+
+---
+
+## 2026-06-09 12:55 | USER-PC | in: 1 out: 109 cache_read: 151366 cache_write: 305
+
+> can cache tokens be seen in prompts.md
+
+---
+
+## 2026-06-09 12:58 | USER-PC | in: 1 out: 11 | cache_read: 153866 cache_write: 316
+
+> commit push
+
+---
+
+## 2026-06-09 12:59 | USER-PC | in: 6 out: 1062 | cache_read: 31608 cache_write: 349808
+
+> what are the costs with cached read and write
+
+---
+
