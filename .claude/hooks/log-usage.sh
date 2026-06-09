@@ -161,15 +161,13 @@ summary = (
     f"---\n\n"
 )
 
-# Remove old summary block, then prepend a fresh one after the header.
+# Refresh the summary block at the top, then append the new entry at the bottom.
 content_no_summary = re.sub(r'## Summary\n\n(?:.*?\n)*?---\n\n', '', content, flags=re.DOTALL)
-if content_no_summary.startswith('# Prompt Log\n\n'):
-    body = content_no_summary[len('# Prompt Log\n\n'):]
-else:
-    body = content_no_summary
+if not content_no_summary.startswith('# Prompt Log\n\n'):
+    content_no_summary = '# Prompt Log\n\n' + content_no_summary
 
 with open(log_file, 'w', encoding='utf-8') as f:
-    f.write('# Prompt Log\n\n' + summary + entry + body)
+    f.write('# Prompt Log\n\n' + summary + content_no_summary[len('# Prompt Log\n\n'):] + entry)
 
 PYEOF
 
