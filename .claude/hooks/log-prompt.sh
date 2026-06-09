@@ -1,13 +1,12 @@
 #!/bin/bash
 # log-prompt.sh
-# Appends every user prompt to prompts.md at the project root.
+# Saves prompt metadata to a pending temp file; log-usage.sh (Stop hook) completes the entry.
 #
 # Optional: set PROMPT_LOG_AUTHOR in your shell profile to override the username.
 #   export PROMPT_LOG_AUTHOR="Prashant"
 
 AUTHOR="${PROMPT_LOG_AUTHOR:-$(whoami)}"
 
-# Read prompt from stdin (Claude passes JSON on stdin)
 read -r INPUT
 
 if command -v python3 &>/dev/null; then
@@ -20,27 +19,43 @@ fi
 
 [ -z "$PROMPT" ] && exit 0
 
-# Normalise path (Windows backslashes → forward slashes)
 CWD="${CLAUDE_CWD:-$PWD}"
 CWD="${CWD//\\//}"
 
-LOG_FILE="$CWD/prompts.md"
-
-# Create the file with a header if it doesn't exist yet
-if [ ! -f "$LOG_FILE" ]; then
-  echo "# Prompt Log" > "$LOG_FILE"
-  echo "" >> "$LOG_FILE"
-fi
-
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M')
 
-{
-  echo "## $TIMESTAMP | $AUTHOR"
-  echo ""
-  echo "> $PROMPT"
-  echo ""
-  echo "---"
-  echo ""
-} >> "$LOG_FILE"
+if command -v python3 &>/dev/null; then
+  CLAUDE_PENDING_PROMPT="$PROMPT" \
+  CLAUDE_PENDING_AUTHOR="$AUTHOR" \
+  CLAUDE_PENDING_TIMESTAMP="$TIMESTAMP" \
+  CLAUDE_PENDING_CWD="$CWD" \
+  python3 -c "
+import os, json
+data = {
+    'prompt': os.environ['CLAUDE_PENDING_PROMPT'],
+    'author': os.environ['CLAUDE_PENDING_AUTHOR'],
+    'timestamp': os.environ['CLAUDE_PENDING_TIMESTAMP'],
+    'cwd': os.environ['CLAUDE_PENDING_CWD'],
+}
+with open('/tmp/claude-pending-prompt.json', 'w') as f:
+    json.dump(data, f)
+"
+elif command -v python &>/dev/null; then
+  CLAUDE_PENDING_PROMPT="$PROMPT" \
+  CLAUDE_PENDING_AUTHOR="$AUTHOR" \
+  CLAUDE_PENDING_TIMESTAMP="$TIMESTAMP" \
+  CLAUDE_PENDING_CWD="$CWD" \
+  python -c "
+import os, json
+data = {
+    'prompt': os.environ['CLAUDE_PENDING_PROMPT'],
+    'author': os.environ['CLAUDE_PENDING_AUTHOR'],
+    'timestamp': os.environ['CLAUDE_PENDING_TIMESTAMP'],
+    'cwd': os.environ['CLAUDE_PENDING_CWD'],
+}
+with open('/tmp/claude-pending-prompt.json', 'w') as f:
+    json.dump(data, f)
+"
+fi
 
 exit 0

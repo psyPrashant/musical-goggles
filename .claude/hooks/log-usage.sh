@@ -1,0 +1,121 @@
+#!/bin/bash
+# log-usage.sh
+# Stop hook: reads the pending prompt file + token usage, writes a complete entry to prompts.md
+# and updates the running summary section.
+#
+# Pricing: Claude Sonnet 4.6 — $3.00/1M input, $15.00/1M output,
+#          $3.75/1M cache-creation, $0.30/1M cache-read
+
+PENDING_FILE="/tmp/claude-pending-prompt.json"
+[ ! -f "$PENDING_FILE" ] && exit 0
+
+if command -v python3 &>/dev/null; then
+  PYTHON=python3
+elif command -v python &>/dev/null; then
+  PYTHON=python
+else
+  exit 0
+fi
+
+STOP_INPUT_FILE="/tmp/claude-stop-input.json"
+cat > "$STOP_INPUT_FILE"
+
+$PYTHON - "$STOP_INPUT_FILE" "$PENDING_FILE" << 'PYEOF'
+import sys, json, os, re
+
+stop_input_file = sys.argv[1]
+pending_file = sys.argv[2]
+
+try:
+    with open(stop_input_file) as f:
+        stop_data = json.load(f)
+    os.remove(stop_input_file)
+except Exception:
+    try:
+        os.remove(stop_input_file)
+    except Exception:
+        pass
+    sys.exit(0)
+
+usage = stop_data.get('usage', {})
+input_tokens = usage.get('input_tokens', 0)
+output_tokens = usage.get('output_tokens', 0)
+cache_creation_tokens = usage.get('cache_creation_input_tokens', 0)
+cache_read_tokens = usage.get('cache_read_input_tokens', 0)
+
+try:
+    with open(pending_file) as f:
+        pending = json.load(f)
+    prompt = pending['prompt']
+    author = pending['author']
+    timestamp = pending['timestamp']
+    cwd = pending['cwd']
+    os.remove(pending_file)
+except Exception:
+    try:
+        os.remove(pending_file)
+    except Exception:
+        pass
+    sys.exit(0)
+
+# Claude Sonnet 4.6 pricing
+INPUT_RATE = 3.00 / 1_000_000
+OUTPUT_RATE = 15.00 / 1_000_000
+CACHE_CREATE_RATE = 3.75 / 1_000_000
+CACHE_READ_RATE = 0.30 / 1_000_000
+
+cost = (
+    input_tokens * INPUT_RATE
+    + output_tokens * OUTPUT_RATE
+    + cache_creation_tokens * CACHE_CREATE_RATE
+    + cache_read_tokens * CACHE_READ_RATE
+)
+
+log_file = os.path.join(cwd, 'prompts.md')
+
+if not os.path.exists(log_file):
+    with open(log_file, 'w') as f:
+        f.write('# Prompt Log\n\n')
+
+with open(log_file, 'r') as f:
+    content = f.read()
+
+entry = (
+    f"## {timestamp} | {author}\n\n"
+    f"> {prompt}\n\n"
+    f"- inputTokens: {input_tokens}\n"
+    f"- outputTokens: {output_tokens}\n"
+    f"- estimatedCostUSD: {cost:.6f}\n\n"
+    f"---\n\n"
+)
+
+# Tally totals from existing entries (only entries that already have token fields)
+total_input = sum(int(m.group(1)) for m in re.finditer(r'- inputTokens: (\d+)', content))
+total_output = sum(int(m.group(1)) for m in re.finditer(r'- outputTokens: (\d+)', content))
+total_cost = sum(float(m.group(1)) for m in re.finditer(r'- estimatedCostUSD: ([\d.]+)', content))
+
+total_input += input_tokens
+total_output += output_tokens
+total_cost += cost
+
+summary = (
+    f"## Summary\n\n"
+    f"- totalInputTokens: {total_input}\n"
+    f"- totalOutputTokens: {total_output}\n"
+    f"- totalEstimatedCostUSD: {total_cost:.6f}\n\n"
+    f"---\n\n"
+)
+
+# Remove old summary block, then prepend fresh one after the header
+content_no_summary = re.sub(r'## Summary\n\n(?:.*?\n)*?---\n\n', '', content, flags=re.DOTALL)
+if content_no_summary.startswith('# Prompt Log\n\n'):
+    body = content_no_summary[len('# Prompt Log\n\n'):]
+else:
+    body = content_no_summary
+
+with open(log_file, 'w') as f:
+    f.write('# Prompt Log\n\n' + summary + entry + body)
+
+PYEOF
+
+exit 0
