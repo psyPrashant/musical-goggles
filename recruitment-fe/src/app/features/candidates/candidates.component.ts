@@ -338,15 +338,6 @@ import { FlagListItem } from '../../core/flag/flag.model';
                   }
                 </select>
               </div>
-              @if (selectedAssessment()?.passwordProtected) {
-                <div class="field">
-                  <label class="field-label">Assessment Password</label>
-                  <input type="password" class="field-input" [value]="invitePassword()"
-                         (input)="invitePassword.set($any($event.target).value)"
-                         placeholder="Enter password to include in email…" autocomplete="off"/>
-                  <span class="field-hint">This will be sent to the candidate in the invitation email</span>
-                </div>
-              }
               @if (inviteError()) {
                 <p class="invite-error">{{ inviteError() }}</p>
               }
@@ -644,7 +635,6 @@ export class CandidatesComponent implements OnInit {
   readonly inviteLastName = signal('');
   readonly inviteEmail = signal('');
   readonly inviteAssessment = signal('');
-  readonly invitePassword = signal('');
   readonly inviteSending = signal(false);
   readonly inviteError = signal('');
   readonly inviteLink = signal('');
@@ -742,7 +732,6 @@ export class CandidatesComponent implements OnInit {
     this.inviteLastName.set('');
     this.inviteEmail.set('');
     this.inviteAssessment.set('');
-    this.invitePassword.set('');
     this.inviteError.set('');
     this.inviteLink.set('');
     this.copied.set(false);
@@ -793,8 +782,7 @@ export class CandidatesComponent implements OnInit {
 
   private _doInviteFlow() {
     const doInvite = (candidateId: string) => {
-      const plainPassword = this.selectedAssessment()?.passwordProtected ? (this.invitePassword() || null) : null;
-      this.candidateSvc.sendInvitation({ candidateId, assessmentId: this.inviteAssessment(), plainPassword })
+      this.candidateSvc.sendInvitation({ candidateId, assessmentId: this.inviteAssessment() })
         .subscribe({
           next: res => {
             this.inviteSending.set(false);

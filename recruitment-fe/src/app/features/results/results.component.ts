@@ -718,7 +718,7 @@ export class ResultsComponent implements OnInit {
       next: list => {
         this.submissions.set(list);
         this.loadingList.set(false);
-        const targetId = this.route.snapshot.queryParamMap.get('submission');
+        const targetId = this.route.snapshot.queryParamMap.get('submissionId');
         if (targetId) {
           const match = list.find(s => s.submissionId === targetId);
           if (match) this.selectSubmission(match);

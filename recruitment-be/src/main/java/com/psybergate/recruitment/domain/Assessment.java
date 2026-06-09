@@ -46,6 +46,9 @@ public class Assessment {
     @Column(name = "access_password_hash")
     private String accessPasswordHash;
 
+    @Column(name = "access_password")
+    private String accessPassword;
+
     @Column(name = "reminder_days_before")
     private Integer reminderDaysBeforeDeadline;
 

@@ -6,6 +6,5 @@ import java.util.UUID;
 
 public record InviteRequest(
         @NotNull UUID candidateId,
-        @NotNull UUID assessmentId,
-        String plainPassword
+        @NotNull UUID assessmentId
 ) {}

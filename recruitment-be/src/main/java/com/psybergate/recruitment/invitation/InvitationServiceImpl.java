@@ -102,7 +102,7 @@ public class InvitationServiceImpl implements InvitationService {
 
         String link = baseUrl + "/assessment/" + assessment.getId() + "/take?token=" + token;
 
-        emailService.sendInvitation(candidate, assessment, link, expiresAt, request.plainPassword());
+        emailService.sendInvitation(candidate, assessment, link, expiresAt, assessment.getAccessPassword());
         invitation.setStatus(InvitationStatus.SENT);
         invitationRepository.save(invitation);
 

@@ -19,7 +19,6 @@ export interface CandidateRequest {
 export interface InviteRequest {
   candidateId: string;
   assessmentId: string;
-  plainPassword?: string | null;
 }
 
 export interface InviteResponse {

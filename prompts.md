@@ -1103,3 +1103,41 @@ Ask clarifying questions
 ---
 
 
+## 2026-06-08 13:36 | prashant.kessa
+
+> look at the jira board for Musical Goggles and create a ticket in the backlog for a bugfix - when you send a candidate an invite it prompts you to enter a password to email them. however there is a discrepency between the password set when creating the assessment and sending the invite. when sending an assessment thats password protected, it should automatically attach the correct password to the email. (password could be something and sender could send something else by mistake and candidate gets stuck)
+
+after creating a ticket, assign it to me (Prashant Kessa) and move it to in progress, then use openspec workflow to archive any outstanding specs that were forgotten and then use openspec workflow to implement the fix
+
+---
+
+## 2026-06-08 14:04 | prashant.kessa
+
+> all good. please archive it, also archive the other spec there ,the tasks weren't checked but it was done
+
+---
+
+## 2026-06-08 14:08 | prashant.kessa
+
+> check those tasks because they are done just not marked by claude
+
+---
+
+## 2026-06-08 14:13 | prashant.kessa
+
+> explain the bug
+
+---
+
+## 2026-06-08 14:13 | prashant.kessa
+
+> fix it
+
+---
+
+## 2026-06-08 14:14 | prashant.kessa
+
+> create a new branch commit and push. dont open a pr yet
+
+---
+

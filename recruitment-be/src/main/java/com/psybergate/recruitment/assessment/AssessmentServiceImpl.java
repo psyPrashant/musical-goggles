@@ -170,9 +170,11 @@ public class AssessmentServiceImpl implements AssessmentService {
     private void applyPassword(Assessment assessment, String rawPassword) {
         if (rawPassword != null && !rawPassword.isBlank()) {
             assessment.setAccessPasswordHash(passwordEncoder.encode(rawPassword));
+            assessment.setAccessPassword(rawPassword);
         } else if (rawPassword != null) {
             // Explicitly blank → clear any existing password
             assessment.setAccessPasswordHash(null);
+            assessment.setAccessPassword(null);
         }
         // null → leave unchanged
     }
