@@ -136,11 +136,8 @@ with open(log_file, 'r', encoding='utf-8') as f:
     content = f.read()
 
 entry = (
-    f"## {timestamp} | {author}\n\n"
+    f"## {timestamp} | {author} | in: {input_tokens} out: {output_tokens} ${cost:.4f}\n\n"
     f"> {prompt}\n\n"
-    f"- inputTokens: {input_tokens}\n"
-    f"- outputTokens: {output_tokens}\n"
-    f"- estimatedCostUSD: {cost:.6f}\n\n"
     f"---\n\n"
 )
 
