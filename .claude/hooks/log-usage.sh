@@ -28,7 +28,7 @@ STOP_INPUT_FILE="$POSIX_TMPDIR/claude-stop-input.json"
 cat > "$STOP_INPUT_FILE"
 
 $PYTHON - "$STOP_INPUT_FILE" "$PENDING_FILE" << 'PYEOF'
-import sys, json, os, re, tempfile
+import sys, json, os, tempfile
 
 stop_input_file = sys.argv[1]
 pending_file = sys.argv[2]
@@ -144,30 +144,8 @@ entry = (
     f"---\n\n"
 )
 
-# Tally totals from existing entries (only entries that already have token fields).
-total_input = sum(int(m.group(1)) for m in re.finditer(r'- inputTokens: (\d+)', content))
-total_output = sum(int(m.group(1)) for m in re.finditer(r'- outputTokens: (\d+)', content))
-total_cost = sum(float(m.group(1)) for m in re.finditer(r'- estimatedCostUSD: ([\d.]+)', content))
-
-total_input += input_tokens
-total_output += output_tokens
-total_cost += cost
-
-summary = (
-    f"## Summary\n\n"
-    f"- totalInputTokens: {total_input}\n"
-    f"- totalOutputTokens: {total_output}\n"
-    f"- totalEstimatedCostUSD: {total_cost:.6f}\n\n"
-    f"---\n\n"
-)
-
-# Refresh the summary block at the top, then append the new entry at the bottom.
-content_no_summary = re.sub(r'## Summary\n\n(?:.*?\n)*?---\n\n', '', content, flags=re.DOTALL)
-if not content_no_summary.startswith('# Prompt Log\n\n'):
-    content_no_summary = '# Prompt Log\n\n' + content_no_summary
-
-with open(log_file, 'w', encoding='utf-8') as f:
-    f.write('# Prompt Log\n\n' + summary + content_no_summary[len('# Prompt Log\n\n'):] + entry)
+with open(log_file, 'a', encoding='utf-8') as f:
+    f.write(entry)
 
 PYEOF
 
