@@ -1171,3 +1171,9 @@ after creating a ticket, assign it to me (Prashant Kessa) and move it to in prog
 
 ---
 
+## 2026-06-09 12:40 | prashant.kessa
+
+> mark the tasks as complete then continue
+
+---
+
