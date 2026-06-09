@@ -136,7 +136,7 @@ with open(log_file, 'r', encoding='utf-8') as f:
     content = f.read()
 
 entry = (
-    f"## {timestamp} | {author} | in: {input_tokens} out: {output_tokens}\n\n"
+    f"## {timestamp} | {author} | in: {input_tokens} out: {output_tokens} cache_read: {cache_read_tokens} cache_write: {cache_creation_tokens}\n\n"
     f"> {prompt}\n\n"
     f"---\n\n"
 )
