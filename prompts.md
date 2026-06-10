@@ -994,3 +994,111 @@ lots of pain and suffering, prompt hooks breaking
 
 ---
 
+## 2026-06-05 | hvbentley14
+
+> improvements. * please add the ability to create templates for the code questions. for example providing the user with a class and a public static void main in java and c# * Display the test cases for the coding questions as a list of test cases in the same panel as the test code button. * Display the results of the test cases when clicking the test code button. * provide the option to only run a test case on code submission instead of test code
+
+---
+
+## 2026-06-05 | hvbentley14
+
+> fix, * when clicking the test code button, the visible test cases need to be updated to either a pass or fail.
+
+---
+
+## 2026-06-05 | hvbentley14
+
+> fix Editing questions in the question bank does not save when editing, fix it. Editing code questions do not provide the option to use the starter code, add it
+
+---
+
+## 2026-06-05 | hvbentley14
+
+> Currently clicking on the test code button does not run the code against the test cases. Please investigate
+
+---
+
+## 2026-06-05 | hvbentley14
+
+> same problem again
+
+---
+
+## 2026-06-05 | hvbentley14
+
+> same problem again
+
+---
+
+## 2026-06-05 | hvbentley14
+
+> Bug. When attempting to test the code we get an error on the front end 'Failed to run tests. Check that the code execution service is running.' and in the browser console we get POST http://localhost:4200/api/take/run-code 500 (Internal Server Error)
+
+---
+
+## 2026-06-05 | hvbentley14
+
+> the backend is throwing the below error when attempting to test the code during the assessment. [ResourceAccessException: I/O error on POST request for "http://localhost:2358/submissions": null with root cause java.nio.channels.ClosedChannelException]
+
+---
+
+## 2026-06-09 | hvbentley14
+
+> Still running into the same problem. Could you please investigate if the code runner is live when attempting to test the code in the browser. The back end is still throwing [SocketChannelImpl.connect error]
+
+---
+
+## 2026-06-09 | hvbentley14
+
+> Issue, when launching the project the redis is currently throwing errors and wont run
+
+---
+
+## 2026-06-09 | hvbentley14
+
+> update the prompts.md with my prompts up to now
+
+---
+
+## 2026-06-10 | hvbentley14
+
+> Please look on Jira for EP-34 Mutation testing on the musical goggles board.
+
+---
+
+## 2026-06-10 | hvbentley14
+
+> Assign them to me, Harvey Bentley, then begin planning this work
+
+---
+
+## 2026-06-10 | hvbentley14
+
+> first explain to me how you are planning on implementing the mutation testing using pitest?
+
+---
+
+## 2026-06-10 | hvbentley14
+
+> write up the open spec plan for this work please
+
+---
+
+## 2026-06-10 | hvbentley14
+
+> /opsx:apply
+
+---
+
+## 2026-06-10 | hvbentley14
+
+> /opsx:archive
+
+---
+
+## 2026-06-10 | hvbentley14
+
+> update the prompts.md file with my prompts
+
+---
+
