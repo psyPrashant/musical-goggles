@@ -994,3 +994,41 @@ lots of pain and suffering, prompt hooks breaking
 
 ---
 
+## 2026-06-09 13:07 | USER-PC | in: 1 out: 41 | cache_read: 38377 cache_write: 694
+
+> commit and push
+
+---
+
+## 2026-06-10 09:53 | USER-PC | in: 6 out: 604 | cache_read: 91065 cache_write: 13079
+
+> git fetch pull
+
+---
+
+## 2026-06-10 09:53 | USER-PC | in: 46 out: 11452 | cache_read: 1695024 cache_write: 116714
+
+> help me make ticket with open spec and jira, when making a group/scenario question, we should be able to create sub questions right there while keeping fuctionality to pull questions for the question bank, the max points/score for the group question should be the sum of the sub questions - remove the    
+points edit field for group questions, but keep track of total points of quetions instead.
+
+---
+
+
+## 2026-06-10 10:17 | USER-PC | in: 12 out: 5960 | cache_read: 586679 cache_write: 14862
+
+> continue
+
+---
+
+## 2026-06-10 10:27 | USER-PC | in: 22 out: 9305 | cache_read: 1568849 cache_write: 18394
+
+> my token usage is not being recored with the hook
+
+---
+
+## 2026-06-10 10:32 | USER-PC | in: 6 out: 2824 | cache_read: 465712 cache_write: 3992
+
+> just commit this hook  change and make a PR
+
+---
+

@@ -28,7 +28,7 @@ STOP_INPUT_FILE="$POSIX_TMPDIR/claude-stop-input.json"
 cat > "$STOP_INPUT_FILE"
 
 $PYTHON - "$STOP_INPUT_FILE" "$PENDING_FILE" << 'PYEOF'
-import sys, json, os, tempfile
+import sys, json, os, time
 
 stop_input_file = sys.argv[1]
 pending_file = sys.argv[2]
@@ -63,40 +63,77 @@ except Exception:
 # Read token usage from the JSONL transcript instead.
 transcript_path = stop_data.get('transcript_path', '')
 
-input_tokens = 0
-output_tokens = 0
-cache_creation_tokens = 0
-cache_read_tokens = 0
 
-if transcript_path and os.path.exists(transcript_path):
+def is_real_user_prompt(entry):
+    """True for an actual user message, as opposed to a tool_result
+    (tool results are also logged with type=='user')."""
+    if entry.get('type') != 'user':
+        return False
+    content = entry.get('message', {}).get('content')
+    if isinstance(content, str):
+        return True
+    if isinstance(content, list):
+        return not any(isinstance(c, dict) and c.get('type') == 'tool_result' for c in content)
+    return False
+
+
+def compute_usage():
+    input_tokens = output_tokens = cache_creation_tokens = cache_read_tokens = 0
+    if not transcript_path or not os.path.exists(transcript_path):
+        return input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens
+
     try:
         with open(transcript_path, encoding='utf-8') as f:
-            lines = [line.strip() for line in f if line.strip()]
-
-        # Find the last user-turn index so we only count the current turn's tokens.
-        last_user_idx = -1
-        for i, line in enumerate(lines):
-            try:
-                entry = json.loads(line)
-                if entry.get('type') == 'user':
-                    last_user_idx = i
-            except Exception:
-                pass
-
-        # Sum assistant entries that came after the last user message.
-        for line in lines[last_user_idx + 1:]:
-            try:
-                entry = json.loads(line)
-                if entry.get('type') == 'assistant':
-                    usage = entry.get('message', {}).get('usage', {})
-                    input_tokens += usage.get('input_tokens', 0)
-                    output_tokens += usage.get('output_tokens', 0)
-                    cache_creation_tokens += usage.get('cache_creation_input_tokens', 0)
-                    cache_read_tokens += usage.get('cache_read_input_tokens', 0)
-            except Exception:
-                pass
+            raw_lines = [line.strip() for line in f if line.strip()]
     except Exception:
-        pass
+        return input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens
+
+    entries = []
+    for line in raw_lines:
+        try:
+            entries.append(json.loads(line))
+        except Exception:
+            entries.append(None)
+
+    # Find the last real user prompt (not a tool_result) -- that marks the
+    # start of the current turn, even if the turn paused on an interactive
+    # tool (e.g. AskUserQuestion) that logged its answer as type=='user' too.
+    last_user_idx = -1
+    for i, entry in enumerate(entries):
+        if entry is not None and is_real_user_prompt(entry):
+            last_user_idx = i
+
+    # A single API response can be split across multiple JSONL lines (one per
+    # content block), all carrying the same message usage -- count each
+    # response only once.
+    seen_message_ids = set()
+    for entry in entries[last_user_idx + 1:]:
+        if entry is None or entry.get('type') != 'assistant':
+            continue
+        message = entry.get('message', {})
+        msg_id = message.get('id')
+        if msg_id is not None:
+            if msg_id in seen_message_ids:
+                continue
+            seen_message_ids.add(msg_id)
+        usage = message.get('usage', {})
+        input_tokens += usage.get('input_tokens', 0)
+        output_tokens += usage.get('output_tokens', 0)
+        cache_creation_tokens += usage.get('cache_creation_input_tokens', 0)
+        cache_read_tokens += usage.get('cache_read_input_tokens', 0)
+
+    return input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens
+
+
+# The transcript line for the turn's final assistant message can be flushed to
+# disk slightly after the Stop hook fires, so retry briefly and keep whichever
+# read captured the most usage.
+input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens = compute_usage()
+for _ in range(3):
+    time.sleep(0.3)
+    candidate = compute_usage()
+    if sum(candidate) > sum((input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens)):
+        input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens = candidate
 
 try:
     with open(pending_file, encoding='utf-8') as f:
