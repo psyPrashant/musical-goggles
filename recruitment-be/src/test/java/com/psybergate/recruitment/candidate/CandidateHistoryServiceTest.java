@@ -78,6 +78,24 @@ class CandidateHistoryServiceTest {
     }
 
     @Test
+    void getAssessmentHistory_cancelledInvitation_returnsCANCELLED() {
+        Assessment assessment = buildAssessment();
+        CandidateInvitation invitation = buildInvitation(assessment, Instant.now().plusSeconds(86400));
+        invitation.setStatus(InvitationStatus.CANCELLED);
+
+        when(candidateRepository.findById(candidateId)).thenReturn(Optional.of(candidate));
+        when(invitationRepository.findByCandidateIdOrderByCreatedAtDesc(candidateId))
+                .thenReturn(List.of(invitation));
+        when(submissionRepository.findByInvitationId(invitation.getId())).thenReturn(Optional.empty());
+
+        List<CandidateHistoryItemResponse> result = service.getAssessmentHistory(candidateId);
+
+        assertThat(result).hasSize(1);
+        // kills mutation removing the CANCELLED check (which would fall through to EXPIRED/PENDING)
+        assertThat(result.get(0).status()).isEqualTo("CANCELLED");
+    }
+
+    @Test
     void getAssessmentHistory_expiredInvitation_returnsExpiredStatus() {
         Assessment assessment = buildAssessment();
         CandidateInvitation invitation = buildInvitation(assessment, Instant.now().minusSeconds(1));

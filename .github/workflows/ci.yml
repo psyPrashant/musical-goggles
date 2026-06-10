@@ -40,6 +40,16 @@ jobs:
       - name: Test
         run: ./mvnw test
 
+      - name: Mutation coverage
+        run: ./mvnw test-compile org.pitest:pitest-maven:mutationCoverage
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pit-mutation-report
+          path: recruitment-be/target/pit-reports/
+
   frontend:
     name: Frontend — Type-check & Test
     runs-on: ubuntu-latest
