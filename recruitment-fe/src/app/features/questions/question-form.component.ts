@@ -1,8 +1,22 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { forkJoin, of } from 'rxjs';
 import { QuestionService } from '../../core/question/question.service';
 import { Difficulty, Question, QuestionType } from '../../core/question/question.model';
+
+interface NewSubQuestionDraft {
+  type: 'MCQ' | 'TEXT' | 'CODE_SUBMISSION';
+  title: string;
+  body: string;
+  maxScore: number;
+  options?: { text: string; correct: boolean }[];
+  languageHint?: string;
+}
+
+type SubQuestionEntry =
+  | { source: 'bank'; question: Question }
+  | { source: 'new'; draft: NewSubQuestionDraft };
 
 @Component({
   selector: 'app-question-form',
@@ -72,13 +86,20 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
               <input formControlName="tagsRaw" class="field-input" placeholder="e.g. algorithms, java, sql"/>
             </div>
 
-            <div class="field" style="max-width: 160px;">
-              <label class="field-label">Points <span class="field-hint-inline">(max score)</span></label>
-              <input type="number" formControlName="maxScore" class="field-input" min="1" step="1"/>
-              @if (form.get('maxScore')?.invalid && form.get('maxScore')?.touched) {
-                <span class="field-err">Must be at least 1</span>
-              }
-            </div>
+            @if (form.get('type')?.value !== 'GROUP') {
+              <div class="field" style="max-width: 160px;">
+                <label class="field-label">Points <span class="field-hint-inline">(max score)</span></label>
+                <input type="number" formControlName="maxScore" class="field-input" min="1" step="1"/>
+                @if (form.get('maxScore')?.invalid && form.get('maxScore')?.touched) {
+                  <span class="field-err">Must be at least 1</span>
+                }
+              </div>
+            } @else {
+              <div class="field" style="max-width: 160px;">
+                <label class="field-label">Total Points</label>
+                <div class="total-points">{{ totalPoints() }} pts</div>
+              </div>
+            }
 
             <div class="field">
               <label class="field-label">Difficulty</label>
@@ -141,15 +162,21 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
                   <span class="field-hint-inline">(add 2 or more from the question bank)</span>
                 </label>
 
-                <!-- Selected members list -->
-                @if (memberQuestions().length > 0) {
+                <!-- Selected sub-questions list -->
+                @if (subQuestionEntries().length > 0) {
                   <div class="members-list">
-                    @for (m of memberQuestions(); track m.id; let i = $index) {
+                    @for (entry of subQuestionEntries(); track $index; let i = $index) {
                       <div class="member-row">
                         <span class="member-num">{{ i + 1 }}</span>
-                        <span class="type-badge type-{{ m.type.toLowerCase() }}">{{ typeLabel(m.type) }}</span>
-                        <span class="member-title">{{ m.title }}</span>
-                        <button type="button" class="icon-btn" (click)="removeMember(m.id)" title="Remove">
+                        @if (entry.source === 'bank') {
+                          <span class="type-badge type-{{ entry.question.type.toLowerCase() }}">{{ typeLabel(entry.question.type) }}</span>
+                          <span class="member-title">{{ entry.question.title }}</span>
+                        } @else {
+                          <span class="type-badge type-{{ entry.draft.type.toLowerCase() }}">{{ typeLabel(entry.draft.type) }}</span>
+                          <span class="member-title">{{ entry.draft.title }}</span>
+                          <span class="new-badge">New</span>
+                        }
+                        <button type="button" class="icon-btn" (click)="removeEntry(i)" title="Remove">
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M18 6L6 18M6 6l12 12"/>
                           </svg>
@@ -195,6 +222,92 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
                       }
                     </div>
                   }
+                </div>
+
+                <!-- Inline create-new-sub-question mini-form -->
+                <div [formGroup]="newSubForm" class="new-sub-form">
+                  <div class="new-sub-form-title">Create a new sub-question</div>
+
+                  <div class="field">
+                    <label class="field-label">Type</label>
+                    <div class="type-selector">
+                      @for (t of subTypeOptions; track t.value) {
+                        <button type="button" class="type-btn"
+                          [class.active]="newSubForm.get('type')?.value === t.value"
+                          (click)="setNewSubType(t.value)">{{ t.label }}</button>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="field">
+                    <label class="field-label">Title <span class="required">*</span></label>
+                    <input formControlName="title" class="field-input" placeholder="e.g. What is a foreign key?"/>
+                    @if (newSubForm.get('title')?.invalid && newSubForm.get('title')?.touched) {
+                      <span class="field-err">Title is required</span>
+                    }
+                  </div>
+
+                  <div class="field">
+                    <label class="field-label">Body <span class="required">*</span></label>
+                    <textarea formControlName="body" class="field-textarea" rows="3" placeholder="Question body…"></textarea>
+                    @if (newSubForm.get('body')?.invalid && newSubForm.get('body')?.touched) {
+                      <span class="field-err">Body is required</span>
+                    }
+                  </div>
+
+                  <div class="field" style="max-width: 160px;">
+                    <label class="field-label">Points <span class="field-hint-inline">(max score)</span></label>
+                    <input type="number" formControlName="maxScore" class="field-input" min="1" step="1"/>
+                    @if (newSubForm.get('maxScore')?.invalid && newSubForm.get('maxScore')?.touched) {
+                      <span class="field-err">Must be at least 1</span>
+                    }
+                  </div>
+
+                  @if (newSubForm.get('type')?.value === 'CODE_SUBMISSION') {
+                    <div class="field">
+                      <label class="field-label">Language Hint</label>
+                      <input formControlName="languageHint" class="field-input" placeholder="e.g. java, python, javascript"/>
+                    </div>
+                  }
+
+                  @if (newSubForm.get('type')?.value === 'MCQ') {
+                    <div class="field">
+                      <label class="field-label">Answer Options <span class="field-hint-inline">(select the correct one)</span></label>
+                      <div formArrayName="options" class="options-list">
+                        @for (opt of newSubOptions.controls; track opt; let i = $index) {
+                          <div [formGroupName]="i" class="option-row">
+                            <div class="radio-wrap" (click)="markSubCorrect(i)">
+                              <div class="radio-circle" [class.selected]="opt.get('correct')?.value">
+                                @if (opt.get('correct')?.value) {
+                                  <div class="radio-dot"></div>
+                                }
+                              </div>
+                              <span class="option-letter">{{ optionLetter(i) }}</span>
+                            </div>
+                            <input type="text" formControlName="text" class="field-input opt-input" [placeholder]="'Option ' + optionLetter(i)"/>
+                            <button type="button" class="icon-btn" (click)="removeSubOption(i)" [disabled]="newSubOptions.length <= 2" title="Remove option">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 6L6 18M6 6l12 12"/>
+                              </svg>
+                            </button>
+                          </div>
+                        }
+                      </div>
+                      <button type="button" class="add-option-btn" (click)="addSubOption()">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                        Add option
+                      </button>
+                    </div>
+                  }
+
+                  @if (newSubError()) {
+                    <span class="field-err">{{ newSubError() }}</span>
+                  }
+
+                  <button type="button" class="add-option-btn" (click)="addSubQuestion()">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                    Add sub-question
+                  </button>
                 </div>
               </div>
             }
@@ -346,6 +459,29 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
 
     .member-title { font-size: 13px; color: var(--text-1); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+    .new-badge {
+      display: inline-flex; padding: 2px 7px; border-radius: 999px;
+      font-size: 11px; font-weight: 500; flex-shrink: 0;
+      background: var(--success-subtle); color: var(--success);
+    }
+
+    .total-points {
+      padding: 8px 12px; font-size: 13.5px; font-weight: 600; color: var(--text-1);
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    /* GROUP: inline create-new-sub-question form */
+    .new-sub-form {
+      margin-top: 12px; padding: 14px;
+      border: 1px dashed var(--border); border-radius: var(--radius-sm);
+      background: var(--bg-elevated);
+    }
+
+    .new-sub-form-title {
+      font-size: 13px; font-weight: 600; color: var(--text-1); margin-bottom: 12px;
+    }
+
     /* GROUP: bank picker */
     .bank-picker {
       border: 1px solid var(--border); border-radius: var(--radius-sm);
@@ -435,21 +571,31 @@ export class QuestionFormComponent implements OnInit {
 
   // ── GROUP-specific state ────────────────────────────────────────────────
   readonly allQuestions = signal<Question[]>([]);
-  readonly memberQuestions = signal<Question[]>([]);
+  readonly subQuestionEntries = signal<SubQuestionEntry[]>([]);
   readonly bankSearch = signal('');
   readonly bankLoading = signal(false);
   readonly bankError = signal<string | null>(null);
   readonly memberError = signal<string | null>(null);
+  readonly newSubError = signal<string | null>(null);
   readonly groupEditBlocked = signal(false);
 
   readonly filteredBank = computed(() => {
     const search = this.bankSearch().toLowerCase();
-    const memberIds = new Set(this.memberQuestions().map(q => q.id));
+    const bankIds = new Set(
+      this.subQuestionEntries()
+        .filter((e): e is { source: 'bank'; question: Question } => e.source === 'bank')
+        .map(e => e.question.id)
+    );
     return this.allQuestions()
       .filter(q => q.type !== 'GROUP')           // no nested groups
-      .filter(q => !memberIds.has(q.id))          // not already added
+      .filter(q => !bankIds.has(q.id))            // not already added
       .filter(q => !search || q.title.toLowerCase().includes(search));
   });
+
+  readonly totalPoints = computed(() =>
+    this.subQuestionEntries().reduce(
+      (sum, e) => sum + (e.source === 'bank' ? e.question.maxScore : e.draft.maxScore), 0)
+  );
 
   readonly form = this.fb.group({
     type: ['MCQ' as QuestionType, Validators.required],
@@ -462,11 +608,27 @@ export class QuestionFormComponent implements OnInit {
     options: this.fb.array([this.makeOption('', true), this.makeOption('', false)]),
   });
 
+  // ── Inline create-new-sub-question mini-form ────────────────────────────
+  readonly newSubForm = this.fb.group({
+    type: ['TEXT' as 'MCQ' | 'TEXT' | 'CODE_SUBMISSION', Validators.required],
+    title: ['', Validators.required],
+    body: ['', Validators.required],
+    maxScore: [1, [Validators.required, Validators.min(1)]],
+    languageHint: [''],
+    options: this.fb.array([this.makeOption('', true), this.makeOption('', false)]),
+  });
+
   readonly typeOptions = [
     { value: 'MCQ', label: 'Multiple Choice' },
     { value: 'TEXT', label: 'Text Response' },
     { value: 'CODE_SUBMISSION', label: 'Code Submission' },
     { value: 'GROUP', label: 'Group / Scenario' },
+  ];
+
+  readonly subTypeOptions = [
+    { value: 'MCQ', label: 'Multiple Choice' },
+    { value: 'TEXT', label: 'Text Response' },
+    { value: 'CODE_SUBMISSION', label: 'Code Submission' },
   ];
 
   readonly difficultyOptions: { value: Difficulty | null; label: string }[] = [
@@ -480,7 +642,14 @@ export class QuestionFormComponent implements OnInit {
     return this.form.get('options') as FormArray;
   }
 
+  get newSubOptions(): FormArray {
+    return this.newSubForm.get('options') as FormArray;
+  }
+
   ngOnInit() {
+    // newSubForm defaults to type 'TEXT', which doesn't use options.
+    this.newSubOptions.clear();
+
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.editId.set(id);
@@ -532,7 +701,7 @@ export class QuestionFormComponent implements OnInit {
     }
 
     if (type === 'GROUP') {
-      this.memberQuestions.set([]);
+      this.subQuestionEntries.set([]);
       this.bankSearch.set('');
       this.bankError.set(null);
       this.bankLoading.set(true);
@@ -550,19 +719,79 @@ export class QuestionFormComponent implements OnInit {
     this.form.patchValue({ difficulty: value });
   }
 
-  // ── GROUP member management ─────────────────────────────────────────────
+  // ── GROUP sub-question management ───────────────────────────────────────
 
   addMember(q: Question) {
-    this.memberQuestions.update(ms => [...ms, q]);
+    this.subQuestionEntries.update(es => [...es, { source: 'bank', question: q }]);
     this.memberError.set(null);
   }
 
-  removeMember(id: string) {
-    this.memberQuestions.update(ms => ms.filter(m => m.id !== id));
+  removeEntry(index: number) {
+    this.subQuestionEntries.update(es => es.filter((_, i) => i !== index));
   }
 
   typeLabel(type: string): string {
     return ({ MCQ: 'MCQ', TEXT: 'Text', CODE_SUBMISSION: 'Code', GROUP: 'Group' } as Record<string, string>)[type] ?? type;
+  }
+
+  // ── Inline create-new-sub-question mini-form ────────────────────────────
+
+  setNewSubType(type: string) {
+    this.newSubForm.patchValue({ type: type as 'MCQ' | 'TEXT' | 'CODE_SUBMISSION' });
+    this.newSubError.set(null);
+
+    if (type === 'MCQ') {
+      if (this.newSubOptions.length < 2) {
+        this.newSubOptions.clear();
+        this.newSubOptions.push(this.makeOption('', true));
+        this.newSubOptions.push(this.makeOption('', false));
+      }
+    } else {
+      this.newSubOptions.clear();
+    }
+  }
+
+  addSubOption() { this.newSubOptions.push(this.makeOption('', false)); }
+
+  removeSubOption(i: number) { this.newSubOptions.removeAt(i); }
+
+  markSubCorrect(index: number) {
+    this.newSubOptions.controls.forEach((ctrl, i) => ctrl.patchValue({ correct: i === index }));
+  }
+
+  addSubQuestion() {
+    this.newSubForm.markAllAsTouched();
+    if (this.newSubForm.invalid) return;
+
+    const type = this.newSubForm.get('type')!.value as 'MCQ' | 'TEXT' | 'CODE_SUBMISSION';
+
+    if (type === 'MCQ') {
+      const opts = this.newSubOptions.value as { text: string; correct: boolean }[];
+      const correctCount = opts.filter(o => o.correct).length;
+      if (opts.some(o => !o.text.trim())) { this.newSubError.set('All option texts are required.'); return; }
+      if (correctCount !== 1) { this.newSubError.set('Exactly one option must be marked correct.'); return; }
+    }
+
+    const draft: NewSubQuestionDraft = {
+      type,
+      title: this.newSubForm.get('title')!.value!,
+      body: this.newSubForm.get('body')!.value!,
+      maxScore: this.newSubForm.get('maxScore')!.value ?? 1,
+      ...(type === 'MCQ' && { options: this.newSubOptions.value }),
+      ...(type === 'CODE_SUBMISSION' && {
+        languageHint: this.newSubForm.get('languageHint')!.value || undefined,
+      }),
+    };
+
+    this.subQuestionEntries.update(es => [...es, { source: 'new', draft }]);
+    this.memberError.set(null);
+    this.newSubError.set(null);
+    this.resetNewSubForm();
+  }
+
+  private resetNewSubForm() {
+    this.newSubForm.reset({ type: 'TEXT', title: '', body: '', maxScore: 1, languageHint: '' });
+    this.newSubOptions.clear();
   }
 
   // ── MCQ helpers ─────────────────────────────────────────────────────────
@@ -601,15 +830,20 @@ export class QuestionFormComponent implements OnInit {
       this.mcqError.set(null);
     }
 
+    const difficulty = this.form.get('difficulty')!.value ?? null;
+
     if (type === 'GROUP') {
-      if (this.memberQuestions().length < 2) {
+      if (this.subQuestionEntries().length < 2) {
         this.memberError.set('A group question must have at least 2 sub-questions.');
         return;
       }
       this.memberError.set(null);
-    }
 
-    const difficulty = this.form.get('difficulty')!.value ?? null;
+      this.saving.set(true);
+      this.error.set(null);
+      this.submitGroup(tags, difficulty);
+      return;
+    }
 
     const payload = {
       type,
@@ -621,9 +855,6 @@ export class QuestionFormComponent implements OnInit {
       ...(type === 'MCQ' && { options: this.options.value }),
       ...(type === 'CODE_SUBMISSION' && {
         languageHint: this.form.get('languageHint')!.value ?? undefined,
-      }),
-      ...(type === 'GROUP' && {
-        memberQuestionIds: this.memberQuestions().map(q => q.id),
       }),
     };
 
@@ -638,6 +869,66 @@ export class QuestionFormComponent implements OnInit {
       next: () => this.router.navigate(['/questions']),
       error: err => {
         this.error.set(err?.error?.detail ?? 'Failed to save question.');
+        this.saving.set(false);
+      },
+    });
+  }
+
+  // Two-phase GROUP submit: persist 'new' sub-question drafts individually first,
+  // then create the GROUP referencing bank + newly-created ids in display order.
+  private submitGroup(tags: string[], difficulty: Difficulty | null) {
+    const entries = this.subQuestionEntries();
+
+    const createCalls = entries
+      .filter((entry): entry is { source: 'new'; draft: NewSubQuestionDraft } => entry.source === 'new')
+      .map(({ draft }) => this.svc.createQuestion({
+        type: draft.type,
+        title: draft.title,
+        body: draft.body,
+        tags: [],
+        maxScore: draft.maxScore,
+        ...(draft.options && { options: draft.options }),
+        ...(draft.languageHint && { languageHint: draft.languageHint }),
+      }));
+
+    const create$ = createCalls.length > 0 ? forkJoin(createCalls) : of([] as Question[]);
+
+    create$.subscribe({
+      next: created => {
+        const memberQuestionIds: string[] = [];
+        let createdIdx = 0;
+        const updatedEntries: SubQuestionEntry[] = entries.map(entry => {
+          if (entry.source === 'bank') {
+            memberQuestionIds.push(entry.question.id);
+            return entry;
+          }
+          const newQuestion = created[createdIdx++];
+          memberQuestionIds.push(newQuestion.id);
+          return { source: 'bank', question: newQuestion };
+        });
+        // Replace persisted drafts with bank references so a retry after a
+        // GROUP-creation failure doesn't recreate them.
+        this.subQuestionEntries.set(updatedEntries);
+
+        const payload = {
+          type: 'GROUP' as QuestionType,
+          title: this.form.get('title')!.value!,
+          body: this.form.get('body')!.value!,
+          tags,
+          difficulty,
+          memberQuestionIds,
+        };
+
+        this.svc.createQuestion(payload).subscribe({
+          next: () => this.router.navigate(['/questions']),
+          error: err => {
+            this.error.set(err?.error?.detail ?? 'Failed to save question.');
+            this.saving.set(false);
+          },
+        });
+      },
+      error: err => {
+        this.error.set(err?.error?.detail ?? 'Failed to create new sub-questions.');
         this.saving.set(false);
       },
     });
