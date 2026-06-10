@@ -2374,3 +2374,15 @@ What's next:
 
 ---
 
+## 2026-06-10 14:25 | shaaira.mayet | in: 1 out: 106 | cache_read: 95455 cache_write: 412
+
+> run docker rebuild images and deploy
+
+---
+
+## 2026-06-10 14:31 | shaaira.mayet | in: 1 out: 61 | cache_read: 96751 cache_write: 3164
+
+> after clicking on the row, on the results page, the full list is not shown
+
+---
+
