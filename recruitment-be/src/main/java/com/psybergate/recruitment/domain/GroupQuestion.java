@@ -16,7 +16,7 @@ import java.util.List;
 @NoArgsConstructor
 public class GroupQuestion extends Question {
 
-    @OneToMany(mappedBy = "groupQuestion", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "groupQuestion", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @OrderBy("displayOrder ASC")
     private List<GroupQuestionMember> members = new ArrayList<>();
 
