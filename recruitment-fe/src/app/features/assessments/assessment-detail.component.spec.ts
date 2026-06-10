@@ -18,6 +18,8 @@ const mockAssessment: AssessmentDetail = {
   passwordProtected: false,
   createdAt: '2026-05-29T00:00:00Z',
   updatedAt: '2026-05-29T00:00:00Z',
+  randomiseQuestions: false,
+  randomisationQuotas: [],
 };
 
 const allQuestions = [
