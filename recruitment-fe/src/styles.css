@@ -99,7 +99,12 @@ body::before {
     radial-gradient(720px 560px at 82% 12%, rgba(139, 92, 246, 0.13), transparent 65%),
     radial-gradient(640px 640px at 70% 82%, rgba(255, 61, 129, 0.09), transparent 65%),
     radial-gradient(560px 520px at 28% 88%, rgba(94, 173, 251, 0.08), transparent 65%);
-  animation: aurora-drift 46s ease-in-out infinite alternate;
+  animation: aurora-drift 46s ease-in-out infinite alternate, aurora-hue 38s linear infinite;
+}
+
+@keyframes aurora-hue {
+  0%, 100% { filter: hue-rotate(0deg); }
+  50%      { filter: hue-rotate(30deg); }
 }
 
 body::after {
@@ -266,4 +271,231 @@ html.light select {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* ============================================================
+   DEEP SPACE LAYER (dark mode only)
+   Parallax starfields, shooting stars, a ringed planet with an
+   orbiting moon, and a distant galaxy. Rendered behind all app
+   content via app.html's .space-fx container.
+   ============================================================ */
+
+.space-fx {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+:root.light .space-fx {
+  display: none;
+}
+
+/* ---- Parallax starfields: tiled gradients, drifting by exactly
+   one tile per loop so the pattern wraps seamlessly ---- */
+
+.stars {
+  position: absolute;
+  inset: -700px;
+  background-repeat: repeat;
+}
+
+.stars-1 {
+  background-image:
+    radial-gradient(1px 1px at 14px 36px, rgba(255, 255, 255, 0.9) 50%, transparent 100%),
+    radial-gradient(1px 1px at 142px 84px, rgba(255, 255, 255, 0.6) 50%, transparent 100%),
+    radial-gradient(1.4px 1.4px at 64px 162px, rgba(190, 215, 255, 0.85) 50%, transparent 100%),
+    radial-gradient(1px 1px at 196px 214px, rgba(255, 255, 255, 0.5) 50%, transparent 100%),
+    radial-gradient(1px 1px at 104px 244px, rgba(255, 205, 170, 0.7) 50%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 232px 130px, rgba(255, 255, 255, 0.75) 50%, transparent 100%);
+  background-size: 260px 260px;
+  animation:
+    star-twinkle 4s ease-in-out infinite alternate,
+    star-drift-1 160s linear infinite;
+}
+
+.stars-2 {
+  background-image:
+    radial-gradient(1.6px 1.6px at 50px 60px, rgba(255, 255, 255, 0.95) 50%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 220px 190px, rgba(170, 200, 255, 0.8) 50%, transparent 100%),
+    radial-gradient(1.4px 1.4px at 340px 90px, rgba(255, 255, 255, 0.65) 50%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 130px 320px, rgba(255, 190, 150, 0.75) 50%, transparent 100%),
+    radial-gradient(1.6px 1.6px at 300px 360px, rgba(255, 255, 255, 0.8) 50%, transparent 100%);
+  background-size: 420px 420px;
+  animation:
+    star-twinkle 6s ease-in-out 1.2s infinite alternate,
+    star-drift-2 230s linear infinite;
+}
+
+.stars-3 {
+  background-image:
+    radial-gradient(2.2px 2.2px at 90px 130px, rgba(255, 255, 255, 1) 50%, transparent 100%),
+    radial-gradient(1.8px 1.8px at 420px 320px, rgba(190, 215, 255, 0.9) 50%, transparent 100%),
+    radial-gradient(2px 2px at 520px 80px, rgba(255, 220, 190, 0.85) 50%, transparent 100%),
+    radial-gradient(1.8px 1.8px at 250px 480px, rgba(255, 255, 255, 0.85) 50%, transparent 100%);
+  background-size: 620px 620px;
+  animation:
+    star-twinkle 8s ease-in-out 2.4s infinite alternate,
+    star-drift-3 320s linear infinite;
+}
+
+@keyframes star-twinkle {
+  from { opacity: 0.45; }
+  to   { opacity: 1; }
+}
+
+@keyframes star-drift-1 { to { transform: translate3d(-260px, -260px, 0); } }
+@keyframes star-drift-2 { to { transform: translate3d(-420px, -420px, 0); } }
+@keyframes star-drift-3 { to { transform: translate3d(-620px, -620px, 0); } }
+
+/* ---- Distant galaxy, slowly rotating ---- */
+
+.galaxy {
+  position: absolute;
+  bottom: 8%;
+  left: 4%;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse 50% 18% at 50% 50%, rgba(220, 200, 255, 0.30), transparent 70%),
+    radial-gradient(ellipse 35% 30% at 50% 50%, rgba(139, 92, 246, 0.22), transparent 70%),
+    radial-gradient(ellipse 14% 10% at 50% 50%, rgba(255, 240, 220, 0.5), transparent 80%);
+  filter: blur(4px);
+  opacity: 0.7;
+  animation: galaxy-spin 140s linear infinite;
+}
+
+@keyframes galaxy-spin {
+  from { transform: rotate(20deg); }
+  to   { transform: rotate(380deg); }
+}
+
+/* ---- Shooting stars: bright head, fading tail, long quiet gaps ---- */
+
+.shooting-star {
+  position: absolute;
+  width: 150px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, 0.95),
+    rgba(170, 200, 255, 0.5) 30%,
+    transparent 100%);
+  filter: drop-shadow(0 0 6px rgba(190, 210, 255, 0.9));
+  opacity: 0;
+  transform-origin: left center;
+}
+
+.shoot-1 { top: 10%; left: 55%; animation: shoot-a 9s linear 1.5s infinite; }
+.shoot-2 { top: 28%; left: 85%; animation: shoot-b 13s linear 5s infinite; }
+.shoot-3 { top: 4%;  left: 25%; animation: shoot-a 11s linear 8.5s infinite; }
+.shoot-4 { top: 55%; left: 70%; animation: shoot-b 17s linear 12s infinite; }
+
+@keyframes shoot-a {
+  0%      { transform: rotate(150deg) translateX(0); opacity: 0; }
+  1%      { opacity: 1; }
+  7%      { transform: rotate(150deg) translateX(58vw); opacity: 0; }
+  100%    { transform: rotate(150deg) translateX(58vw); opacity: 0; }
+}
+
+@keyframes shoot-b {
+  0%      { transform: rotate(165deg) translateX(0); opacity: 0; }
+  1%      { opacity: 1; }
+  6%      { transform: rotate(165deg) translateX(70vw); opacity: 0; }
+  100%    { transform: rotate(165deg) translateX(70vw); opacity: 0; }
+}
+
+/* ---- Ringed planet with orbiting moon ---- */
+
+.planet {
+  position: absolute;
+  top: 9%;
+  right: 7%;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 33% 28%, #4a3a7e, #251a52 52%, #0d0a28 78%);
+  box-shadow:
+    inset -24px -18px 50px rgba(0, 0, 0, 0.65),
+    inset 6px 6px 20px rgba(180, 160, 255, 0.12),
+    0 0 80px rgba(139, 92, 246, 0.22);
+  animation: planet-float 24s ease-in-out infinite alternate;
+}
+
+.planet-bands {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: repeating-linear-gradient(
+    -12deg,
+    transparent 0 18px,
+    rgba(255, 107, 44, 0.05) 18px 26px,
+    transparent 26px 44px,
+    rgba(190, 170, 255, 0.06) 44px 54px
+  );
+}
+
+.planet-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 256px;
+  height: 84px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 107, 44, 0.30);
+  box-shadow:
+    0 0 14px rgba(255, 107, 44, 0.18),
+    inset 0 0 12px rgba(255, 107, 44, 0.12);
+  transform: translate(-50%, -50%) rotate(-22deg);
+}
+
+.planet-ring::before {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  border-radius: 50%;
+  border: 1px solid rgba(139, 92, 246, 0.28);
+}
+
+.planet-moon-orbit {
+  position: absolute;
+  inset: -42px;
+  animation: moon-orbit 16s linear infinite;
+}
+
+.planet-moon {
+  position: absolute;
+  top: 50%;
+  left: -7px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #d3daff, #6a74a8 70%);
+  box-shadow: 0 0 12px rgba(190, 200, 255, 0.6);
+}
+
+@keyframes moon-orbit {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes planet-float {
+  from { transform: translateY(0) rotate(0deg); }
+  to   { transform: translateY(-18px) rotate(3deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stars,
+  .galaxy,
+  .shooting-star,
+  .planet,
+  .planet-moon-orbit {
+    animation: none;
+  }
+
+  .shooting-star {
+    display: none;
+  }
 }
