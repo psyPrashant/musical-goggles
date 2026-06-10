@@ -224,7 +224,7 @@ export class CompletedAssessmentsComponent implements OnInit {
 
   viewResult(s: SubmissionSummary): void {
     if (s.submissionId) {
-      this.router.navigate(['/results'], { queryParams: { submissionId: s.submissionId } });
+      this.router.navigate(['/results'], { queryParams: { submission: s.submissionId } });
     }
   }
 }
