@@ -31,6 +31,7 @@ public class SubmissionServiceImpl implements SubmissionService {
     @Autowired private QuestionRepository questionRepository;
     @Autowired private com.psybergate.recruitment.repository.SubmissionFlagRepository submissionFlagRepository;
     @Autowired private com.psybergate.recruitment.repository.InvitationRepository invitationRepository;
+    @Autowired private com.psybergate.recruitment.repository.SubmissionQuestionSnapshotRepository snapshotRepository;
 
     @Override
     public List<SubmissionSummaryResponse> listSubmissions(UUID assessmentId) {
@@ -160,9 +161,8 @@ public class SubmissionServiceImpl implements SubmissionService {
         Candidate candidate = candidateRepository.findById(submission.getCandidateId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Candidate not found"));
 
-        // Load all questions in display order
-        List<AssessmentQuestion> aqList = assessmentQuestionRepository
-                .findByAssessmentIdOrderByDisplayOrder(submission.getAssessmentId());
+        // Load questions: use snapshot subset for randomised assessments
+        List<AssessmentQuestion> aqList = resolveQuestionsForResult(assessment, submissionId);
 
         // Load all answers for this submission
         List<CandidateAnswer> answers = answerRepository.findBySubmissionId(submissionId);
@@ -333,28 +333,36 @@ public class SubmissionServiceImpl implements SubmissionService {
                         Collectors.summingInt(AnswerScore::getScore)
                 ));
 
-        // Batch-load assessment titles
+        // Batch-load assessments
         Set<UUID> assessmentIds = submissions.stream()
                 .map(CandidateSubmission::getAssessmentId).collect(Collectors.toSet());
-        Map<UUID, String> assessmentTitleById = assessmentIds.isEmpty() ? Map.of() :
+        Map<UUID, Assessment> assessmentById = assessmentIds.isEmpty() ? Map.of() :
                 assessmentRepository.findAllById(assessmentIds).stream()
-                        .collect(Collectors.toMap(Assessment::getId, Assessment::getTitle));
+                        .collect(Collectors.toMap(Assessment::getId, Function.identity()));
         Map<UUID, UUID> assessmentBySubmission = submissions.stream()
                 .collect(Collectors.toMap(CandidateSubmission::getId, CandidateSubmission::getAssessmentId));
 
-        // Batch-load question counts per assessment
-        Map<UUID, Integer> questionCountByAssessment = assessmentIds.isEmpty() ? Map.of() :
-                assessmentQuestionRepository.sumMaxScoreGroupByAssessmentId(assessmentIds).stream()
+        // Separate randomised vs non-randomised assessment IDs
+        Set<UUID> randomisedAssessmentIds = assessmentById.values().stream()
+                .filter(Assessment::isRandomiseQuestions)
+                .map(Assessment::getId)
+                .collect(Collectors.toSet());
+
+        // Batch-load max score for non-randomised assessments
+        Set<UUID> nonRandomisedIds = assessmentIds.stream()
+                .filter(id -> !randomisedAssessmentIds.contains(id))
+                .collect(Collectors.toSet());
+        Map<UUID, Integer> questionCountByAssessment = nonRandomisedIds.isEmpty() ? Map.of() :
+                assessmentQuestionRepository.sumMaxScoreGroupByAssessmentId(nonRandomisedIds).stream()
                         .collect(Collectors.toMap(
                                 row -> (UUID) row[0],
                                 row -> ((Long) row[1]).intValue()
                         ));
 
-        // Build slot list per assessment: question IDs for every answerable slot (GROUP sub-questions
-        // counted individually; a question ID that appears in multiple slots counts once per slot)
+        // Build slot list per non-randomised assessment
         Map<UUID, List<UUID>> slotQIdsByAssessment = new HashMap<>();
         Map<UUID, Integer> totalAnswerableByAssessment = new HashMap<>();
-        for (UUID assessmentId : assessmentIds) {
+        for (UUID assessmentId : nonRandomisedIds) {
             List<AssessmentQuestion> aqItems = assessmentQuestionRepository
                     .findByAssessmentIdOrderByDisplayOrder(assessmentId);
             List<UUID> slots = new ArrayList<>();
@@ -369,6 +377,30 @@ public class SubmissionServiceImpl implements SubmissionService {
             }
             slotQIdsByAssessment.put(assessmentId, slots);
             totalAnswerableByAssessment.put(assessmentId, slots.size());
+        }
+
+        // For randomised assessments: compute per-submission maxScore and slots from snapshot
+        Map<UUID, Integer> maxScoreBySubmission = new HashMap<>();
+        Map<UUID, List<UUID>> slotsBySubmission = new HashMap<>();
+        for (CandidateSubmission sub : submissions) {
+            UUID aId = sub.getAssessmentId();
+            if (!randomisedAssessmentIds.contains(aId)) continue;
+            List<AssessmentQuestion> snapshotAqs = resolveQuestionsForResult(
+                    assessmentById.get(aId), sub.getId());
+            List<UUID> slots = new ArrayList<>();
+            int maxScore = 0;
+            for (AssessmentQuestion aqItem : snapshotAqs) {
+                Question q = (Question) Hibernate.unproxy(aqItem.getQuestion());
+                maxScore += q.getMaxScore();
+                if (q instanceof GroupQuestion gq) {
+                    Hibernate.initialize(gq.getMembers());
+                    gq.getMembers().forEach(m -> slots.add(m.getQuestion().getId()));
+                } else {
+                    slots.add(q.getId());
+                }
+            }
+            slotsBySubmission.put(sub.getId(), slots);
+            maxScoreBySubmission.put(sub.getId(), maxScore);
         }
 
         // Load open flags for all submissions
@@ -391,20 +423,51 @@ public class SubmissionServiceImpl implements SubmissionService {
                     int answered = answeredBySubmission.getOrDefault(s.getId(), 0L).intValue();
                     // Count scored slots: each slot whose question ID has a score counts once per slot
                     Set<UUID> scoredQIds = scoredQIdsBySubmission.getOrDefault(s.getId(), Set.of());
-                    List<UUID> slots = slotQIdsByAssessment.getOrDefault(
-                            assessmentBySubmission.get(s.getId()), List.of());
+                    boolean isRandomised = randomisedAssessmentIds.contains(s.getAssessmentId());
+                    List<UUID> slots = isRandomised
+                            ? slotsBySubmission.getOrDefault(s.getId(), List.of())
+                            : slotQIdsByAssessment.getOrDefault(assessmentBySubmission.get(s.getId()), List.of());
                     int marked = (int) slots.stream().filter(scoredQIds::contains).count();
                     int score = totalScoreBySubmission.getOrDefault(s.getId(), 0);
-                    int maxScore = questionCountByAssessment.getOrDefault(s.getAssessmentId(), 0);
-                    int totalAnswerable = totalAnswerableByAssessment.getOrDefault(s.getAssessmentId(), 0);
+                    int maxScore = isRandomised
+                            ? maxScoreBySubmission.getOrDefault(s.getId(), 0)
+                            : questionCountByAssessment.getOrDefault(s.getAssessmentId(), 0);
+                    int totalAnswerable = isRandomised
+                            ? slots.size()
+                            : totalAnswerableByAssessment.getOrDefault(s.getAssessmentId(), 0);
                     FlagStatus flagStatus = flagStatusBySubmission.get(s.getId());
-                    String assessmentTitle = assessmentTitleById.getOrDefault(s.getAssessmentId(), "");
+                    String assessmentTitle = Optional.ofNullable(assessmentById.get(s.getAssessmentId()))
+                            .map(Assessment::getTitle).orElse("");
+                    boolean blacklisted = Optional.ofNullable(candidateMap.get(s.getCandidateId()))
+                            .map(Candidate::isBlacklisted).orElse(false);
                     return new SubmissionSummaryResponse(
                             s.getId(), s.getInvitationId(), s.getCandidateId(), name,
                             s.getAssessmentId(), assessmentTitle,
-                            s.getStatus(), s.getSubmittedAt(), answered, totalAnswerable, marked, score, maxScore, flagStatus
+                            s.getStatus(), s.getSubmittedAt(), answered, totalAnswerable, marked, score, maxScore, flagStatus, blacklisted
                     );
                 })
+                .toList();
+    }
+
+    private List<AssessmentQuestion> resolveQuestionsForResult(Assessment assessment, UUID submissionId) {
+        List<AssessmentQuestion> allAqs = assessmentQuestionRepository
+                .findByAssessmentIdOrderByDisplayOrder(assessment.getId());
+        if (!assessment.isRandomiseQuestions()) return allAqs;
+
+        List<com.psybergate.recruitment.domain.SubmissionQuestionSnapshot> snapshots =
+                snapshotRepository.findBySubmissionIdOrderByDisplayOrder(submissionId);
+        if (snapshots.isEmpty()) return allAqs;
+
+        Set<UUID> snappedIds = snapshots.stream()
+                .map(com.psybergate.recruitment.domain.SubmissionQuestionSnapshot::getQuestionId)
+                .collect(Collectors.toSet());
+        Map<UUID, Integer> orderMap = snapshots.stream().collect(Collectors.toMap(
+                com.psybergate.recruitment.domain.SubmissionQuestionSnapshot::getQuestionId,
+                com.psybergate.recruitment.domain.SubmissionQuestionSnapshot::getDisplayOrder
+        ));
+        return allAqs.stream()
+                .filter(aq -> snappedIds.contains(aq.getQuestion().getId()))
+                .sorted(Comparator.comparingInt(aq -> orderMap.getOrDefault(aq.getQuestion().getId(), aq.getDisplayOrder())))
                 .toList();
     }
 
@@ -419,7 +482,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                     return new SubmissionSummaryResponse(
                             null, inv.getId(), c.getId(), name,
                             assessmentId, assessmentTitle,
-                            SubmissionStatus.NOT_STARTED, null, 0, 0, 0, 0, 0, null
+                            SubmissionStatus.NOT_STARTED, null, 0, 0, 0, 0, 0, null, c.isBlacklisted()
                     );
                 })
                 .toList();

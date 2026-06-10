@@ -164,6 +164,7 @@ import { SubmissionSummary } from '../../core/marking/marking.model';
     .table tr.clickable:hover td { background: var(--bg-hover); }
 
     .align-right { text-align: right; }
+    .table th.align-right { text-align: right; }
     .text-dim { color: var(--text-3); }
     .table-empty { text-align: center; padding: 32px 16px !important; color: var(--text-3); font-size: 13px; }
 

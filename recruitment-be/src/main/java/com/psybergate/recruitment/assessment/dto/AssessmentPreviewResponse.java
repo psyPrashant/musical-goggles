@@ -9,5 +9,7 @@ public record AssessmentPreviewResponse(
         String description,
         Integer timeLimitMinutes,
         boolean passwordRequired,
+        boolean randomiseQuestions,
+        List<RandomisationQuotaDto> randomisationQuotas,
         List<PreviewQuestionDto> questions
 ) {}

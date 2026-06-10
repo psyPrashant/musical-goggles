@@ -20,5 +20,6 @@ public record SubmissionSummaryResponse(
         int markedCount,
         int totalScore,
         int maxScore,
-        FlagStatus flagStatus
+        FlagStatus flagStatus,
+        boolean candidateBlacklisted
 ) {}

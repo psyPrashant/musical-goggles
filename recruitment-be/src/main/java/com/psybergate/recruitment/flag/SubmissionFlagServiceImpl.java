@@ -20,11 +20,12 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class SubmissionFlagServiceImpl implements SubmissionFlagService {
 
-    private static final List<FlagStatus> OPEN_STATUSES = List.of(FlagStatus.FLAGGED, FlagStatus.UNDER_REVIEW);
+    private static final List<FlagStatus> OPEN_STATUSES = List.of(FlagStatus.FLAGGED, FlagStatus.UNDER_REVIEW, FlagStatus.ACTION_REQUIRED);
 
     private static final Map<FlagStatus, Set<FlagStatus>> ALLOWED_TRANSITIONS = Map.of(
-            FlagStatus.FLAGGED,      Set.of(FlagStatus.UNDER_REVIEW),
-            FlagStatus.UNDER_REVIEW, Set.of(FlagStatus.RESOLVED, FlagStatus.DISMISSED)
+            FlagStatus.FLAGGED,          Set.of(FlagStatus.UNDER_REVIEW, FlagStatus.ACTION_REQUIRED),
+            FlagStatus.UNDER_REVIEW,     Set.of(FlagStatus.ACTION_REQUIRED, FlagStatus.RESOLVED, FlagStatus.DISMISSED),
+            FlagStatus.ACTION_REQUIRED,  Set.of(FlagStatus.RESOLVED, FlagStatus.DISMISSED)
     );
 
     @Autowired private SubmissionFlagRepository flagRepository;

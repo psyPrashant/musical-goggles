@@ -877,6 +877,8 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
       description: data.description,
       timeLimitMinutes: 0,
       passwordRequired: false,
+      randomiseQuestions: false,
+      randomisationQuotas: [],
       questions: data.questions.map(q => ({
         id: q.id,
         type: q.type as any,

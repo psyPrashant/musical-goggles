@@ -43,6 +43,12 @@ public class Assessment {
     @OneToMany(mappedBy = "assessment", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AssessmentQuestion> questions = new ArrayList<>();
 
+    @Column(name = "randomise_questions", nullable = false)
+    private boolean randomiseQuestions = false;
+
+    @OneToMany(mappedBy = "assessment", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RandomisationQuota> randomisationQuotas = new ArrayList<>();
+
     @Column(name = "access_password_hash")
     private String accessPasswordHash;
 

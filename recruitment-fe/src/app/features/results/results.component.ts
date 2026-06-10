@@ -3,7 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { MarkingService } from '../../core/marking/marking.service';
 import { ResultQuestion, ResultSummary, SubmissionSummary } from '../../core/marking/marking.model';
 import { FlagService } from '../../core/flag/flag.service';
-import { FlagAuditEntry, FlagReason, FlagResponse, FlagStatus } from '../../core/flag/flag.model';
+import { FlagAuditEntry, FlagListItem, FlagReason, FlagResponse, FlagStatus } from '../../core/flag/flag.model';
 import { ReminderService } from '../../core/reminder/reminder.service';
 import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
 
@@ -46,12 +46,20 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                 <div class="sub-info">
                   <div class="sub-name-row">
                     <span class="sub-name">{{ s.candidateName }}</span>
+                    @if (s.candidateBlacklisted) {
+                      <span class="sub-bl-symbol" title="Blacklisted">⊘</span>
+                    }
+                  </div>
+                  <div class="sub-tags">
                     <span class="sub-status" [class]="statusClass(s)">{{ statusLabel(s) }}</span>
                     @if ((s.status === 'SUBMITTED' || s.status === 'AUTO_SUBMITTED') && s.markedCount < s.totalAnswers) {
                       <span class="pending-badge">⏳ Pending</span>
                     }
                     @if (s.flagStatus === 'FLAGGED' || s.flagStatus === 'UNDER_REVIEW') {
                       <span class="flag-badge">⚑ Flagged</span>
+                    }
+                    @if (s.flagStatus === 'ACTION_REQUIRED') {
+                      <span class="flag-badge flag-badge-action">⚠ Action Required</span>
                     }
                   </div>
                   <span class="sub-date">{{ formatDate(s.submittedAt) }}</span>
@@ -129,7 +137,12 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
               <div class="detail-header">
                 <div class="detail-avatar" [style.background]="avatarColor(result()!.candidateName)">{{ initials(result()!.candidateName) }}</div>
                 <div class="detail-candidate-info">
-                  <span class="detail-name">{{ result()!.candidateName }}</span>
+                  <div class="detail-name-row">
+                    <span class="detail-name">{{ result()!.candidateName }}</span>
+                    @if (selectedSummary()?.candidateBlacklisted) {
+                      <span class="detail-bl-tag">Blacklisted</span>
+                    }
+                  </div>
                   <span class="detail-assessment">{{ result()!.assessmentTitle }}</span>
                   <span class="detail-submitted">Submitted: {{ formatDate(result()!.submittedAt) }}</span>
                 </div>
@@ -141,7 +154,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                   </span>
                   <div class="answered-stat">{{ result()!.answeredCount }}/{{ totalQuestionCount() }} answered</div>
                   @if (activeFlag()) {
-                    <span class="flag-badge-detail">⚑ {{ activeFlag()!.status === 'FLAGGED' ? 'Flagged' : 'Under Review' }}</span>
+                    <span class="flag-badge-detail">⚑ {{ activeFlag()!.status === 'FLAGGED' ? 'Flagged' : activeFlag()!.status === 'ACTION_REQUIRED' ? 'Action Required' : 'Under Review' }}</span>
                   }
                 </div>
               </div>
@@ -241,6 +254,24 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                         {{ r.sentBy ? 'by recruiter' : 'by system' }}
                       </span>
                       <span class="audit-meta">{{ formatDate(r.sentAt) }}</span>
+                    </div>
+                  }
+                }
+              </div>
+
+              <!-- Submission flag history -->
+              <div class="audit-section">
+                <div class="audit-title">Flag History</div>
+                @if (submissionFlags().length === 0) {
+                  <div class="audit-empty">No flags raised</div>
+                } @else {
+                  @for (f of submissionFlags(); track f.flagId) {
+                    <div class="flag-history-entry">
+                      <div class="flag-history-row">
+                        <span class="flag-history-reason">{{ flagReasonLabel(f.reason) }}</span>
+                        <span class="flag-history-status" [class]="'fh-status-' + f.status.toLowerCase()">{{ f.status }}</span>
+                        <span class="audit-meta">{{ formatDate(f.createdAt) }}</span>
+                      </div>
                     </div>
                   }
                 }
@@ -410,8 +441,10 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
     }
 
     .sub-info { flex: 1; min-width: 0; }
-    .sub-name-row { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+    .sub-name-row { display: flex; align-items: center; gap: 5px; margin-bottom: 2px; }
     .sub-name { font-size: 13px; font-weight: 600; color: var(--text-1); }
+    .sub-bl-symbol { font-size: 13px; color: var(--danger); flex-shrink: 0; }
+    .sub-tags { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 2px; }
 
     .sub-status { font-size: 10px; padding: 1px 6px; border-radius: 999px; font-weight: 500; }
     .status-submitted { background: var(--success-subtle); color: var(--success); }
@@ -446,7 +479,9 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
     }
 
     .detail-candidate-info { flex: 1; }
-    .detail-name { display: block; font-size: 15px; font-weight: 600; color: var(--text-1); }
+    .detail-name-row { display: flex; align-items: center; gap: 8px; }
+    .detail-name { font-size: 15px; font-weight: 600; color: var(--text-1); }
+    .detail-bl-tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--danger-subtle); color: var(--danger); white-space: nowrap; }
     .detail-assessment { display: block; font-size: 12px; color: var(--text-2); margin-top: 2px; }
     .detail-submitted { display: block; font-size: 11px; color: var(--text-3); margin-top: 2px; }
 
@@ -571,6 +606,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
 
     .pending-badge { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--warning-subtle); color: var(--warning); font-weight: 600; flex-shrink: 0; }
     .flag-badge { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--danger-subtle); color: var(--danger); font-weight: 600; flex-shrink: 0; }
+    .flag-badge-action { background: rgba(234,88,12,.12); color: #ea580c; }
     .flag-badge-detail { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--danger-subtle); color: var(--danger); }
 
     .flag-section {
@@ -615,6 +651,17 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
     .audit-title { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
     .audit-entry { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--border); }
     .audit-entry:last-child { border-bottom: none; }
+    .flag-history-entry { padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .flag-history-entry:last-child { border-bottom: none; }
+    .flag-history-row { display: flex; align-items: center; gap: 8px; }
+    .flag-history-reason { font-size: 12px; color: var(--text-1); flex: 1; }
+    .flag-history-status { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; }
+    .flag-history-notes { font-size: 11.5px; color: var(--text-3); margin-top: 3px; font-style: italic; }
+    .fh-status-flagged { background: var(--warning-subtle); color: var(--warning); }
+    .fh-status-under_review { background: var(--info-subtle); color: var(--info); }
+    .fh-status-action_required { background: rgba(234,88,12,.12); color: #ea580c; }
+    .fh-status-resolved { background: var(--success-subtle); color: var(--success); }
+    .fh-status-dismissed { background: var(--bg-elevated); color: var(--text-3); }
     .audit-action { font-size: 12.5px; color: var(--text-1); font-weight: 500; display: flex; align-items: center; gap: 6px; }
     .audit-meta { font-size: 11.5px; color: var(--text-3); }
     .audit-empty { font-size: 12px; color: var(--text-3); font-style: italic; }
@@ -664,6 +711,9 @@ export class ResultsComponent implements OnInit {
   readonly flagSaving = signal(false);
   readonly showResolveForm = signal<FlagStatus | null>(null);
   readonly resolveNotes = signal('');
+
+  // Flag history for selected submission
+  readonly submissionFlags = signal<FlagListItem[]>([]);
 
   // Reminder state
   readonly showReminderConfirm = signal(false);
@@ -718,7 +768,7 @@ export class ResultsComponent implements OnInit {
       next: list => {
         this.submissions.set(list);
         this.loadingList.set(false);
-        const targetId = this.route.snapshot.queryParamMap.get('submissionId');
+        const targetId = this.route.snapshot.queryParamMap.get('submission');
         if (targetId) {
           const match = list.find(s => s.submissionId === targetId);
           if (match) this.selectSubmission(match);
@@ -743,6 +793,7 @@ export class ResultsComponent implements OnInit {
     this.reminderSending.set(false);
     this.reminderSuccess.set(false);
     this.reminderHistory.set([]);
+    this.submissionFlags.set([]);
     // NOT_STARTED candidates have no submission to load
     if (s.status !== 'NOT_STARTED' && s.submissionId) {
       this.loadingResult.set(true);
@@ -750,9 +801,12 @@ export class ResultsComponent implements OnInit {
         next: r => { this.result.set(r); this.loadingResult.set(false); },
         error: () => this.loadingResult.set(false),
       });
-      if (s.flagStatus === 'FLAGGED' || s.flagStatus === 'UNDER_REVIEW') {
+      if (s.flagStatus === 'FLAGGED' || s.flagStatus === 'UNDER_REVIEW' || s.flagStatus === 'ACTION_REQUIRED') {
         this.loadActiveFlagForSubmission(s.submissionId, s.flagStatus as FlagStatus);
       }
+      this.flagSvc.getCandidateFlags(s.candidateId).subscribe({
+        next: flags => this.submissionFlags.set(flags.filter(f => f.submissionId === s.submissionId)),
+      });
     }
     // Load reminder history via invitationId
     this.reminderSvc.getReminderHistory(s.invitationId).subscribe({
@@ -921,6 +975,17 @@ export class ResultsComponent implements OnInit {
   formatDate(iso: string | null): string {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('en-ZA', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  flagReasonLabel(reason: FlagReason): string {
+    const map: Record<FlagReason, string> = {
+      COPIED_ANSWERS: 'Copied Answers',
+      TIMING_ANOMALY: 'Timing Anomaly',
+      AI_GENERATED_CONTENT: 'AI-Generated Content',
+      SUSPICIOUS_BEHAVIOUR: 'Suspicious Behaviour',
+      OTHER: 'Other',
+    };
+    return map[reason] ?? reason;
   }
 
   scorePercent(s: SubmissionSummary): string {
