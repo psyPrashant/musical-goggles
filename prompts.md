@@ -2392,3 +2392,15 @@ What's next:
 
 ---
 
+## 2026-06-10 10:34 | USER-PC | in: 40 out: 22295 | cache_read: 1626500 cache_write: 74080
+
+> check the debug file now
+
+---
+
+## 2026-06-10 10:55 | USER-PC | in: 2 out: 68 | cache_read: 96576 cache_write: 4013
+
+> clear
+
+---
+
