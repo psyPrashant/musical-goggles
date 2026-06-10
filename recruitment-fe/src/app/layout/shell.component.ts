@@ -11,6 +11,8 @@ import { ThemeService } from '../core/theme/theme.service';
   template: `
     <div class="shell">
       <aside class="sidebar">
+        <div class="sidebar-glow"></div>
+
         <div class="sidebar-logo">
           <img
             class="logo-img"
@@ -23,6 +25,7 @@ import { ThemeService } from '../core/theme/theme.service';
         </div>
 
         <nav class="sidebar-nav">
+          <span class="nav-section">Overview</span>
           <a routerLink="/dashboard" routerLinkActive="nav-active" class="nav-item">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
@@ -30,6 +33,8 @@ import { ThemeService } from '../core/theme/theme.service';
             </svg>
             Dashboard
           </a>
+
+          <span class="nav-section">Build</span>
           <a routerLink="/assessments" routerLinkActive="nav-active" class="nav-item">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -53,6 +58,8 @@ import { ThemeService } from '../core/theme/theme.service';
             </svg>
             Candidates
           </a>
+
+          <span class="nav-section">Review</span>
           <a routerLink="/results" routerLinkActive="nav-active" class="nav-item">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 20V10M12 20V4M6 20v-6"/>
@@ -73,7 +80,9 @@ import { ThemeService } from '../core/theme/theme.service';
             </svg>
             Flagged
           </a>
+
           @if (auth.role() === 'ADMIN') {
+            <span class="nav-section">Admin</span>
             <a routerLink="/staff" routerLinkActive="nav-active" class="nav-item">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -132,7 +141,8 @@ import { ThemeService } from '../core/theme/theme.service';
       width: var(--sidebar-width);
       height: 100vh;
       background: var(--bg-card);
-      border-right: 1px solid var(--border);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
@@ -140,6 +150,34 @@ import { ThemeService } from '../core/theme/theme.service';
       top: 0;
       left: 0;
       z-index: 100;
+      overflow: hidden;
+    }
+
+    /* gradient hairline on the right edge instead of a flat border */
+    .sidebar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 1px;
+      background: linear-gradient(180deg,
+        rgba(255, 107, 44, 0.45),
+        var(--border) 30%,
+        var(--border) 70%,
+        rgba(139, 92, 246, 0.4));
+      pointer-events: none;
+    }
+
+    /* soft glow pooled behind the logo */
+    .sidebar-glow {
+      position: absolute;
+      top: -90px;
+      left: -60px;
+      width: 280px;
+      height: 220px;
+      background: radial-gradient(closest-side, var(--accent-subtle), transparent);
+      pointer-events: none;
     }
 
     .sidebar-logo {
@@ -150,6 +188,7 @@ import { ThemeService } from '../core/theme/theme.service';
       border-bottom: 1px solid var(--border);
       gap: 10px;
       flex-shrink: 0;
+      position: relative;
     }
 
     .logo-img {
@@ -159,82 +198,114 @@ import { ThemeService } from '../core/theme/theme.service';
       object-fit: contain;
     }
 
-    .logo-text {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .logo-brand {
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      color: var(--text-1);
-    }
-
     .logo-sub {
       font-size: 9.5px;
-      color: var(--accent);
-      letter-spacing: 0.07em;
+      font-weight: 600;
+      letter-spacing: 0.09em;
       text-transform: uppercase;
+      background: var(--gradient-accent);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .sidebar-nav {
       flex: 1;
-      padding: 10px 10px;
+      padding: 12px 10px;
       display: flex;
       flex-direction: column;
       gap: 2px;
       overflow-y: auto;
+      position: relative;
+    }
+
+    .nav-section {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      padding: 14px 10px 5px;
+    }
+
+    .nav-section:first-child {
+      padding-top: 2px;
     }
 
     .nav-item {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 9px 10px;
+      padding: 9px 12px;
       border-radius: var(--radius-sm);
       color: var(--text-2);
       font-size: 13.5px;
       font-weight: 400;
-      transition: background 100ms, color 100ms;
+      transition: background 140ms, color 140ms, transform 140ms;
       cursor: pointer;
       text-decoration: none;
-      border-left: 3px solid transparent;
+      position: relative;
+    }
+
+    .nav-item svg {
+      transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     .nav-item:hover {
       background: var(--bg-hover);
       color: var(--text-1);
+      transform: translateX(2px);
+    }
+
+    .nav-item:hover svg {
+      transform: scale(1.12);
     }
 
     .nav-item.nav-active {
       background: var(--accent-subtle);
       color: var(--accent);
       font-weight: 500;
-      border-left-color: var(--accent);
+      box-shadow: inset 0 0 0 1px rgba(255, 107, 44, 0.18);
+    }
+
+    .nav-item.nav-active::before {
+      content: '';
+      position: absolute;
+      left: -10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 60%;
+      border-radius: 0 3px 3px 0;
+      background: var(--gradient-accent);
+      box-shadow: var(--glow-accent);
     }
 
     .sidebar-user {
-      padding: 10px 12px;
-      border-top: 1px solid var(--border);
+      margin: 10px;
+      padding: 9px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-elevated);
       display: flex;
       align-items: center;
       gap: 10px;
+      position: relative;
     }
 
     .user-avatar {
       width: 30px;
       height: 30px;
       border-radius: 50%;
-      background: var(--accent-subtle);
-      border: 1.5px solid var(--accent);
+      background: var(--gradient-accent);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 11px;
       font-weight: 700;
-      color: var(--accent);
+      color: #fff;
       flex-shrink: 0;
+      box-shadow: 0 0 12px rgba(255, 107, 44, 0.4);
     }
 
     .user-info {
@@ -258,7 +329,8 @@ import { ThemeService } from '../core/theme/theme.service';
       color: var(--text-3);
     }
 
-    .logout-btn {
+    .logout-btn,
+    .theme-btn {
       background: none;
       border: none;
       cursor: pointer;
@@ -276,19 +348,6 @@ import { ThemeService } from '../core/theme/theme.service';
       background: var(--danger-subtle);
     }
 
-    .theme-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--text-3);
-      display: flex;
-      align-items: center;
-      padding: 4px;
-      border-radius: 4px;
-      transition: color 120ms, background 120ms;
-      flex-shrink: 0;
-    }
-
     .theme-btn:hover {
       color: var(--accent);
       background: var(--accent-subtle);
@@ -299,7 +358,7 @@ import { ThemeService } from '../core/theme/theme.service';
       flex: 1;
       height: 100vh;
       overflow-y: auto;
-      background: var(--bg);
+      background: transparent;
       display: flex;
       flex-direction: column;
     }
