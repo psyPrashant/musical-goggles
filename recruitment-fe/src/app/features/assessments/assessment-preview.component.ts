@@ -43,6 +43,15 @@ import { AssessmentPreview, PreviewQuestion } from '../../core/assessment/assess
                   {{ preview()!.questions.length }} questions
                 </div>
               </div>
+              @if (preview()!.randomiseQuestions && preview()!.randomisationQuotas.length) {
+                <div class="randomisation-bar">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+                    <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+                  </svg>
+                  Randomised: {{ quotaSummary(preview()!) }}
+                </div>
+              }
             </div>
 
             @if (preview()!.questions.length === 0) {
@@ -244,6 +253,13 @@ import { AssessmentPreview, PreviewQuestion } from '../../core/assessment/assess
 
     .sub-q-option-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: var(--text-1); }
 
+    .randomisation-bar {
+      display: flex; align-items: center; gap: 6px; margin-top: 10px;
+      font-size: 12.5px; color: var(--accent); font-weight: 500;
+      background: var(--accent-subtle); padding: 6px 10px; border-radius: var(--radius-sm);
+      align-self: flex-start;
+    }
+
     .empty-state { text-align: center; padding: 60px; color: var(--text-3); font-size: 13px; }
 
     .error-banner {
@@ -276,5 +292,12 @@ export class AssessmentPreviewComponent implements OnInit {
 
   optionLetter(index: number): string {
     return String.fromCharCode(65 + index);
+  }
+
+  quotaSummary(p: AssessmentPreview): string {
+    const labels: Record<string, string> = { MCQ: 'MCQ', TEXT: 'Text', CODE_SUBMISSION: 'Code', GROUP: 'Group' };
+    return (p.randomisationQuotas ?? [])
+      .map(q => `${q.count} ${labels[q.questionType] ?? q.questionType}`)
+      .join(' · ');
   }
 }

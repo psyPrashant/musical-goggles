@@ -4,8 +4,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CdkDragDrop, CdkDropList, CdkDrag, CdkDragHandle, moveItemInArray } from '@angular/cdk/drag-drop';
 import { AssessmentService } from '../../core/assessment/assessment.service';
 import { QuestionService } from '../../core/question/question.service';
-import { AssessmentDetail } from '../../core/assessment/assessment.model';
-import { Difficulty, Question } from '../../core/question/question.model';
+import { AssessmentDetail, RandomisationQuota } from '../../core/assessment/assessment.model';
+import { Difficulty, Question, QuestionType } from '../../core/question/question.model';
 
 @Component({
   selector: 'app-assessment-builder',
@@ -278,6 +278,37 @@ import { Difficulty, Question } from '../../core/question/question.model';
                   Monitor clipboard paste activity
                 </label>
               </div>
+            </div>
+
+            <div class="settings-card">
+              <span class="settings-section-label">Randomisation</span>
+              <label class="toggle-label">
+                <div class="toggle" [class.on]="randomiseQuestions()" (click)="randomiseQuestions.set(!randomiseQuestions())">
+                  <div class="toggle-thumb"></div>
+                </div>
+                Randomise questions — serve a random subset per candidate
+              </label>
+              @if (randomiseQuestions()) {
+                <div class="quota-grid">
+                  @for (type of questionTypesInAssessment(); track type) {
+                    <div class="quota-row">
+                      <span class="quota-type-label">{{ typeLabelMap[type] }}</span>
+                      <span class="quota-available">/ {{ questionCountByType()[type] }} available</span>
+                      <input
+                        type="number"
+                        class="field-input quota-input"
+                        [value]="randomisationQuotas()[type] || 0"
+                        (input)="setQuota(type, +$any($event.target).value)"
+                        min="0"
+                        [max]="questionCountByType()[type]"
+                      />
+                    </div>
+                  }
+                  @if (questionTypesInAssessment().length === 0) {
+                    <p class="quota-empty">Add questions in Step 2 first.</p>
+                  }
+                </div>
+              }
             </div>
 
             @if (assessment()) {
@@ -792,6 +823,21 @@ import { Difficulty, Question } from '../../core/question/question.model';
     }
 
     .toggle.on .toggle-thumb { left: 19px; }
+
+    /* Randomisation quotas */
+    .quota-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+
+    .quota-row {
+      display: flex; align-items: center; gap: 10px;
+    }
+
+    .quota-type-label { font-size: 13px; font-weight: 500; color: var(--text-1); min-width: 64px; }
+
+    .quota-available { font-size: 12px; color: var(--text-3); flex: 1; }
+
+    .quota-input { width: 80px; flex-shrink: 0; }
+
+    .quota-empty { font-size: 13px; color: var(--text-3); margin-top: 10px; }
   `],
 })
 export class AssessmentBuilderComponent implements OnInit {
@@ -821,6 +867,8 @@ export class AssessmentBuilderComponent implements OnInit {
   readonly tabMonitor = signal(true);
   readonly aiDetect = signal(false);
   readonly clipMonitor = signal(false);
+  readonly randomiseQuestions = signal(false);
+  readonly randomisationQuotas = signal<Record<QuestionType, number>>({} as Record<QuestionType, number>);
 
   readonly form = this.fb.nonNullable.group({
     title: ['', Validators.required],
@@ -842,6 +890,23 @@ export class AssessmentBuilderComponent implements OnInit {
       if (search && !q.title.toLowerCase().includes(search)) return false;
       return true;
     });
+  });
+
+  readonly questionTypesInAssessment = computed((): QuestionType[] => {
+    const qs = this.assessment()?.questions ?? [];
+    const seen = new Set<QuestionType>();
+    qs.forEach(q => seen.add(q.type as QuestionType));
+    return Array.from(seen);
+  });
+
+  readonly questionCountByType = computed((): Record<QuestionType, number> => {
+    const qs = this.assessment()?.questions ?? [];
+    const counts: Partial<Record<QuestionType, number>> = {};
+    qs.forEach(q => {
+      const t = q.type as QuestionType;
+      counts[t] = (counts[t] ?? 0) + 1;
+    });
+    return counts as Record<QuestionType, number>;
   });
 
   readonly steps = [
@@ -902,6 +967,12 @@ export class AssessmentBuilderComponent implements OnInit {
           if (a.passwordProtected) {
             this.accessType.set('password');
           }
+          if (a.randomiseQuestions) {
+            this.randomiseQuestions.set(true);
+            const quotaMap: Partial<Record<QuestionType, number>> = {};
+            (a.randomisationQuotas ?? []).forEach(q => { quotaMap[q.questionType as QuestionType] = q.count; });
+            this.randomisationQuotas.set(quotaMap as Record<QuestionType, number>);
+          }
           if (!isEditPath) {
             this.step.set(2);
           }
@@ -936,24 +1007,50 @@ export class AssessmentBuilderComponent implements OnInit {
 
   finish() {
     const a = this.assessment();
-    if (a && this.orderChanged()) {
-      this.saving.set(true);
-      const order = a.questions.map(q => ({ questionId: q.questionId, displayOrder: q.displayOrder }));
-      this.assessmentService.reorderQuestions(a.id, order).subscribe({
-        next: updated => {
-          this.assessment.set(updated);
-          this.orderChanged.set(false);
+    if (!a) { this.router.navigate(['/assessments']); return; }
+
+    this.saving.set(true);
+    this.error.set(null);
+
+    const quotaMap = this.randomisationQuotas();
+    const randomisationQuotas: RandomisationQuota[] = this.randomiseQuestions()
+      ? (Object.entries(quotaMap) as [QuestionType, number][])
+          .filter(([, count]) => count > 0)
+          .map(([questionType, count]) => ({ questionType, count }))
+      : [];
+
+    const req = {
+      title: a.title,
+      description: a.description,
+      timeLimitMinutes: a.timeLimitMinutes,
+      accessPassword: null,
+      randomiseQuestions: this.randomiseQuestions(),
+      randomisationQuotas,
+    };
+
+    const saveSettings$ = this.assessmentService.updateAssessment(a.id, req);
+    const reorder$ = this.orderChanged()
+      ? this.assessmentService.reorderQuestions(a.id, a.questions.map(q => ({ questionId: q.questionId, displayOrder: q.displayOrder })))
+      : null;
+
+    saveSettings$.subscribe({
+      next: updated => {
+        this.assessment.set(updated);
+        if (reorder$) {
+          reorder$.subscribe({
+            next: () => { this.saving.set(false); this.router.navigate(['/assessments']); },
+            error: () => { this.error.set('Failed to save question order.'); this.saving.set(false); },
+          });
+        } else {
           this.saving.set(false);
           this.router.navigate(['/assessments']);
-        },
-        error: () => {
-          this.error.set('Failed to save question order. Please try again.');
-          this.saving.set(false);
-        },
-      });
-    } else {
-      this.router.navigate(['/assessments']);
-    }
+        }
+      },
+      error: () => {
+        this.error.set('Failed to save settings. Please try again.');
+        this.saving.set(false);
+      },
+    });
   }
 
   private saveBasicInfo() {
@@ -962,7 +1059,20 @@ export class AssessmentBuilderComponent implements OnInit {
     this.error.set(null);
     const { title, description, timeLimitMinutes } = this.form.getRawValue();
     const accessPassword = this.accessType() === 'password' ? (this.accessPassword() || null) : null;
-    const req = { title, description: description || null, timeLimitMinutes, accessPassword };
+    const quotaMap = this.randomisationQuotas();
+    const randomisationQuotas: RandomisationQuota[] = this.randomiseQuestions()
+      ? (Object.entries(quotaMap) as [QuestionType, number][])
+          .filter(([, count]) => count > 0)
+          .map(([questionType, count]) => ({ questionType, count }))
+      : [];
+    const req = {
+      title,
+      description: description || null,
+      timeLimitMinutes,
+      accessPassword,
+      randomiseQuestions: this.randomiseQuestions(),
+      randomisationQuotas,
+    };
     const existing = this.assessment();
 
     const op = existing
@@ -983,6 +1093,10 @@ export class AssessmentBuilderComponent implements OnInit {
         this.saving.set(false);
       },
     });
+  }
+
+  setQuota(type: QuestionType, value: number) {
+    this.randomisationQuotas.update(q => ({ ...q, [type]: value }));
   }
 
   drop(event: CdkDragDrop<unknown[]>) {
