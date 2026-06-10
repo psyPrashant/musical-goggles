@@ -15,6 +15,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @Transactional
@@ -29,6 +30,7 @@ public class CandidateTakeServiceImpl implements CandidateTakeService {
     @Autowired private CandidateAnswerRepository answerRepository;
     @Autowired private AnswerScoreRepository answerScoreRepository;
     @Autowired private InvitationRepository invitationRepository;
+    @Autowired private com.psybergate.recruitment.repository.SubmissionQuestionSnapshotRepository snapshotRepository;
     @Autowired private com.psybergate.recruitment.marking.MarkingService markingService;
     @Autowired private ObjectMapper objectMapper;
 
@@ -64,8 +66,7 @@ public class CandidateTakeServiceImpl implements CandidateTakeService {
             submission = submissionRepository.save(submission);
         }
 
-        List<AssessmentQuestion> aqList = assessmentQuestionRepository
-                .findByAssessmentIdOrderByDisplayOrder(assessmentId);
+        List<AssessmentQuestion> aqList = resolveQuestions(assessment, submission.getId());
 
         List<TakeQuestionDto> questions = aqList.stream()
                 .map(aq -> toTakeQuestion(aq))
@@ -181,6 +182,67 @@ public class CandidateTakeServiceImpl implements CandidateTakeService {
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
+
+    private List<AssessmentQuestion> resolveQuestions(Assessment assessment, UUID submissionId) {
+        List<AssessmentQuestion> allAqs = assessmentQuestionRepository
+                .findByAssessmentIdOrderByDisplayOrder(assessment.getId());
+
+        if (!assessment.isRandomiseQuestions()) {
+            return allAqs;
+        }
+
+        // Check for an existing snapshot (resume path)
+        if (snapshotRepository.existsBySubmissionId(submissionId)) {
+            List<com.psybergate.recruitment.domain.SubmissionQuestionSnapshot> snapshots =
+                    snapshotRepository.findBySubmissionIdOrderByDisplayOrder(submissionId);
+            Set<UUID> snappedIds = snapshots.stream()
+                    .map(com.psybergate.recruitment.domain.SubmissionQuestionSnapshot::getQuestionId)
+                    .collect(Collectors.toSet());
+            Map<UUID, Integer> orderMap = snapshots.stream().collect(
+                    Collectors.toMap(
+                            com.psybergate.recruitment.domain.SubmissionQuestionSnapshot::getQuestionId,
+                            com.psybergate.recruitment.domain.SubmissionQuestionSnapshot::getDisplayOrder
+                    )
+            );
+            return allAqs.stream()
+                    .filter(aq -> snappedIds.contains(aq.getQuestion().getId()))
+                    .sorted(Comparator.comparingInt(aq -> orderMap.getOrDefault(aq.getQuestion().getId(), aq.getDisplayOrder())))
+                    .toList();
+        }
+
+        // First load: draw random subset per quota
+        Map<com.psybergate.recruitment.domain.QuestionType, List<AssessmentQuestion>> byType = allAqs.stream()
+                .collect(Collectors.groupingBy(aq -> {
+                    Question q = (Question) Hibernate.unproxy(aq.getQuestion());
+                    return q.getType();
+                }));
+
+        List<AssessmentQuestion> selected = new ArrayList<>();
+        for (com.psybergate.recruitment.domain.RandomisationQuota quota : assessment.getRandomisationQuotas()) {
+            List<AssessmentQuestion> pool = byType.getOrDefault(quota.getQuestionType(), List.of());
+            if (quota.getCount() > pool.size()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Assessment configuration error: quota of " + quota.getCount() +
+                        " for type " + quota.getQuestionType() + " exceeds available questions (" + pool.size() + ")");
+            }
+            List<AssessmentQuestion> shuffled = new ArrayList<>(pool);
+            Collections.shuffle(shuffled);
+            selected.addAll(shuffled.subList(0, quota.getCount()));
+        }
+
+        // Persist snapshot
+        int order = 0;
+        for (AssessmentQuestion aq : selected) {
+            com.psybergate.recruitment.domain.SubmissionQuestionSnapshot snap =
+                    new com.psybergate.recruitment.domain.SubmissionQuestionSnapshot();
+            snap.setSubmissionId(submissionId);
+            snap.setQuestionId(aq.getQuestion().getId());
+            snap.setDisplayOrder(order++);
+            snapshotRepository.save(snap);
+        }
+
+        return selected;
+    }
 
     private Assessment requireAssessment(UUID assessmentId) {
         return assessmentRepository.findById(assessmentId)
@@ -300,9 +362,11 @@ public class CandidateTakeServiceImpl implements CandidateTakeService {
     }
 
     private void scoreUnansweredQuestions(UUID submissionId, UUID assessmentId) {
+        Assessment assessment = requireAssessment(assessmentId);
         Set<UUID> answeredIds = answerRepository.findQuestionIdsBySubmissionId(submissionId);
 
-        for (AssessmentQuestion aq : assessmentQuestionRepository.findByAssessmentIdOrderByDisplayOrder(assessmentId)) {
+        List<AssessmentQuestion> effective = resolveQuestions(assessment, submissionId);
+        for (AssessmentQuestion aq : effective) {
             Question q = (Question) Hibernate.unproxy(aq.getQuestion());
             if (q instanceof GroupQuestion gq) {
                 for (GroupQuestionMember m : gq.getMembers()) {
@@ -341,7 +405,7 @@ public class CandidateTakeServiceImpl implements CandidateTakeService {
 
     private SubmitResponse buildSubmitResponse(CandidateSubmission submission, Assessment assessment) {
         int answeredCount = answerRepository.findBySubmissionId(submission.getId()).size();
-        int total = assessmentQuestionRepository.findByAssessmentIdOrderByDisplayOrder(assessment.getId()).size();
+        int total = resolveQuestions(assessment, submission.getId()).size();
         return new SubmitResponse(
                 submission.getId(),
                 assessment.getTitle(),

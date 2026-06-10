@@ -14,6 +14,8 @@ public record AssessmentDetailResponse(
         AssessmentStatus status,
         List<AssessmentQuestionItemResponse> questions,
         boolean passwordProtected,
+        boolean randomiseQuestions,
+        List<RandomisationQuotaDto> randomisationQuotas,
         Instant createdAt,
         Instant updatedAt
 ) {}

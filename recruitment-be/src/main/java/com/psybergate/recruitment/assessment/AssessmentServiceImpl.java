@@ -17,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -39,6 +40,7 @@ public class AssessmentServiceImpl implements AssessmentService {
         assessment.setTimeLimitMinutes(req.timeLimitMinutes());
         assessment.setCreatedBy(creator);
         applyPassword(assessment, req.accessPassword());
+        applyRandomisation(assessment, req);
 
         return toDetailResponse(assessmentRepository.save(assessment));
     }
@@ -64,6 +66,7 @@ public class AssessmentServiceImpl implements AssessmentService {
         assessment.setDescription(req.description());
         assessment.setTimeLimitMinutes(req.timeLimitMinutes());
         applyPassword(assessment, req.accessPassword());
+        applyRandomisation(assessment, req);
         return toDetailResponse(assessmentRepository.save(assessment));
     }
 
@@ -150,12 +153,16 @@ public class AssessmentServiceImpl implements AssessmentService {
                 .map(aq -> toPreviewQuestion(aq.getQuestion()))
                 .toList();
 
+        List<RandomisationQuotaDto> quotaDtos = toQuotaDtos(assessment);
+
         return new AssessmentPreviewResponse(
                 assessment.getId(),
                 assessment.getTitle(),
                 assessment.getDescription(),
                 assessment.getTimeLimitMinutes(),
                 assessment.getAccessPasswordHash() != null,
+                assessment.isRandomiseQuestions(),
+                quotaDtos,
                 questions
         );
     }
@@ -204,8 +211,35 @@ public class AssessmentServiceImpl implements AssessmentService {
                 a.getId(), a.getTitle(), a.getDescription(), a.getTimeLimitMinutes(),
                 a.getStatus(), questions,
                 a.getAccessPasswordHash() != null,
+                a.isRandomiseQuestions(),
+                toQuotaDtos(a),
                 a.getCreatedAt(), a.getUpdatedAt()
         );
+    }
+
+    private void applyRandomisation(Assessment assessment, AssessmentRequest req) {
+        assessment.setRandomiseQuestions(req.randomiseQuestions());
+        assessment.getRandomisationQuotas().clear();
+        if (req.randomiseQuestions()) {
+            List<RandomisationQuotaDto> quotas = req.randomisationQuotas();
+            if (quotas == null || quotas.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "At least one quota is required when randomiseQuestions is true");
+            }
+            for (RandomisationQuotaDto dto : quotas) {
+                RandomisationQuota quota = new RandomisationQuota();
+                quota.setAssessment(assessment);
+                quota.setQuestionType(dto.questionType());
+                quota.setCount(dto.count());
+                assessment.getRandomisationQuotas().add(quota);
+            }
+        }
+    }
+
+    private List<RandomisationQuotaDto> toQuotaDtos(Assessment a) {
+        return a.getRandomisationQuotas().stream()
+                .map(q -> new RandomisationQuotaDto(q.getQuestionType(), q.getCount()))
+                .collect(Collectors.toList());
     }
 
     private PreviewQuestionDto toPreviewQuestion(Question q) {

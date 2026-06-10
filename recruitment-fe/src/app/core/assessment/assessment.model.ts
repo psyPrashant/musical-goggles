@@ -2,6 +2,11 @@ import { Difficulty, QuestionType } from '../question/question.model';
 
 export type AssessmentStatus = 'DRAFT' | 'PUBLISHED';
 
+export interface RandomisationQuota {
+  questionType: QuestionType;
+  count: number;
+}
+
 export interface Assessment {
   id: string;
   title: string;
@@ -31,6 +36,8 @@ export interface AssessmentDetail {
   status: AssessmentStatus;
   questions: AssessmentQuestion[];
   passwordProtected: boolean;
+  randomiseQuestions: boolean;
+  randomisationQuotas: RandomisationQuota[];
   createdAt: string;
   updatedAt: string;
 }
@@ -40,6 +47,8 @@ export interface AssessmentRequest {
   description: string | null;
   timeLimitMinutes: number;
   accessPassword?: string | null;
+  randomiseQuestions: boolean;
+  randomisationQuotas: RandomisationQuota[];
 }
 
 export interface AddQuestionRequest {
@@ -68,5 +77,7 @@ export interface AssessmentPreview {
   description: string | null;
   timeLimitMinutes: number;
   passwordRequired: boolean;
+  randomiseQuestions: boolean;
+  randomisationQuotas: RandomisationQuota[];
   questions: PreviewQuestion[];
 }

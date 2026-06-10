@@ -40,6 +40,8 @@ const mockPreview: AssessmentPreview = {
       languageHint: 'java',
     },
   ],
+  randomiseQuestions: false,
+  randomisationQuotas: [],
 };
 
 describe('AssessmentPreviewComponent', () => {

@@ -80,11 +80,11 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
         userRepository.findByEmail("acandidate@integration.dev").ifPresent(userRepository::delete);
     }
 
-    // ── CRUD ──────────────────────────────────────────────────────────────────
+    // â”€â”€ CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void createAssessment_valid_returns201() throws Exception {
-        AssessmentRequest req = new AssessmentRequest("Java Backend Assessment", "For senior roles", 60, null);
+        AssessmentRequest req = new AssessmentRequest("Java Backend Assessment", "For senior roles", 60, null, false, java.util.List.of());
 
         mockMvc.perform(post("/api/assessments")
                         .header("Authorization", "Bearer " + token)
@@ -99,7 +99,7 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void createAssessment_missingTitle_returns400() throws Exception {
-        AssessmentRequest req = new AssessmentRequest("", "desc", 30, null);
+        AssessmentRequest req = new AssessmentRequest("", "desc", 30, null, false, java.util.List.of());
 
         mockMvc.perform(post("/api/assessments")
                         .header("Authorization", "Bearer " + token)
@@ -110,7 +110,7 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void createAssessment_zeroTimeLimit_returns400() throws Exception {
-        AssessmentRequest req = new AssessmentRequest("Title", "desc", 0, null);
+        AssessmentRequest req = new AssessmentRequest("Title", "desc", 0, null, false, java.util.List.of());
 
         mockMvc.perform(post("/api/assessments")
                         .header("Authorization", "Bearer " + token)
@@ -150,7 +150,7 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     void updateAssessment_returns200() throws Exception {
         String id = createAssessmentViaApi("Original Title", 30);
-        AssessmentRequest update = new AssessmentRequest("Updated Title", "new desc", 60, null);
+        AssessmentRequest update = new AssessmentRequest("Updated Title", "new desc", 60, null, false, java.util.List.of());
 
         mockMvc.perform(put("/api/assessments/" + id)
                         .header("Authorization", "Bearer " + token)
@@ -174,7 +174,7 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
-    // ── Publish ───────────────────────────────────────────────────────────────
+    // â”€â”€ Publish â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void publishAssessment_draftToPublished_returns200() throws Exception {
@@ -198,7 +198,7 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isConflict());
     }
 
-    // ── Question sub-resource ─────────────────────────────────────────────────
+    // â”€â”€ Question sub-resource â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void addQuestion_valid_returns201() throws Exception {
@@ -325,7 +325,7 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
-    // ── Reorder ───────────────────────────────────────────────────────────────
+    // â”€â”€ Reorder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void reorderQuestions_happyPath_returns200WithNewOrder() throws Exception {
@@ -368,7 +368,7 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isUnprocessableEntity());
     }
 
-    // ── Preview ───────────────────────────────────────────────────────────────
+    // â”€â”€ Preview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Test
     void previewAssessment_draftState_returns200() throws Exception {
@@ -445,10 +445,10 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-    // ── helpers ───────────────────────────────────────────────────────────────
+    // â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private String createAssessmentViaApi(String title, int minutes) throws Exception {
-        AssessmentRequest req = new AssessmentRequest(title, null, minutes, null);
+        AssessmentRequest req = new AssessmentRequest(title, null, minutes, null, false, java.util.List.of());
         String body = mockMvc.perform(post("/api/assessments")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -501,3 +501,4 @@ class AssessmentControllerIntegrationTest extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(req)));
     }
 }
+

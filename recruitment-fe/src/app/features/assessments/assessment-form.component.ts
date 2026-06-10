@@ -108,6 +108,8 @@ export class AssessmentFormComponent implements OnInit {
       title: this.form.value.title!,
       description: this.form.value.description || null,
       timeLimitMinutes: this.form.value.timeLimitMinutes!,
+      randomiseQuestions: false,
+      randomisationQuotas: [],
     };
 
     const id = this.editId();
