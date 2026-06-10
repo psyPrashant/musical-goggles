@@ -32,6 +32,7 @@ class CandidateTakeServiceImplTest {
     @Mock private CandidateAnswerRepository answerRepository;
     @Mock private AnswerScoreRepository answerScoreRepository;
     @Mock private InvitationRepository invitationRepository;
+    @Mock private SubmissionQuestionSnapshotRepository snapshotRepository;
     @Mock private MarkingService markingService;
     @Mock private ObjectMapper objectMapper;
 
@@ -53,6 +54,7 @@ class CandidateTakeServiceImplTest {
         submissionId = UUID.randomUUID();
 
         assessment = new Assessment();
+        assessment.setId(assessmentId);
         assessment.setTimeLimitMinutes(60);
 
         submission = new CandidateSubmission();

@@ -362,9 +362,11 @@ public class CandidateTakeServiceImpl implements CandidateTakeService {
     }
 
     private void scoreUnansweredQuestions(UUID submissionId, UUID assessmentId) {
+        Assessment assessment = requireAssessment(assessmentId);
         Set<UUID> answeredIds = answerRepository.findQuestionIdsBySubmissionId(submissionId);
 
-        for (AssessmentQuestion aq : assessmentQuestionRepository.findByAssessmentIdOrderByDisplayOrder(assessmentId)) {
+        List<AssessmentQuestion> effective = resolveQuestions(assessment, submissionId);
+        for (AssessmentQuestion aq : effective) {
             Question q = (Question) Hibernate.unproxy(aq.getQuestion());
             if (q instanceof GroupQuestion gq) {
                 for (GroupQuestionMember m : gq.getMembers()) {
@@ -403,7 +405,7 @@ public class CandidateTakeServiceImpl implements CandidateTakeService {
 
     private SubmitResponse buildSubmitResponse(CandidateSubmission submission, Assessment assessment) {
         int answeredCount = answerRepository.findBySubmissionId(submission.getId()).size();
-        int total = assessmentQuestionRepository.findByAssessmentIdOrderByDisplayOrder(assessment.getId()).size();
+        int total = resolveQuestions(assessment, submission.getId()).size();
         return new SubmitResponse(
                 submission.getId(),
                 assessment.getTitle(),

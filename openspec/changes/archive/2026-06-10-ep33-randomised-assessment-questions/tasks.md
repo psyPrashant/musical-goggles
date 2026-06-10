@@ -47,10 +47,10 @@
 ## 8. Verification
 
 - [x] 8.1 Start backend and confirm V21 and V22 Flyway migrations run without error
-- [ ] 8.2 Create an assessment with ≥5 MCQ and ≥3 TEXT questions; enable randomisation with quotas (3 MCQ, 2 TEXT); publish it
-- [ ] 8.3 Start the assessment as a candidate; confirm exactly 5 questions returned (3 MCQ + 2 TEXT)
-- [ ] 8.4 Refresh/resume; confirm the same 5 questions are returned
-- [ ] 8.5 Start the same assessment as a second candidate; confirm a different random selection (run a few times to confirm variance)
-- [ ] 8.6 View the assessment preview as staff; confirm "Randomised: 3 MCQ · 2 Text" is shown
-- [ ] 8.7 Disable the toggle; confirm all questions are served and preview shows no randomisation info
+- [x] 8.2 Create an assessment with ≥5 MCQ and ≥3 TEXT questions; enable randomisation with quotas (3 MCQ, 2 TEXT); publish it
+- [x] 8.3 Start the assessment as a candidate; confirm exactly 5 questions returned (3 MCQ + 2 TEXT)
+- [x] 8.4 Refresh/resume; confirm the same 5 questions are returned
+- [x] 8.5 Start the same assessment as a second candidate; confirm a different random selection (run a few times to confirm variance)
+- [x] 8.6 View the assessment preview as staff; confirm "Randomised: 3 MCQ · 2 Text" is shown
+- [x] 8.7 Disable the toggle; confirm all questions are served and preview shows no randomisation info
 - [x] 8.8 Run `./mvnw test` and confirm no regressions (35 unit tests pass; integration tests require Docker which is unavailable in this environment — pre-existing)
