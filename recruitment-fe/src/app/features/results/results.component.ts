@@ -178,8 +178,13 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                               [style.stroke-dasharray]="ringDash()"/>
                     </svg>
                     <div class="ring-center">
-                      <span class="ring-percent">{{ resultPercent() }}%</span>
-                      <span class="ring-pts">{{ result()!.totalScore }}/{{ result()!.maxScore }}</span>
+                      @if (result()!.markingStatus === 'FULLY_MARKED') {
+                        <span class="ring-percent">{{ resultPercent() }}%</span>
+                        <span class="ring-pts">{{ result()!.totalScore }}/{{ result()!.maxScore }}</span>
+                      } @else {
+                        <span class="ring-percent ring-pending">—</span>
+                        <span class="ring-pts">awaiting marks</span>
+                      }
                     </div>
                   </div>
                   <span class="marking-badge" [class.badge-done]="result()!.markingStatus === 'FULLY_MARKED'" [class.badge-pending]="result()!.markingStatus === 'PENDING_REVIEW'">
@@ -426,7 +431,9 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
     </div>
   `,
   styles: [`
-    .page { display: flex; flex-direction: column; min-height: 100vh; }
+    /* Lock to the viewport so the submission list and the detail
+       panel scroll independently instead of sharing one page scroll */
+    .page { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
     .page-header {
       height: var(--topbar-height);
@@ -596,6 +603,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
       display: flex; flex-direction: column; align-items: center; justify-content: center;
     }
     .ring-percent { font-size: 17px; font-weight: 700; color: var(--text-1); line-height: 1.1; }
+    .ring-percent.ring-pending { color: var(--text-3); }
     .ring-pts { font-size: 10.5px; color: var(--text-3); }
 
     .marking-badge {
@@ -1151,7 +1159,9 @@ export class ResultsComponent implements OnInit {
 
   ringDash(): string {
     const circumference = 2 * Math.PI * 34;
-    const filled = (this.resultPercent() / 100) * circumference;
+    // No fill until marking is complete — a partial score reads as a final one
+    const pct = this.result()?.markingStatus === 'FULLY_MARKED' ? this.resultPercent() : 0;
+    const filled = (pct / 100) * circumference;
     return filled + ' ' + circumference;
   }
 
