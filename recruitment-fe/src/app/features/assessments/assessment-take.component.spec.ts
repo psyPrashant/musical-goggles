@@ -44,6 +44,9 @@ const mockSubmitResponse: SubmitResponse = {
 function createComponent(takeResponse = mockTakeResponse) {
   const authSvc = {
     validateCandidateToken: vi.fn().mockReturnValue(of({ token: MOCK_TOKEN })),
+    firstName: vi.fn().mockReturnValue('Test'),
+    lastName: vi.fn().mockReturnValue('Candidate'),
+    displayName: vi.fn().mockReturnValue('Test Candidate'),
   };
   const assessmentSvc = {
     getPreview: vi.fn().mockReturnValue(of({

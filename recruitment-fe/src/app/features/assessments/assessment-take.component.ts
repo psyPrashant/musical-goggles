@@ -3,6 +3,7 @@ import { DatePipe } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { AssessmentService } from '../../core/assessment/assessment.service';
 import { AuthService } from '../../core/auth/auth.service';
+import { ThemeService } from '../../core/theme/theme.service';
 import { AssessmentPreview } from '../../core/assessment/assessment.model';
 import { CandidateTakeService } from '../../core/take/candidate-take.service';
 import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidate-take.model';
@@ -181,6 +182,29 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
               <div class="legend-item"><div class="legend-dot dot-current"></div> Current</div>
               <div class="legend-item"><div class="legend-dot dot-answered"></div> Answered</div>
               <div class="legend-item"><div class="legend-dot dot-flagged"></div> Flagged</div>
+            </div>
+
+            <div class="nav-user">
+              <div class="user-avatar">{{ initials }}</div>
+              <div class="user-info">
+                <span class="user-name">{{ authSvc.displayName() }}</span>
+                <span class="user-role">Candidate</span>
+              </div>
+              <button class="theme-btn" (click)="theme.toggle()" [title]="theme.isDark() ? 'Switch to light mode' : 'Switch to dark mode'">
+                @if (theme.isDark()) {
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="5"/>
+                    <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                    <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                  </svg>
+                } @else {
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                  </svg>
+                }
+              </button>
             </div>
           </div>
 
@@ -544,6 +568,7 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
       width: 220px; flex-shrink: 0;
       background: var(--bg-card); border-right: 1px solid var(--border);
       padding: 16px; overflow-y: auto;
+      display: flex; flex-direction: column;
     }
 
     .nav-label { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
@@ -578,6 +603,53 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
     .dot-current { background: var(--accent); }
     .dot-answered { background: var(--success); opacity: 0.6; }
     .dot-flagged { background: var(--warning); opacity: 0.6; }
+
+    /* Candidate identity card pinned to the bottom of the nav,
+       mirroring the recruiter shell's sidebar user section */
+    .nav-user {
+      margin-top: auto;
+      padding: 9px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-elevated);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--gradient-accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+      box-shadow: 0 0 12px rgba(255, 107, 44, 0.4);
+    }
+
+    .user-info {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column;
+    }
+
+    .user-name {
+      font-size: 12.5px; font-weight: 500; color: var(--text-1);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .user-role { font-size: 10.5px; color: var(--text-3); }
+
+    .theme-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-3);
+      display: flex; align-items: center;
+      padding: 4px; border-radius: 4px;
+      transition: color 120ms, background 120ms;
+      flex-shrink: 0;
+    }
+
+    .theme-btn:hover {
+      color: var(--accent);
+      background: var(--accent-subtle);
+    }
 
     /* Question panel */
     .question-panel { flex: 1; overflow-y: auto; padding: 24px; }
@@ -761,8 +833,15 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
 export class AssessmentTakeComponent implements OnInit, OnDestroy {
   private readonly svc = inject(AssessmentService);
   private readonly takeSvc = inject(CandidateTakeService);
-  private readonly authSvc = inject(AuthService);
+  protected readonly authSvc = inject(AuthService);
+  protected readonly theme = inject(ThemeService);
   private readonly route = inject(ActivatedRoute);
+
+  protected get initials(): string {
+    const f = this.authSvc.firstName()?.[0] ?? '';
+    const l = this.authSvc.lastName()?.[0] ?? '';
+    return (f + l).toUpperCase() || '?';
+  }
 
   readonly phase = signal<'guide' | 'in-progress' | 'submitted'>('guide');
   readonly submitted = computed(() => this.phase() === 'submitted');
