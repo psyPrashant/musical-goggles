@@ -38,35 +38,52 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
           } @else if (filteredSubmissions().length === 0) {
             <div class="empty-panel">No submissions.</div>
           } @else {
-            @for (s of filteredSubmissions(); track s.submissionId) {
-              <div class="submission-item"
-                   [class.active]="selectedSummary()?.invitationId === s.invitationId"
-                   (click)="selectSubmission(s)">
-                <div class="sub-avatar" [style.background]="avatarColor(s.candidateName)">{{ initials(s.candidateName) }}</div>
-                <div class="sub-info">
-                  <div class="sub-name-row">
-                    <span class="sub-name">{{ s.candidateName }}</span>
-                    @if (s.candidateBlacklisted) {
-                      <span class="sub-bl-symbol" title="Blacklisted">⊘</span>
-                    }
-                  </div>
-                  <div class="sub-tags">
-                    <span class="sub-status" [class]="statusClass(s)">{{ statusLabel(s) }}</span>
-                    @if ((s.status === 'SUBMITTED' || s.status === 'AUTO_SUBMITTED') && s.markedCount < s.totalAnswers) {
-                      <span class="pending-badge">⏳ Pending</span>
-                    }
-                    @if (s.flagStatus === 'FLAGGED' || s.flagStatus === 'UNDER_REVIEW') {
-                      <span class="flag-badge">⚑ Flagged</span>
-                    }
-                    @if (s.flagStatus === 'ACTION_REQUIRED') {
-                      <span class="flag-badge flag-badge-action">⚠ Action Required</span>
-                    }
-                  </div>
-                  <span class="sub-date">{{ formatDate(s.submittedAt) }}</span>
-                  <span class="sub-progress">{{ s.markedCount }}/{{ s.totalAnswers }} marked</span>
-                  <span class="sub-score">{{ scorePercent(s) }}</span>
-                </div>
+            @for (g of groupedSubmissions(); track g.assessmentId) {
+              <div class="group-header">
+                <span class="group-title">{{ g.assessmentTitle }}</span>
+                <span class="group-count">{{ g.items.length }}</span>
               </div>
+              @for (s of g.items; track s.invitationId) {
+                <div class="submission-item"
+                     [class.active]="selectedSummary()?.invitationId === s.invitationId"
+                     (click)="selectSubmission(s)">
+                  <div class="sub-avatar" [style.background]="avatarColor(s.candidateName)">{{ initials(s.candidateName) }}</div>
+                  <div class="sub-info">
+                    <div class="sub-name-row">
+                      <span class="sub-name">{{ s.candidateName }}</span>
+                      @if (s.candidateBlacklisted) {
+                        <span class="sub-bl-symbol" title="Blacklisted">⊘</span>
+                      }
+                      <span class="sub-score">{{ scorePercent(s) }}</span>
+                    </div>
+                    <div class="sub-tags">
+                      <span class="sub-status" [class]="statusClass(s)">{{ statusLabel(s) }}</span>
+                      @if ((s.status === 'SUBMITTED' || s.status === 'AUTO_SUBMITTED') && s.markedCount < s.totalAnswers) {
+                        <span class="pending-badge">⏳ Pending</span>
+                      }
+                      @if (s.flagStatus === 'FLAGGED' || s.flagStatus === 'UNDER_REVIEW') {
+                        <span class="flag-badge">⚑ Flagged</span>
+                      }
+                      @if (s.flagStatus === 'ACTION_REQUIRED') {
+                        <span class="flag-badge flag-badge-action">⚠ Action Required</span>
+                      }
+                    </div>
+                    <div class="sub-meta-row">
+                      <span>{{ formatDate(s.submittedAt) }}</span>
+                      @if (s.status !== 'NOT_STARTED' && s.totalAnswers > 0) {
+                        <span>{{ s.markedCount }}/{{ s.totalAnswers }} marked</span>
+                      }
+                    </div>
+                    @if (s.status !== 'NOT_STARTED' && s.totalAnswers > 0) {
+                      <div class="sub-progress-bar">
+                        <div class="sub-progress-fill"
+                             [class.fill-done]="s.markedCount >= s.totalAnswers"
+                             [style.width.%]="markedPercent(s)"></div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
             }
           }
         </div>
@@ -147,12 +164,33 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                   <span class="detail-submitted">Submitted: {{ formatDate(result()!.submittedAt) }}</span>
                 </div>
                 <div class="detail-score-block">
-                  <div class="total-score">{{ result()!.totalScore }}/{{ result()!.maxScore }}</div>
-                  <div class="total-max">pts</div>
+                  <div class="score-ring">
+                    <svg viewBox="0 0 80 80" width="86" height="86">
+                      <defs>
+                        <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stop-color="var(--accent)"/>
+                          <stop offset="100%" stop-color="var(--accent-2)"/>
+                        </linearGradient>
+                      </defs>
+                      <circle cx="40" cy="40" r="34" class="ring-track"/>
+                      <circle cx="40" cy="40" r="34" class="ring-fill"
+                              stroke="url(#scoreGrad)"
+                              [style.stroke-dasharray]="ringDash()"/>
+                    </svg>
+                    <div class="ring-center">
+                      @if (result()!.markingStatus === 'FULLY_MARKED') {
+                        <span class="ring-percent">{{ resultPercent() }}%</span>
+                        <span class="ring-pts">{{ result()!.totalScore }}/{{ result()!.maxScore }}</span>
+                      } @else {
+                        <span class="ring-percent ring-pending">—</span>
+                        <span class="ring-pts">awaiting marks</span>
+                      }
+                    </div>
+                  </div>
                   <span class="marking-badge" [class.badge-done]="result()!.markingStatus === 'FULLY_MARKED'" [class.badge-pending]="result()!.markingStatus === 'PENDING_REVIEW'">
                     {{ result()!.markingStatus === 'FULLY_MARKED' ? '✓ Fully Marked' : '⏳ Pending Review' }}
                   </span>
-                  <div class="answered-stat">{{ result()!.answeredCount }}/{{ totalQuestionCount() }} answered</div>
+                  <div class="answered-stat">{{ markedQuestionCount() }}/{{ totalQuestionCount() }} questions marked</div>
                   @if (activeFlag()) {
                     <span class="flag-badge-detail">⚑ {{ activeFlag()!.status === 'FLAGGED' ? 'Flagged' : activeFlag()!.status === 'ACTION_REQUIRED' ? 'Action Required' : 'Under Review' }}</span>
                   }
@@ -207,7 +245,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
               <!-- Flag audit trail -->
               @if (auditTrail().length > 0) {
                 <div class="audit-section">
-                  <div class="audit-title">Flag History</div>
+                  <div class="audit-title">Flag Activity</div>
                   @for (entry of auditTrail(); track entry.id) {
                     <div class="audit-entry">
                       <span class="audit-action">{{ entry.action === 'CREATED' ? 'Flagged' : entry.fromStatus + ' → ' + entry.toStatus }}</span>
@@ -239,45 +277,50 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                 </div>
               }
 
-              <!-- Reminder history -->
-              <div class="audit-section">
-                <div class="audit-title">Reminder History</div>
-                @if (reminderHistory().length === 0) {
-                  <div class="audit-empty">No reminders sent yet</div>
-                } @else {
-                  @for (r of reminderHistory(); track r.id) {
-                    <div class="audit-entry">
-                      <span class="audit-action">
-                        <span class="reminder-type-badge" [class.type-auto]="r.sendType === 'AUTOMATED'">
-                          {{ r.sendType === 'AUTOMATED' ? 'Automated' : 'Manual' }}
+              <!-- Histories side by side -->
+              <div class="history-grid">
+                <div class="audit-section">
+                  <div class="audit-title">Reminder History</div>
+                  @if (reminderHistory().length === 0) {
+                    <div class="audit-empty">No reminders sent yet</div>
+                  } @else {
+                    @for (r of reminderHistory(); track r.id) {
+                      <div class="audit-entry">
+                        <span class="audit-action">
+                          <span class="reminder-type-badge" [class.type-auto]="r.sendType === 'AUTOMATED'">
+                            {{ r.sendType === 'AUTOMATED' ? 'Automated' : 'Manual' }}
+                          </span>
+                          {{ r.sentBy ? 'by recruiter' : 'by system' }}
                         </span>
-                        {{ r.sentBy ? 'by recruiter' : 'by system' }}
-                      </span>
-                      <span class="audit-meta">{{ formatDate(r.sentAt) }}</span>
-                    </div>
-                  }
-                }
-              </div>
-
-              <!-- Submission flag history -->
-              <div class="audit-section">
-                <div class="audit-title">Flag History</div>
-                @if (submissionFlags().length === 0) {
-                  <div class="audit-empty">No flags raised</div>
-                } @else {
-                  @for (f of submissionFlags(); track f.flagId) {
-                    <div class="flag-history-entry">
-                      <div class="flag-history-row">
-                        <span class="flag-history-reason">{{ flagReasonLabel(f.reason) }}</span>
-                        <span class="flag-history-status" [class]="'fh-status-' + f.status.toLowerCase()">{{ f.status }}</span>
-                        <span class="audit-meta">{{ formatDate(f.createdAt) }}</span>
+                        <span class="audit-meta">{{ formatDate(r.sentAt) }}</span>
                       </div>
-                    </div>
+                    }
                   }
-                }
+                </div>
+
+                <div class="audit-section">
+                  <div class="audit-title">Flag History</div>
+                  @if (submissionFlags().length === 0) {
+                    <div class="audit-empty">No flags raised</div>
+                  } @else {
+                    @for (f of submissionFlags(); track f.flagId) {
+                      <div class="flag-history-entry">
+                        <div class="flag-history-row">
+                          <span class="flag-history-reason">{{ flagReasonLabel(f.reason) }}</span>
+                          <span class="flag-history-status" [class]="'fh-status-' + f.status.toLowerCase()">{{ f.status }}</span>
+                          <span class="audit-meta">{{ formatDate(f.createdAt) }}</span>
+                        </div>
+                      </div>
+                    }
+                  }
+                </div>
               </div>
 
               <!-- Per-question answers -->
+              <div class="answers-title">
+                Answers
+                <span class="answers-count">{{ totalQuestionCount() }} question{{ totalQuestionCount() === 1 ? '' : 's' }}</span>
+              </div>
               <div class="answers-list">
                 @for (q of result()!.questions; track q.questionId; let i = $index) {
                   @if (q.questionType === 'GROUP') {
@@ -388,7 +431,9 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
     </div>
   `,
   styles: [`
-    .page { display: flex; flex-direction: column; min-height: 100vh; }
+    /* Lock to the viewport so the submission list and the detail
+       panel scroll independently instead of sharing one page scroll */
+    .page { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
     .page-header {
       height: var(--topbar-height);
@@ -420,19 +465,52 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
     .filter-chip.active { background: var(--accent-subtle); color: var(--accent); border-color: var(--accent); font-weight: 600; }
 
     .split-layout {
-      display: grid; grid-template-columns: 300px 1fr;
+      display: grid; grid-template-columns: 324px 1fr;
       flex: 1; min-height: 0;
     }
 
-    .submissions-panel { border-right: 1px solid var(--border); overflow-y: auto; }
+    /* Solid glass panel so cards read clearly against the backdrop */
+    .submissions-panel {
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      background: var(--bg-card);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      padding: 10px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+
+    .group-header {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 12px 6px 4px;
+    }
+    .group-header:first-child { padding-top: 4px; }
+    .group-title {
+      font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em;
+      text-transform: uppercase; color: var(--text-3);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .group-count {
+      font-size: 10px; font-weight: 600; color: var(--text-2);
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: 999px; padding: 1px 7px; flex-shrink: 0;
+    }
 
     .submission-item {
       display: flex; align-items: flex-start; gap: 10px;
-      padding: 12px 14px; border-bottom: 1px solid var(--border);
-      cursor: pointer; transition: background 120ms;
+      padding: 11px 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 120ms, border-color 120ms, box-shadow 120ms;
     }
-    .submission-item:hover { background: var(--bg-hover); }
-    .submission-item.active { background: var(--accent-subtle); }
+    .submission-item:hover { background: var(--bg-hover); border-color: var(--border-hover); }
+    .submission-item.active {
+      background: var(--accent-subtle);
+      border-color: var(--accent);
+      box-shadow: 0 0 16px rgba(255, 107, 44, 0.14);
+    }
 
     .sub-avatar {
       width: 32px; height: 32px; border-radius: 50%;
@@ -441,10 +519,19 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
     }
 
     .sub-info { flex: 1; min-width: 0; }
-    .sub-name-row { display: flex; align-items: center; gap: 5px; margin-bottom: 2px; }
-    .sub-name { font-size: 13px; font-weight: 600; color: var(--text-1); }
+    .sub-name-row { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+    .sub-name {
+      font-size: 13px; font-weight: 600; color: var(--text-1);
+      flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
     .sub-bl-symbol { font-size: 13px; color: var(--danger); flex-shrink: 0; }
-    .sub-tags { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 2px; }
+    .sub-score {
+      font-size: 13px; font-weight: 700; flex-shrink: 0;
+      background: var(--gradient-accent);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .sub-tags { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
 
     .sub-status { font-size: 10px; padding: 1px 6px; border-radius: 999px; font-weight: 500; }
     .status-submitted { background: var(--success-subtle); color: var(--success); }
@@ -452,9 +539,21 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
     .status-progress { background: var(--warning-subtle); color: var(--warning); }
     .status-not-started { background: var(--bg-elevated); color: var(--text-3); border: 1px solid var(--border); }
 
-    .sub-date { display: block; font-size: 11px; color: var(--text-3); }
-    .sub-progress { display: block; font-size: 11px; color: var(--text-2); margin-top: 1px; }
-    .sub-score { display: block; font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 1px; }
+    .sub-meta-row {
+      display: flex; justify-content: space-between; gap: 8px;
+      font-size: 11px; color: var(--text-3);
+    }
+
+    .sub-progress-bar {
+      height: 3px; border-radius: 3px; background: var(--border);
+      overflow: hidden; margin-top: 6px;
+    }
+    .sub-progress-fill {
+      height: 100%; border-radius: 3px;
+      background: var(--gradient-accent);
+      transition: width 400ms ease;
+    }
+    .sub-progress-fill.fill-done { background: var(--success); }
 
     .detail-panel { overflow-y: auto; }
 
@@ -485,9 +584,27 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
     .detail-assessment { display: block; font-size: 12px; color: var(--text-2); margin-top: 2px; }
     .detail-submitted { display: block; font-size: 11px; color: var(--text-3); margin-top: 2px; }
 
-    .detail-score-block { text-align: right; flex-shrink: 0; }
-    .total-score { font-size: 26px; font-weight: 800; color: var(--text-1); line-height: 1; }
-    .total-max { font-size: 12px; color: var(--text-3); }
+    .detail-score-block {
+      text-align: center; flex-shrink: 0;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+
+    .score-ring { position: relative; width: 86px; height: 86px; }
+    .score-ring svg { transform: rotate(-90deg); }
+    .ring-track {
+      fill: none; stroke: var(--border); stroke-width: 6;
+    }
+    .ring-fill {
+      fill: none; stroke-width: 6; stroke-linecap: round;
+      transition: stroke-dasharray 600ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .ring-center {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .ring-percent { font-size: 17px; font-weight: 700; color: var(--text-1); line-height: 1.1; }
+    .ring-percent.ring-pending { color: var(--text-3); }
+    .ring-pts { font-size: 10.5px; color: var(--text-3); }
 
     .marking-badge {
       display: inline-block; margin-top: 6px; padding: 2px 8px;
@@ -610,7 +727,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
     .flag-badge-detail { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--danger-subtle); color: var(--danger); }
 
     .flag-section {
-      margin: 0 20px 16px;
+      margin: 0 0 14px;
       padding: 12px 14px; background: var(--bg-card);
       border: 1px solid var(--border); border-radius: var(--radius-lg);
     }
@@ -645,8 +762,35 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
     .btn-flag-action.dismiss { border-color: var(--text-3); }
 
     .audit-section {
-      margin: 0 20px 16px; padding: 12px 14px;
+      margin: 0 0 14px; padding: 12px 14px;
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    }
+
+    .history-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+      margin-bottom: 14px;
+    }
+    .history-grid .audit-section { margin: 0; }
+    @media (max-width: 1100px) {
+      .history-grid { grid-template-columns: 1fr; gap: 0; }
+      .history-grid .audit-section { margin: 0 0 14px; }
+    }
+
+    .answers-title {
+      display: flex; align-items: baseline; gap: 8px;
+      font-size: 13px; font-weight: 600; color: var(--text-1);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin: 6px 2px 10px;
+    }
+    .answers-count {
+      font-size: 11.5px; font-weight: 500; color: var(--text-3);
+      text-transform: none; letter-spacing: 0;
+    }
+
+    /* Glass treatment so detail cards read clearly over the backdrop */
+    .detail-header, .answer-card, .flag-section, .audit-section, .reminder-section {
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
     }
     .audit-title { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
     .audit-entry { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--border); }
@@ -667,7 +811,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
     .audit-empty { font-size: 12px; color: var(--text-3); font-style: italic; }
 
     .reminder-section {
-      margin: 0 20px 16px; padding: 12px 14px;
+      margin: 0 0 14px; padding: 12px 14px;
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
       display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
     }
@@ -743,6 +887,20 @@ export class ResultsComponent implements OnInit {
       }
     }
     return result;
+  });
+
+  readonly groupedSubmissions = computed(() => {
+    const groups = new Map<string, { assessmentId: string; assessmentTitle: string; items: SubmissionSummary[] }>();
+    for (const s of this.filteredSubmissions()) {
+      const key = s.assessmentId ?? '—';
+      let g = groups.get(key);
+      if (!g) {
+        g = { assessmentId: key, assessmentTitle: s.assessmentTitle ?? 'Unknown Assessment', items: [] };
+        groups.set(key, g);
+      }
+      g.items.push(s);
+    }
+    return [...groups.values()];
   });
 
   readonly filteredSubmissions = computed(() => {
@@ -988,6 +1146,25 @@ export class ResultsComponent implements OnInit {
     return map[reason] ?? reason;
   }
 
+  markedPercent(s: SubmissionSummary): number {
+    if (s.totalAnswers <= 0) return 0;
+    return Math.min(100, Math.round((s.markedCount / s.totalAnswers) * 100));
+  }
+
+  resultPercent(): number {
+    const r = this.result();
+    if (!r || r.maxScore <= 0) return 0;
+    return Math.round((r.totalScore / r.maxScore) * 100);
+  }
+
+  ringDash(): string {
+    const circumference = 2 * Math.PI * 34;
+    // No fill until marking is complete — a partial score reads as a final one
+    const pct = this.result()?.markingStatus === 'FULLY_MARKED' ? this.resultPercent() : 0;
+    const filled = (pct / 100) * circumference;
+    return filled + ' ' + circumference;
+  }
+
   scorePercent(s: SubmissionSummary): string {
     if (s.maxScore <= 0 || s.markedCount < s.totalAnswers || s.totalAnswers === 0) return '—';
     return Math.round((s.totalScore / s.maxScore) * 100) + '%';
@@ -995,6 +1172,15 @@ export class ResultsComponent implements OnInit {
 
   typeLabel(type: string): string {
     return { MCQ: 'MCQ', TEXT: 'Text', CODE_SUBMISSION: 'Code', GROUP: 'Group' }[type] ?? type;
+  }
+
+  markedQuestionCount(): number {
+    return (this.result()?.questions ?? []).reduce(
+      (sum, q) => sum + (q.questionType === 'GROUP'
+        ? (q.subQuestions ?? []).filter(sub => sub.score !== null).length
+        : (q.score !== null ? 1 : 0)),
+      0
+    );
   }
 
   totalQuestionCount(): number {
