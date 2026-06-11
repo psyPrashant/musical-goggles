@@ -1350,3 +1350,15 @@ Make the adjustments you think would be best
 
 ---
 
+## 2026-06-11 12:57 | prashant.kessa | in: 804 out: 16915 | cache_read: 4628682 cache_write: 211625
+
+> update the actual assessment related pages to align with the updated frontend
+
+---
+
+## 2026-06-11 13:08 | prashant.kessa | in: 282 out: 6808 | cache_read: 2614024 cache_write: 222160
+
+> for the candidate, can you add a section at the botton of the nav showing their name and surname and a button for light mode and dark mode - like how it is for the admin/recruiter nav
+
+---
+
