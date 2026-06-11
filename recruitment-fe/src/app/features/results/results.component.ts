@@ -190,7 +190,7 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                   <span class="marking-badge" [class.badge-done]="result()!.markingStatus === 'FULLY_MARKED'" [class.badge-pending]="result()!.markingStatus === 'PENDING_REVIEW'">
                     {{ result()!.markingStatus === 'FULLY_MARKED' ? '✓ Fully Marked' : '⏳ Pending Review' }}
                   </span>
-                  <div class="answered-stat">{{ result()!.answeredCount }}/{{ totalQuestionCount() }} answered</div>
+                  <div class="answered-stat">{{ markedQuestionCount() }}/{{ totalQuestionCount() }} questions marked</div>
                   @if (activeFlag()) {
                     <span class="flag-badge-detail">⚑ {{ activeFlag()!.status === 'FLAGGED' ? 'Flagged' : activeFlag()!.status === 'ACTION_REQUIRED' ? 'Action Required' : 'Under Review' }}</span>
                   }
@@ -1172,6 +1172,15 @@ export class ResultsComponent implements OnInit {
 
   typeLabel(type: string): string {
     return { MCQ: 'MCQ', TEXT: 'Text', CODE_SUBMISSION: 'Code', GROUP: 'Group' }[type] ?? type;
+  }
+
+  markedQuestionCount(): number {
+    return (this.result()?.questions ?? []).reduce(
+      (sum, q) => sum + (q.questionType === 'GROUP'
+        ? (q.subQuestions ?? []).filter(sub => sub.score !== null).length
+        : (q.score !== null ? 1 : 0)),
+      0
+    );
   }
 
   totalQuestionCount(): number {
