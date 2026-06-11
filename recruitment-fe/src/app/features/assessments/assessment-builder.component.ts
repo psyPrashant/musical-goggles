@@ -334,7 +334,7 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
       display: flex;
       flex-direction: column;
       min-height: 100vh;
-      background: var(--bg);
+      background: transparent;
     }
 
     .builder-header {
@@ -345,6 +345,8 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
       padding: 0 24px;
       border-bottom: 1px solid var(--border);
       background: var(--bg-card);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
       flex-shrink: 0;
     }
 
@@ -430,9 +432,10 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
     }
 
     .step-item.active .step-circle {
-      background: var(--accent);
+      background: var(--gradient-accent);
       color: #fff;
       border-color: var(--accent);
+      box-shadow: 0 0 12px rgba(255, 107, 44, 0.35);
     }
 
     .step-item.done .step-circle {
@@ -460,7 +463,7 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
       transition: background 300ms;
     }
 
-    .step-line.filled { background: var(--accent); }
+    .step-line.filled { background: var(--gradient-accent); }
 
     .error-banner {
       margin: 16px 24px 0;
@@ -617,9 +620,13 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
       gap: 10px;
       padding: 11px 14px;
       background: var(--bg-card);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
+      transition: border-color 120ms;
     }
+    .q-row:hover { border-color: var(--border-hover); }
 
     .drag-handle { color: var(--text-3); flex-shrink: 0; cursor: grab; }
     .drag-handle:active { cursor: grabbing; }
@@ -675,6 +682,9 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
     .bank-panel {
       width: 320px;
       background: var(--bg-card);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      box-shadow: var(--card-shadow);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
       display: flex;
@@ -696,7 +706,7 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
 
     .bank-select {
       flex: 1; padding: 5px 8px;
-      background: var(--bg); border: 1px solid var(--border);
+      background: var(--bg-elevated); border: 1px solid var(--border);
       border-radius: var(--radius-sm); color: var(--text-1);
       font-size: 12px; font-family: var(--font); outline: none; cursor: pointer;
     }
@@ -713,7 +723,7 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
     .bank-search {
       width: 100%;
       padding: 6px 10px;
-      background: var(--bg);
+      background: var(--bg-elevated);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       color: var(--text-1);
@@ -731,10 +741,12 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
       align-items: flex-start;
       gap: 8px;
       padding: 10px 12px;
-      background: var(--bg);
+      background: var(--bg-elevated);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
+      transition: border-color 120ms;
     }
+    .bank-item:hover { border-color: var(--border-hover); }
 
     .bank-item-body { flex: 1; }
 

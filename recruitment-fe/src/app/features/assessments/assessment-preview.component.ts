@@ -166,6 +166,9 @@ import { AssessmentPreview, PreviewQuestion } from '../../core/assessment/assess
 
     .assessment-info-card {
       background: var(--bg-card); border: 1px solid var(--border);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      box-shadow: var(--card-shadow);
       border-radius: var(--radius-lg); padding: 16px 20px;
       margin-bottom: 20px;
     }
@@ -183,13 +186,17 @@ import { AssessmentPreview, PreviewQuestion } from '../../core/assessment/assess
 
     .question-card {
       background: var(--bg-card); border: 1px solid var(--border);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      box-shadow: var(--card-shadow);
       border-radius: var(--radius-lg); padding: 18px 20px;
     }
 
     .question-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 
     .q-number {
-      background: var(--accent); color: #fff;
+      background: var(--gradient-accent); color: #fff;
+      box-shadow: 0 0 10px rgba(255, 107, 44, 0.3);
       font-weight: 700; font-size: 12px;
       width: 24px; height: 24px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;

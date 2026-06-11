@@ -318,8 +318,19 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
     :host { display: block; }
 
     .take-page {
-      min-height: 100vh; background: var(--bg);
+      min-height: 100vh; background: transparent;
       display: flex; flex-direction: column;
+    }
+
+    /* Glass treatment so cards read clearly over the animated backdrop */
+    .submitted-card, .guide-card, .password-card, .modal-card,
+    .question-card, .topbar, .nav-panel {
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+    }
+
+    .submitted-card, .guide-card, .password-card, .modal-card, .question-card {
+      box-shadow: var(--card-shadow);
     }
 
     .loading-screen, .error-screen, .submitted-screen {
@@ -391,16 +402,24 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
     .guide-rules-list li { font-size: 13.5px; color: var(--text-2); line-height: 1.5; }
 
     .guide-start-btn {
-      padding: 12px 24px; background: var(--accent); color: #fff;
+      padding: 12px 24px; background: var(--gradient-accent); color: #fff;
       border: none; border-radius: var(--radius-sm);
       font-size: 14px; font-weight: 600; cursor: pointer;
-      font-family: var(--font); transition: background 150ms; align-self: flex-start;
+      font-family: var(--font); align-self: flex-start;
+      box-shadow: 0 2px 14px rgba(255, 107, 44, 0.3);
+      transition: box-shadow 180ms ease, transform 180ms ease, filter 180ms ease;
     }
-    .guide-start-btn:hover { background: var(--accent-hover); }
+    .guide-start-btn:hover {
+      filter: brightness(1.12);
+      box-shadow: var(--glow-accent);
+      transform: translateY(-1px);
+    }
 
     /* Modal overlay */
     .modal-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      position: fixed; inset: 0; background: rgba(2, 4, 16, 0.55);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
       display: flex; align-items: center; justify-content: center;
       z-index: 100; padding: 20px;
     }
@@ -434,11 +453,12 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
     .modal-btn-cancel:hover { background: var(--bg-hover); color: var(--text-1); }
 
     .modal-btn-confirm {
-      padding: 8px 18px; background: var(--accent); color: #fff;
+      padding: 8px 18px; background: var(--gradient-accent); color: #fff;
       border: none; border-radius: var(--radius-sm);
       font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font);
+      transition: filter 150ms;
     }
-    .modal-btn-confirm:hover:not(:disabled) { background: var(--accent-hover); }
+    .modal-btn-confirm:hover:not(:disabled) { filter: brightness(1.12); }
     .modal-btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .modal-btn-danger {
@@ -460,7 +480,8 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
 
     .logo-mark {
       width: 30px; height: 30px; border-radius: 7px;
-      background: var(--accent); color: #fff;
+      background: var(--gradient-accent); color: #fff;
+      box-shadow: 0 0 12px rgba(255, 107, 44, 0.35);
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
 
@@ -476,7 +497,19 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
       transition: background 300ms, color 300ms;
     }
     .timer-amber { background: var(--warning-subtle); color: var(--warning); }
-    .timer-red { background: var(--danger-subtle); color: var(--danger); }
+    .timer-red {
+      background: var(--danger-subtle); color: var(--danger);
+      animation: timer-pulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes timer-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(251, 94, 108, 0.35); }
+      50%      { box-shadow: 0 0 0 6px rgba(251, 94, 108, 0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .timer-red { animation: none; }
+    }
 
     .topbar-right { display: flex; align-items: center; gap: 10px; }
 
@@ -528,7 +561,11 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
       transition: all 120ms; display: flex; align-items: center; justify-content: center;
     }
     .nav-cell:hover { background: var(--bg-hover); color: var(--text-1); }
-    .nav-cell.nav-current { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+    .nav-cell.nav-current {
+      background: var(--gradient-accent); border-color: var(--accent);
+      color: #fff; font-weight: 700;
+      box-shadow: 0 0 10px rgba(255, 107, 44, 0.35);
+    }
     .nav-cell.nav-answered { background: var(--success-subtle); border-color: rgba(16,185,129,.3); color: var(--success); }
     .nav-cell.nav-flagged { border-color: var(--warning); color: var(--warning); background: var(--warning-subtle); }
     .nav-cell.nav-current.nav-flagged { background: var(--accent); border-color: var(--warning); color: #fff; }
@@ -553,7 +590,7 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
     .progress-bar-wrap {
       height: 3px; background: var(--border);
     }
-    .progress-bar { height: 100%; background: var(--accent); transition: width 300ms; }
+    .progress-bar { height: 100%; background: var(--gradient-accent); transition: width 300ms; }
 
     .question-meta {
       display: flex; align-items: center; gap: 10px;
@@ -676,8 +713,8 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
     }
     .nav-btn:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-1); }
     .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .nav-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .nav-btn.primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .nav-btn.primary { background: var(--gradient-accent); color: #fff; border-color: transparent; }
+    .nav-btn.primary:hover:not(:disabled) { filter: brightness(1.12); }
 
     .password-screen {
       flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px;
@@ -712,11 +749,12 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
 
     .password-btn {
       width: 100%; padding: 10px 14px;
-      background: var(--accent); color: #fff; border: none;
+      background: var(--gradient-accent); color: #fff; border: none;
       border-radius: var(--radius-sm); font-size: 14px; font-weight: 600;
-      cursor: pointer; font-family: var(--font); transition: background 150ms;
+      cursor: pointer; font-family: var(--font); transition: filter 150ms;
+      box-shadow: 0 2px 14px rgba(255, 107, 44, 0.3);
     }
-    .password-btn:hover:not(:disabled) { background: var(--accent-hover); }
+    .password-btn:hover:not(:disabled) { filter: brightness(1.12); }
     .password-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   `],
 })

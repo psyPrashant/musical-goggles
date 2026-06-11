@@ -156,15 +156,22 @@ type Tab = 'all' | 'active' | 'draft' | 'closed';
     .assessment-row {
       display: flex; align-items: center; gap: 14px;
       background: var(--bg-card); border: 1px solid var(--border);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      box-shadow: var(--card-shadow);
       border-radius: var(--radius-lg); padding: 16px 20px;
-      transition: border-color 150ms;
+      transition: border-color 150ms, transform 150ms, box-shadow 150ms;
     }
 
-    .assessment-row:hover { border-color: var(--border-hover); }
+    .assessment-row:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-1px);
+    }
 
     .assessment-icon {
       width: 42px; height: 42px; border-radius: 10px;
-      background: var(--accent-subtle); color: var(--accent);
+      background: var(--gradient-accent); color: #fff;
+      box-shadow: 0 0 14px rgba(255, 107, 44, 0.25);
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
 
