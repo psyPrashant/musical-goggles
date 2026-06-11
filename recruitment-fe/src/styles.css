@@ -123,10 +123,18 @@ body::after {
 
 :root.light body::before {
   background:
-    radial-gradient(640px 520px at 18% 22%, rgba(242, 92, 26, 0.10), transparent 65%),
-    radial-gradient(720px 560px at 82% 12%, rgba(124, 58, 237, 0.09), transparent 65%),
-    radial-gradient(640px 640px at 70% 82%, rgba(233, 30, 108, 0.06), transparent 65%),
-    radial-gradient(560px 520px at 28% 88%, rgba(34, 104, 209, 0.06), transparent 65%);
+    radial-gradient(640px 520px at 18% 22%, rgba(242, 92, 26, 0.20), transparent 65%),
+    radial-gradient(720px 560px at 82% 12%, rgba(124, 58, 237, 0.17), transparent 65%),
+    radial-gradient(640px 640px at 70% 82%, rgba(233, 30, 108, 0.12), transparent 65%),
+    radial-gradient(560px 520px at 28% 88%, rgba(34, 104, 209, 0.12), transparent 65%);
+}
+
+:root.light body::after {
+  background-image:
+    linear-gradient(rgba(90, 100, 160, 0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(90, 100, 160, 0.10) 1px, transparent 1px);
+  mask-image: radial-gradient(ellipse 100% 90% at 50% 0%, black 35%, transparent 90%);
+  -webkit-mask-image: radial-gradient(ellipse 100% 90% at 50% 0%, black 35%, transparent 90%);
 }
 
 @keyframes aurora-drift {
@@ -288,8 +296,109 @@ html.light select {
   overflow: hidden;
 }
 
-:root.light .space-fx {
+/* In light mode the cosmos yields to a sunlit studio: the dark-only
+   layers hide and the login page's orb + ring language takes over. */
+:root.light .stars,
+:root.light .galaxy,
+:root.light .shooting-star,
+:root.light .planet {
   display: none;
+}
+
+/* ---- Light mode: floating gradient orbs (login page style) ---- */
+
+.light-orb {
+  display: none;
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(85px);
+}
+
+:root.light .light-orb {
+  display: block;
+}
+
+.light-orb-1 {
+  width: 560px;
+  height: 560px;
+  top: -180px;
+  right: 6%;
+  background: radial-gradient(circle, rgba(242, 92, 26, 0.26), transparent 70%);
+  animation: light-orb-float 13s ease-in-out infinite alternate;
+}
+
+.light-orb-2 {
+  width: 500px;
+  height: 500px;
+  bottom: -160px;
+  left: 4%;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.22), transparent 70%);
+  animation: light-orb-float 16s ease-in-out infinite alternate-reverse;
+}
+
+.light-orb-3 {
+  width: 420px;
+  height: 420px;
+  top: 38%;
+  left: 42%;
+  background: radial-gradient(circle, rgba(233, 30, 108, 0.14), transparent 70%);
+  animation: light-orb-float 19s ease-in-out 2s infinite alternate;
+}
+
+@keyframes light-orb-float {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(48px, 32px) scale(1.14); }
+}
+
+/* ---- Light mode: spinning conic rings (login page style) ---- */
+
+.light-ring {
+  display: none;
+  position: absolute;
+  top: -140px;
+  right: -120px;
+  width: 680px;
+  height: 680px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    rgba(242, 92, 26, 0.55) 12%,
+    transparent 26%,
+    transparent 50%,
+    rgba(124, 58, 237, 0.45) 62%,
+    transparent 76%
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), black calc(100% - 1.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), black calc(100% - 1.5px));
+  animation: light-ring-spin 22s linear infinite;
+}
+
+:root.light .light-ring {
+  display: block;
+}
+
+.light-ring-2 {
+  top: auto;
+  right: auto;
+  bottom: -180px;
+  left: -160px;
+  width: 560px;
+  height: 560px;
+  background: conic-gradient(
+    from 180deg,
+    transparent 0%,
+    rgba(233, 30, 108, 0.4) 14%,
+    transparent 30%,
+    transparent 55%,
+    rgba(34, 104, 209, 0.35) 68%,
+    transparent 82%
+  );
+  animation: light-ring-spin 30s linear infinite reverse;
+}
+
+@keyframes light-ring-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* ---- Parallax starfields: tiled gradients, drifting by exactly
@@ -491,7 +600,9 @@ html.light select {
   .galaxy,
   .shooting-star,
   .planet,
-  .planet-moon-orbit {
+  .planet-moon-orbit,
+  .light-orb,
+  .light-ring {
     animation: none;
   }
 
