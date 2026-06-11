@@ -1324,3 +1324,10 @@ What's next:
 
 ---
 
+## 2026-06-11 11:33 | prashant.kessa | in: 432 out: 7961 | cache_read: 1006333 cache_write: 104091
+
+> i really like it - dark mode is beautiful
+can you update the light mode - use the design for the login page for light mode and carry that style to the rest of the app - currently its just a plain grey colour (the light grid and colour pattern)
+
+---
+
