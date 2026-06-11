@@ -6,10 +6,11 @@ import { FlagService } from '../../core/flag/flag.service';
 import { FlagAuditEntry, FlagListItem, FlagReason, FlagResponse, FlagStatus } from '../../core/flag/flag.model';
 import { ReminderService } from '../../core/reminder/reminder.service';
 import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
+import { CodeEditorComponent } from '../../shared/code-editor/code-editor.component';
 
 @Component({
   selector: 'app-results',
-  imports: [],
+  imports: [CodeEditorComponent],
   template: `
     <div class="page">
       <div class="page-header">
@@ -346,7 +347,11 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                               <span class="score-display">{{ sub.score }}/{{ sub.maxScore }}</span>
                             }
                           </div>
-                          <div class="answer-content">{{ sub.candidateAnswer ?? '(No answer)' }}</div>
+                          @if (sub.questionType === 'CODE_SUBMISSION' && sub.candidateAnswer) {
+                            <app-code-editor [value]="sub.candidateAnswer" language="java" [readOnly]="true" height="260px" />
+                          } @else {
+                            <div class="answer-content">{{ sub.candidateAnswer ?? '(No answer)' }}</div>
+                          }
                           @if (sub.feedback) {
                             <div class="feedback-display">{{ sub.feedback }}</div>
                           }
@@ -390,7 +395,11 @@ import { ReminderSendLogDto } from '../../core/reminder/reminder.model';
                         }
                       </div>
 
-                      <div class="answer-content">{{ q.candidateAnswer ?? '(No answer)' }}</div>
+                      @if (q.questionType === 'CODE_SUBMISSION' && q.candidateAnswer) {
+                        <app-code-editor [value]="q.candidateAnswer" language="java" [readOnly]="true" height="260px" />
+                      } @else {
+                        <div class="answer-content">{{ q.candidateAnswer ?? '(No answer)' }}</div>
+                      }
 
                       @if (q.feedback) {
                         <div class="feedback-display">{{ q.feedback }}</div>

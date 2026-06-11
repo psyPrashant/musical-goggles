@@ -6,7 +6,10 @@ services:
       POSTGRES_USER: ${DB_USER:-recruitment}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-recruitment}
     ports:
-      - "5432:5432"
+      # Host port 5433: a natively installed PostgreSQL service commonly owns
+      # 5432 on the host and silently shadows the container. In-network
+      # consumers (backend service) still use db:5432.
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -21,6 +24,48 @@ services:
       - "1025:1025"
       - "8025:8025"
 
+  # Sandboxed code-execution engine for CODE_SUBMISSION questions.
+  # Port 2000 is published so a backend run with ./mvnw spring-boot:run
+  # (default PISTON_BASE_URL http://localhost:2000/api/v2) can reach it too.
+  piston:
+    image: ghcr.io/engineer-man/piston
+    privileged: true
+    ports:
+      - "2000:2000"
+    volumes:
+      - piston_data:/piston
+    tmpfs:
+      - /tmp:exec
+    environment:
+      PISTON_RUN_TIMEOUT: 10000
+      PISTON_COMPILE_TIMEOUT: 15000
+    restart: unless-stopped
+    healthcheck:
+      # The piston image has node but not curl/wget.
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:2000/api/v2/runtimes', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # One-shot: installs the Java runtime into the piston volume (idempotent).
+  piston-init:
+    image: curlimages/curl:latest
+    depends_on:
+      piston:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -c
+      - >
+        if curl -sf http://piston:2000/api/v2/runtimes | grep -q '"language":"java"';
+        then echo "Java runtime already installed";
+        else echo "Installing Java runtime (one-time download)...";
+        curl -sf -X POST http://piston:2000/api/v2/packages
+        -H "Content-Type: application/json"
+        -d '{"language":"java","version":"15.0.2"}' && echo " done";
+        fi
+    restart: "no"
+
   backend:
     build: ./recruitment-be
     ports:
@@ -33,11 +78,14 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-recruitment}
       SPRING_MAIL_HOST: mailhog
       SPRING_MAIL_PORT: 1025
+      PISTON_BASE_URL: http://piston:2000/api/v2
     depends_on:
       db:
         condition: service_healthy
       mailhog:
         condition: service_started
+      piston:
+        condition: service_healthy
 
   frontend:
     build: ./recruitment-fe
@@ -48,3 +96,4 @@ services:
 
 volumes:
   postgres_data:
+  piston_data:
