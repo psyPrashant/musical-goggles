@@ -294,4 +294,103 @@ class QuestionControllerIntegrationTest extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(createTextQuestionRequest())))
                 .andExpect(status().isCreated());
     }
+
+    private String createTextQuestionWithMaxScore(String title, int maxScore) throws Exception {
+        QuestionRequest req = new QuestionRequest(QuestionType.TEXT, title, "body", null, null, null, null, maxScore, null);
+        String body = mockMvc.perform(post("/api/questions")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andReturn().getResponse().getContentAsString();
+        return objectMapper.readTree(body).get("id").asText();
+    }
+
+    @Test
+    void createGroupQuestion_maxScoreEqualsSumOfMemberMaxScores() throws Exception {
+        String id1 = createTextQuestionWithMaxScore("Sub Q1", 2);
+        String id2 = createTextQuestionWithMaxScore("Sub Q2", 3);
+        String id3 = createTextQuestionWithMaxScore("Sub Q3", 5);
+
+        QuestionRequest group = new QuestionRequest(QuestionType.GROUP, "Scenario", "Preamble", null, null, null,
+                List.of(java.util.UUID.fromString(id1), java.util.UUID.fromString(id2), java.util.UUID.fromString(id3)),
+                999, null);
+
+        mockMvc.perform(post("/api/questions")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(group)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.type").value("GROUP"))
+                .andExpect(jsonPath("$.maxScore").value(10))
+                .andExpect(jsonPath("$.memberQuestions", hasSize(3)));
+    }
+
+    @Test
+    void createGroupQuestion_fewerThanTwoMembers_returns400() throws Exception {
+        String id1 = createTextQuestionWithMaxScore("Sub Q1", 2);
+
+        QuestionRequest group = new QuestionRequest(QuestionType.GROUP, "Scenario", "Preamble", null, null, null,
+                List.of(java.util.UUID.fromString(id1)), null, null);
+
+        mockMvc.perform(post("/api/questions")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(group)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createGroupQuestion_nonExistentMember_returns404() throws Exception {
+        String id1 = createTextQuestionWithMaxScore("Sub Q1", 2);
+
+        QuestionRequest group = new QuestionRequest(QuestionType.GROUP, "Scenario", "Preamble", null, null, null,
+                List.of(java.util.UUID.fromString(id1), java.util.UUID.randomUUID()), null, null);
+
+        mockMvc.perform(post("/api/questions")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(group)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updateGroupQuestion_recomputesMaxScoreFromExistingMembers() throws Exception {
+        String id1 = createTextQuestionWithMaxScore("Sub Q1", 2);
+        String id2 = createTextQuestionWithMaxScore("Sub Q2", 3);
+
+        QuestionRequest group = new QuestionRequest(QuestionType.GROUP, "Scenario", "Preamble", null, null, null,
+                List.of(java.util.UUID.fromString(id1), java.util.UUID.fromString(id2)), null, null);
+
+        String body = mockMvc.perform(post("/api/questions")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(group)))
+                .andReturn().getResponse().getContentAsString();
+        String groupId = objectMapper.readTree(body).get("id").asText();
+
+        QuestionRequest update = new QuestionRequest(QuestionType.GROUP, "Updated Scenario", "Updated preamble",
+                null, null, null, null, 999, null);
+
+        mockMvc.perform(put("/api/questions/" + groupId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(update)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Updated Scenario"))
+                .andExpect(jsonPath("$.maxScore").value(5));
+    }
+
+    @Test
+    void updateQuestion_nonGroup_honorsRequestMaxScore() throws Exception {
+        String id = createTextQuestionWithMaxScore("Sample", 1);
+
+        QuestionRequest update = new QuestionRequest(QuestionType.TEXT, "Sample", "body", null, null, null, null, 7, null);
+
+        mockMvc.perform(put("/api/questions/" + id)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(update)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.maxScore").value(7));
+    }
 }

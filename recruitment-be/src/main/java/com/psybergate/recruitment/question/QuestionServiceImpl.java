@@ -29,7 +29,7 @@ public class QuestionServiceImpl implements QuestionService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
 
         Question question = buildEntity(req);
-        question.setMaxScore(req.maxScore() != null ? req.maxScore() : 1);
+        question.setMaxScore(resolveMaxScore(question, req));
         question.setCreatedBy(creator);
         question.setTags(tagService.resolveTagNames(req.tags()));
         question.setDifficulty(req.difficulty());
@@ -67,12 +67,12 @@ public class QuestionServiceImpl implements QuestionService {
 
         question.setTitle(req.title());
         question.setBody(req.body());
-        question.setMaxScore(req.maxScore() != null ? req.maxScore() : 1);
         question.setDifficulty(req.difficulty());
         question.getTags().clear();
         question.getTags().addAll(tagService.resolveTagNames(req.tags()));
 
         applyTypeSpecificUpdate(question, req);
+        question.setMaxScore(resolveMaxScore(question, req));
 
         QuestionResponse response = toResponse(questionRepository.save(question));
         tagService.cleanupOrphans();
@@ -106,6 +106,15 @@ public class QuestionServiceImpl implements QuestionService {
             }
             case GROUP -> buildGroup(req);
         };
+    }
+
+    private int resolveMaxScore(Question question, QuestionRequest req) {
+        if (question instanceof GroupQuestion gq) {
+            return gq.getMembers().stream()
+                    .mapToInt(m -> m.getQuestion().getMaxScore())
+                    .sum();
+        }
+        return req.maxScore() != null ? req.maxScore() : 1;
     }
 
     private GroupQuestion buildGroup(QuestionRequest req) {
