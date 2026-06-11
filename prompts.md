@@ -1326,8 +1326,27 @@ What's next:
 
 ## 2026-06-11 11:33 | prashant.kessa | in: 432 out: 7961 | cache_read: 1006333 cache_write: 104091
 
-> i really like it - dark mode is beautiful
-can you update the light mode - use the design for the login page for light mode and carry that style to the rest of the app - currently its just a plain grey colour (the light grid and colour pattern)
+> update the light mode - use the design for the login page for light mode and carry that style to the rest of the app - currently its just a plain grey colour (the light grid and colour pattern)
+
+---
+
+## 2026-06-11 11:41 | prashant.kessa | in: 298 out: 20367 | cache_read: 2698627 cache_write: 139173
+
+> commit this - then i want an update for the "Results" section. the list of assessments -  can you update this whole section so that visibility is better. you can adjust the way the cards are grouped etc - it should be more intuitive
+
+Make the adjustments you think would be best
+
+---
+
+## 2026-06-11 11:57 | prashant.kessa | in: 272 out: 3849 | cache_read: 983467 cache_write: 144654
+
+> the score ring should not have a result if the marking is not done, also i want the scroll for the assessments to be separate from the scroll of the assessment questions
+
+---
+
+## 2026-06-11 12:02 | prashant.kessa | in: 10 out: 1499 | cache_read: 675936 cache_write: 148538
+
+> below the ring - instead of saying 9/10 answered it should say questions marked
 
 ---
 
