@@ -6,10 +6,12 @@ import { AuthService } from '../../core/auth/auth.service';
 import { AssessmentPreview } from '../../core/assessment/assessment.model';
 import { CandidateTakeService } from '../../core/take/candidate-take.service';
 import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidate-take.model';
+import { CodeEditorComponent } from '../../shared/code-editor/code-editor.component';
+import { CodeRunnerPanelComponent } from '../../shared/code-runner/code-runner-panel.component';
 
 @Component({
   selector: 'app-assessment-take',
-  imports: [DatePipe],
+  imports: [DatePipe, CodeEditorComponent, CodeRunnerPanelComponent],
   template: `
     <div class="take-page">
       @if (loading()) {
@@ -240,13 +242,17 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
                       @if (q.languageHint) {
                         <span class="lang-tag">{{ q.languageHint }}</span>
                       }
-                      <span class="code-hint">Paste or type your code below</span>
+                      <span class="code-hint">Your program must declare <code>public class Main</code> with a <code>main</code> method</span>
                     </div>
-                    <textarea rows="12"
-                              class="answer-textarea code-textarea"
-                              [value]="answers()[q.id] ?? ''"
-                              (input)="setAnswer(q.id, $any($event.target).value)"
-                              placeholder="// Write your solution here…"></textarea>
+                    <app-code-editor
+                      [value]="answers()[q.id] ?? javaStarter"
+                      language="java"
+                      height="360px"
+                      (valueChange)="setAnswer(q.id, $event)"
+                      (runRequested)="runner.run()" />
+                    <app-code-runner-panel #runner
+                      [code]="answers()[q.id] ?? javaStarter"
+                      [sessionToken]="sessionToken()!" />
                   </div>
                 }
 
@@ -286,12 +292,17 @@ import { AssessmentTakeResponse, SubmitResponse } from '../../core/take/candidat
                           <div class="code-answer">
                             <div class="code-bar">
                               @if (sub.languageHint) { <span class="lang-tag">{{ sub.languageHint }}</span> }
-                              <span class="code-hint">Paste or type your code below</span>
+                              <span class="code-hint">Your program must declare <code>public class Main</code> with a <code>main</code> method</span>
                             </div>
-                            <textarea rows="10" class="answer-textarea code-textarea"
-                                      [value]="answers()[sub.id] ?? ''"
-                                      (input)="setAnswer(sub.id, $any($event.target).value)"
-                                      placeholder="// Write your solution here…"></textarea>
+                            <app-code-editor
+                              [value]="answers()[sub.id] ?? javaStarter"
+                              language="java"
+                              height="300px"
+                              (valueChange)="setAnswer(sub.id, $event)"
+                              (runRequested)="subRunner.run()" />
+                            <app-code-runner-panel #subRunner
+                              [code]="answers()[sub.id] ?? javaStarter"
+                              [sessionToken]="sessionToken()!" />
                           </div>
                         }
                       </div>
@@ -750,6 +761,11 @@ export class AssessmentTakeComponent implements OnInit, OnDestroy {
   readonly answers = signal<Record<string, string | undefined>>({});
   readonly flagged = signal<Set<string>>(new Set());
   readonly timeLeft = signal(0);
+
+  // Prefilled in the code editor; never autosaved until the candidate edits.
+  // "Main" is a contract with the run endpoint, which compiles the file as Main.java.
+  readonly javaStarter =
+    'public class Main {\n    public static void main(String[] args) {\n        \n    }\n}\n';
 
   private timerId: ReturnType<typeof setInterval> | null = null;
   private deadlineMs: number | null = null;

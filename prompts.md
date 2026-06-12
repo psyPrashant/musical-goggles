@@ -1350,3 +1350,21 @@ Make the adjustments you think would be best
 
 ---
 
+## 2026-06-11 15:39 | prashant.kessa | in: 290 out: 13005 | cache_read: 1083918 cache_write: 20916
+
+> can you figure out a way to have an inbrowser code editor. something like leetcode, i want this feature for the coding questions in the assessment. lets just try java for now. something that the candidate can use to write and run their code. what is the best option for this. ask clarifying questions
+
+---
+
+## 2026-06-12 01:00 | prashant.kessa | in: 6508 out: 20766 | cache_read: 16209884 cache_write: 310576
+
+> you do it
+
+---
+
+## 2026-06-12 01:21 | prashant.kessa | in: 2727 out: 22421 | cache_read: 10813554 cache_write: 29261
+
+> fix everything for me, tests, docker etc... so i can just run my application normally
+
+---
+

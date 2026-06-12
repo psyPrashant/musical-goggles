@@ -29,6 +29,12 @@ A recruitment platform with two sub-projects:
 ./mvnw test -Dtest=MyTestClass#myMethod
 ```
 
+Integration tests use TestContainers — Docker Desktop must be running. If tests fail with "Could not find a valid Docker environment" on Docker Engine 29+, ensure `%USERPROFILE%\.docker-java.properties` contains `api.version=1.44`.
+
+### Code execution (Piston)
+
+`CODE_SUBMISSION` questions run candidate Java via a self-hosted [Piston](https://github.com/engineer-man/piston) engine — the public emkc.org API is whitelist-only and unusable. `docker compose up` starts it (service `piston`, port 2000) and `piston-init` installs the Java runtime into its volume on first run. A locally run backend (`./mvnw spring-boot:run`) reaches it at the default `PISTON_BASE_URL` of `http://localhost:2000/api/v2`.
+
 ### Stack & Architecture
 
 - **Spring Boot 4.0.6**, Java 17, Maven

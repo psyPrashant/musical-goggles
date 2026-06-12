@@ -22,3 +22,15 @@ jwt:
 
 app:
   base-url: ${APP_BASE_URL:http://localhost:4200}
+
+# Self-hosted Piston engine (docker run --privileged -p 2000:2000 ghcr.io/engineer-man/piston).
+# The public API (emkc.org) is whitelist-only since 2026-02-15 and cannot be used anonymously.
+piston:
+  base-url: ${PISTON_BASE_URL:http://localhost:2000/api/v2}
+  java-version: "*"
+  connect-timeout: 3s
+  read-timeout: 20s
+  run-timeout-ms: 5000
+  compile-timeout-ms: 10000
+  min-interval-ms: 1100
+  max-queue-wait-ms: 8000

@@ -29,6 +29,23 @@
 	<properties>
 		<java.version>17</java.version>
 	</properties>
+
+	<profiles>
+		<!-- On Windows, JDK 24+ NIO pipes use Unix-domain sockets whose default
+		     socket directory (the user temp dir) can make Tomcat fail at startup
+		     with "Invalid argument: connect". Redirect them to a short path. -->
+		<profile>
+			<id>windows-nio-pipe-fix</id>
+			<activation>
+				<os>
+					<family>windows</family>
+				</os>
+			</activation>
+			<properties>
+				<spring-boot.run.jvmArguments>-Djdk.net.unixdomain.tmpdir=C:\Windows\Temp</spring-boot.run.jvmArguments>
+			</properties>
+		</profile>
+	</profiles>
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
