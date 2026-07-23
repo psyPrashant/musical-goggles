@@ -1,7 +1,7 @@
 package com.psybergate.recruitment.reminder;
 
 import com.psybergate.recruitment.reminder.dto.ReminderSendLogDto;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,10 +14,10 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/invitations/{invitationId}/reminders")
 @PreAuthorize("hasAnyRole('ADMIN','RECRUITER')")
+@RequiredArgsConstructor
 public class ReminderController {
 
-    @Autowired
-    private ReminderService reminderService;
+    private final ReminderService reminderService;
 
     @PostMapping
     public ResponseEntity<ReminderSendLogDto> sendReminder(

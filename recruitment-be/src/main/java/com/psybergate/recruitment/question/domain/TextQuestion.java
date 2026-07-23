@@ -1,5 +1,7 @@
-package com.psybergate.recruitment.domain;
+package com.psybergate.recruitment.question.domain;
 
+import com.psybergate.recruitment.domain.Question;
+import com.psybergate.recruitment.domain.QuestionType;
 import jakarta.persistence.*;
 import lombok.NoArgsConstructor;
 

@@ -1368,3 +1368,32 @@ Make the adjustments you think would be best
 
 ---
 
+## 2026-07-23 17:01 | prashant.kessa | in: 4 out: 1013 | cache_read: 82332 cache_write: 20002
+
+> i need to cleanup this project for a demo to a client (so the goal is to ensure that everything looks good). lets focus on the backend first. can you go through it. then also ensure that everything calls the service interface instead of the service impl.
+
+---
+## 2026-07-23 21:56 | prashant.kessa | in: 60 out: 29253 | cache_read: 7536636 cache_write: 48180
+
+> add a global exception handler, then commit and push to a new branch
+
+---
+
+## 2026-07-23 22:06 | prashant.kessa | in: 8 out: 1384 | cache_read: 1088698 cache_write: 1858
+
+> open a draft pr please, also rename the branch to refactor/demo
+
+---
+
+## 2026-07-23 22:09 | prashant.kessa | in: 4 out: 2215 | cache_read: 547487 cache_write: 2575
+
+> can you review all the unit tests and integration tests. some of them are calling the service impl directly. fix any issues/inconsistencies you come across
+
+---
+
+## 2026-07-23 22:30 | prashant.kessa | in: 10 out: 3772 | cache_read: 1781610 cache_write: 8291
+
+> i deleted them. continue
+
+---
+

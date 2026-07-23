@@ -83,7 +83,7 @@ class AuthControllerIntegrationTest extends AbstractIntegrationTest {
     // Task 4.4 — protected endpoint access
     @Test
     void protectedEndpoint_withoutToken_returns401() throws Exception {
-        mockMvc.perform(get("/api/protected-ping"))
+        mockMvc.perform(get("/api/dashboard/stats"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -92,7 +92,7 @@ class AuthControllerIntegrationTest extends AbstractIntegrationTest {
         User user = userRepository.findByEmail(TEST_EMAIL).orElseThrow();
         String token = jwtService.generateToken(user.getId().toString(), Role.RECRUITER, 1L);
 
-        mockMvc.perform(get("/api/protected-ping")
+        mockMvc.perform(get("/api/dashboard/stats")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
     }

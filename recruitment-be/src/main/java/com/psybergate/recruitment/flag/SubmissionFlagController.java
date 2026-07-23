@@ -1,10 +1,10 @@
 package com.psybergate.recruitment.flag;
 
-import com.psybergate.recruitment.domain.FlagReason;
 import com.psybergate.recruitment.domain.FlagStatus;
+import com.psybergate.recruitment.flag.domain.FlagReason;
 import com.psybergate.recruitment.flag.dto.*;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,10 +18,10 @@ import java.util.UUID;
 
 @RestController
 @PreAuthorize("hasAnyRole('ADMIN','RECRUITER')")
+@RequiredArgsConstructor
 public class SubmissionFlagController {
 
-    @Autowired
-    private SubmissionFlagService flagService;
+    private final SubmissionFlagService flagService;
 
     /** 4.1 — Create flag */
     @PostMapping("/api/submissions/{submissionId}/flags")

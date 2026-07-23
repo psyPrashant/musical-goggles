@@ -1,5 +1,6 @@
 package com.psybergate.recruitment.domain;
 
+import com.psybergate.recruitment.flag.domain.FlagReason;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

@@ -1,8 +1,8 @@
 package com.psybergate.recruitment.tag;
 
 import com.psybergate.recruitment.domain.Tag;
-import com.psybergate.recruitment.repository.TagRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.psybergate.recruitment.tag.repository.TagRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,10 +13,10 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class TagServiceImpl implements TagService {
 
-    @Autowired
-    private TagRepository tagRepository;
+    private final TagRepository tagRepository;
 
     @Override
     public Tag findOrCreate(String name) {

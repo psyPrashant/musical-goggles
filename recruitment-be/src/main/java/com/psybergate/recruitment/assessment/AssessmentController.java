@@ -2,7 +2,7 @@ package com.psybergate.recruitment.assessment;
 
 import com.psybergate.recruitment.assessment.dto.*;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,10 +15,10 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/assessments")
 @PreAuthorize("hasAnyRole('ADMIN','RECRUITER')")
+@RequiredArgsConstructor
 public class AssessmentController {
 
-    @Autowired
-    private AssessmentService assessmentService;
+    private final AssessmentService assessmentService;
 
     @PostMapping
     public ResponseEntity<AssessmentDetailResponse> create(@RequestBody @Valid AssessmentRequest request,

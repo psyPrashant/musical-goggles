@@ -14,7 +14,7 @@ import com.psybergate.recruitment.repository.CandidateRepository;
 import com.psybergate.recruitment.repository.CandidateSubmissionRepository;
 import com.psybergate.recruitment.repository.InvitationRepository;
 import com.psybergate.recruitment.security.JwtService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,16 +29,17 @@ import java.util.UUID;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class InvitationServiceImpl implements InvitationService {
 
     private static final long INVITATION_TTL_HOURS = 48L;
 
-    @Autowired private CandidateRepository candidateRepository;
-    @Autowired private AssessmentRepository assessmentRepository;
-    @Autowired private InvitationRepository invitationRepository;
-    @Autowired private CandidateSubmissionRepository submissionRepository;
-    @Autowired private JwtService jwtService;
-    @Autowired private EmailService emailService;
+    private final CandidateRepository candidateRepository;
+    private final AssessmentRepository assessmentRepository;
+    private final InvitationRepository invitationRepository;
+    private final CandidateSubmissionRepository submissionRepository;
+    private final JwtService jwtService;
+    private final EmailService emailService;
 
     private static final List<SubmissionStatus> COMPLETED_STATUSES =
             List.of(SubmissionStatus.SUBMITTED, SubmissionStatus.AUTO_SUBMITTED);

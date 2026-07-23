@@ -1,6 +1,6 @@
 package com.psybergate.recruitment.flag.dto;
 
-import com.psybergate.recruitment.domain.FlagReason;
+import com.psybergate.recruitment.flag.domain.FlagReason;
 import jakarta.validation.constraints.NotNull;
 
 public record CreateFlagRequest(

@@ -4,8 +4,8 @@ import com.psybergate.recruitment.domain.*;
 import com.psybergate.recruitment.repository.*;
 import java.util.ArrayList;
 import com.psybergate.recruitment.take.dto.*;
+import lombok.RequiredArgsConstructor;
 import org.hibernate.Hibernate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,20 +19,21 @@ import java.util.stream.Stream;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class CandidateTakeServiceImpl implements CandidateTakeService {
 
     private static final int MAX_TEXT_LENGTH = 65_535;
 
-    @Autowired private AssessmentRepository assessmentRepository;
-    @Autowired private AssessmentQuestionRepository assessmentQuestionRepository;
-    @Autowired private QuestionRepository questionRepository;
-    @Autowired private CandidateSubmissionRepository submissionRepository;
-    @Autowired private CandidateAnswerRepository answerRepository;
-    @Autowired private AnswerScoreRepository answerScoreRepository;
-    @Autowired private InvitationRepository invitationRepository;
-    @Autowired private com.psybergate.recruitment.repository.SubmissionQuestionSnapshotRepository snapshotRepository;
-    @Autowired private com.psybergate.recruitment.marking.MarkingService markingService;
-    @Autowired private ObjectMapper objectMapper;
+    private final AssessmentRepository assessmentRepository;
+    private final AssessmentQuestionRepository assessmentQuestionRepository;
+    private final QuestionRepository questionRepository;
+    private final CandidateSubmissionRepository submissionRepository;
+    private final CandidateAnswerRepository answerRepository;
+    private final AnswerScoreRepository answerScoreRepository;
+    private final InvitationRepository invitationRepository;
+    private final com.psybergate.recruitment.repository.SubmissionQuestionSnapshotRepository snapshotRepository;
+    private final com.psybergate.recruitment.marking.MarkingService markingService;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional

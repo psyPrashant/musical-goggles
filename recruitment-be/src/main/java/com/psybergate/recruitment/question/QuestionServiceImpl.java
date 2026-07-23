@@ -1,12 +1,13 @@
 package com.psybergate.recruitment.question;
 
 import com.psybergate.recruitment.domain.*;
+import com.psybergate.recruitment.question.domain.TextQuestion;
 import com.psybergate.recruitment.question.dto.*;
 import java.util.UUID;
 import com.psybergate.recruitment.repository.QuestionRepository;
 import com.psybergate.recruitment.repository.UserRepository;
 import com.psybergate.recruitment.tag.TagService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,11 +18,12 @@ import java.util.UUID;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class QuestionServiceImpl implements QuestionService {
 
-    @Autowired private QuestionRepository questionRepository;
-    @Autowired private UserRepository userRepository;
-    @Autowired private TagService tagService;
+    private final QuestionRepository questionRepository;
+    private final UserRepository userRepository;
+    private final TagService tagService;
 
     @Override
     public QuestionResponse create(QuestionRequest req, UUID createdById) {

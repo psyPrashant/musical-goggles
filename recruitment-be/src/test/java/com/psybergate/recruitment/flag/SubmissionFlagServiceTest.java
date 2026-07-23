@@ -1,9 +1,12 @@
 package com.psybergate.recruitment.flag;
 
 import com.psybergate.recruitment.domain.*;
+import com.psybergate.recruitment.flag.domain.FlagReason;
+import com.psybergate.recruitment.flag.domain.SubmissionFlagAudit;
 import com.psybergate.recruitment.flag.dto.FlagAuditResponse;
 import com.psybergate.recruitment.flag.dto.FlagListItemResponse;
 import com.psybergate.recruitment.flag.dto.FlagResponse;
+import com.psybergate.recruitment.flag.repository.SubmissionFlagAuditRepository;
 import com.psybergate.recruitment.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

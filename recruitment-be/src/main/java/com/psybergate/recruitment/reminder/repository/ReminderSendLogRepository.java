@@ -1,4 +1,4 @@
-package com.psybergate.recruitment.repository;
+package com.psybergate.recruitment.reminder.repository;
 
 import com.psybergate.recruitment.reminder.ReminderSendLog;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -1,6 +1,6 @@
-package com.psybergate.recruitment.repository;
+package com.psybergate.recruitment.flag.repository;
 
-import com.psybergate.recruitment.domain.SubmissionFlagAudit;
+import com.psybergate.recruitment.flag.domain.SubmissionFlagAudit;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

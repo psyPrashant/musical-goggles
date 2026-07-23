@@ -4,7 +4,7 @@ import com.psybergate.recruitment.domain.*;
 import com.psybergate.recruitment.email.EmailService;
 import com.psybergate.recruitment.repository.CandidateSubmissionRepository;
 import com.psybergate.recruitment.repository.InvitationRepository;
-import com.psybergate.recruitment.repository.ReminderSendLogRepository;
+import com.psybergate.recruitment.reminder.repository.ReminderSendLogRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

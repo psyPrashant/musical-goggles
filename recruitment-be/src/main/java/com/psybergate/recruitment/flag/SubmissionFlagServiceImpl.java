@@ -1,9 +1,12 @@
 package com.psybergate.recruitment.flag;
 
 import com.psybergate.recruitment.domain.*;
+import com.psybergate.recruitment.flag.domain.FlagReason;
+import com.psybergate.recruitment.flag.domain.SubmissionFlagAudit;
 import com.psybergate.recruitment.flag.dto.*;
+import com.psybergate.recruitment.flag.repository.SubmissionFlagAuditRepository;
 import com.psybergate.recruitment.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +21,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class SubmissionFlagServiceImpl implements SubmissionFlagService {
 
     private static final List<FlagStatus> OPEN_STATUSES = List.of(FlagStatus.FLAGGED, FlagStatus.UNDER_REVIEW, FlagStatus.ACTION_REQUIRED);
@@ -28,11 +32,11 @@ public class SubmissionFlagServiceImpl implements SubmissionFlagService {
             FlagStatus.ACTION_REQUIRED,  Set.of(FlagStatus.RESOLVED, FlagStatus.DISMISSED)
     );
 
-    @Autowired private SubmissionFlagRepository flagRepository;
-    @Autowired private SubmissionFlagAuditRepository auditRepository;
-    @Autowired private CandidateSubmissionRepository submissionRepository;
-    @Autowired private CandidateRepository candidateRepository;
-    @Autowired private AssessmentRepository assessmentRepository;
+    private final SubmissionFlagRepository flagRepository;
+    private final SubmissionFlagAuditRepository auditRepository;
+    private final CandidateSubmissionRepository submissionRepository;
+    private final CandidateRepository candidateRepository;
+    private final AssessmentRepository assessmentRepository;
 
     @Override
     @Transactional

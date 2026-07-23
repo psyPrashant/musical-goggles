@@ -6,8 +6,8 @@ import com.psybergate.recruitment.repository.*;
 import com.psybergate.recruitment.repository.SubmissionFlagRepository;
 import com.psybergate.recruitment.domain.FlagStatus;
 import com.psybergate.recruitment.domain.SubmissionFlag;
+import lombok.RequiredArgsConstructor;
 import org.hibernate.Hibernate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,18 +20,19 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class SubmissionServiceImpl implements SubmissionService {
 
-    @Autowired private CandidateSubmissionRepository submissionRepository;
-    @Autowired private CandidateAnswerRepository answerRepository;
-    @Autowired private AnswerScoreRepository scoreRepository;
-    @Autowired private CandidateRepository candidateRepository;
-    @Autowired private AssessmentRepository assessmentRepository;
-    @Autowired private AssessmentQuestionRepository assessmentQuestionRepository;
-    @Autowired private QuestionRepository questionRepository;
-    @Autowired private com.psybergate.recruitment.repository.SubmissionFlagRepository submissionFlagRepository;
-    @Autowired private com.psybergate.recruitment.repository.InvitationRepository invitationRepository;
-    @Autowired private com.psybergate.recruitment.repository.SubmissionQuestionSnapshotRepository snapshotRepository;
+    private final CandidateSubmissionRepository submissionRepository;
+    private final CandidateAnswerRepository answerRepository;
+    private final AnswerScoreRepository scoreRepository;
+    private final CandidateRepository candidateRepository;
+    private final AssessmentRepository assessmentRepository;
+    private final AssessmentQuestionRepository assessmentQuestionRepository;
+    private final QuestionRepository questionRepository;
+    private final com.psybergate.recruitment.repository.SubmissionFlagRepository submissionFlagRepository;
+    private final com.psybergate.recruitment.repository.InvitationRepository invitationRepository;
+    private final com.psybergate.recruitment.repository.SubmissionQuestionSnapshotRepository snapshotRepository;
 
     @Override
     public List<SubmissionSummaryResponse> listSubmissions(UUID assessmentId) {
