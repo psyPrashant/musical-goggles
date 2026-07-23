@@ -26,7 +26,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class CandidateTakeServiceImplTest {
+class CandidateTakeServiceTest {
 
     @Mock private AssessmentRepository assessmentRepository;
     @Mock private AssessmentQuestionRepository assessmentQuestionRepository;

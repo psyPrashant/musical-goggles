@@ -11,7 +11,7 @@ Measured after unit test expansion (2026-06-10):
 | Flag domain (`com.psybergate.recruitment.flag.*`) mutation coverage | 84% |
 | Flag domain test strength | 90% |
 
-Unit test count grew from 52 to 108 across 11 test classes. New unit test classes added: `InvitationServiceTest` (17 tests), `SubmissionServiceTest` (15 tests), `MarkingServiceTest` (8 tests), `AuthServiceTest` (7 tests). Existing classes expanded: `CandidateTakeServiceImplTest` (+8 tests), `CandidateHistoryServiceTest` (+1 test).
+Unit test count grew from 52 to 108 across 11 test classes. New unit test classes added: `InvitationServiceTest` (17 tests), `SubmissionServiceTest` (15 tests), `MarkingServiceTest` (8 tests), `AuthServiceTest` (7 tests). Existing classes expanded: `CandidateTakeServiceTest` (+8 tests, since renamed from `CandidateTakeServiceImplTest`), `CandidateHistoryServiceTest` (+1 test).
 
 The remaining 66% of mutations have no coverage (NO_COVERAGE) because those classes are only exercised by integration tests (excluded from PIT scope — see below). The test strength of 80% means that for mutants which ARE covered by unit tests, 80% are killed.
 
