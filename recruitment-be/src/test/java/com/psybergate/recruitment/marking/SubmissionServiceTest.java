@@ -407,6 +407,56 @@ class SubmissionServiceTest {
         assertThat(result.markingStatus()).isEqualTo("FULLY_MARKED");
     }
 
+    @Test
+    void getResult_questionBothStandaloneAndGroupMember_countsScoreOnce() {
+        // Regression test: a question appearing both as its own standalone
+        // AssessmentQuestion AND as a member of a GROUP question on the same
+        // assessment must not have its score/maxScore counted twice.
+        UUID sharedQuestionId = UUID.randomUUID();
+        UUID answerId = UUID.randomUUID();
+
+        TextQuestion sharedQ = new TextQuestion();
+        sharedQ.setId(sharedQuestionId);
+        sharedQ.setTitle("Shared Q");
+        sharedQ.setBody("body");
+        sharedQ.setMaxScore(5);
+
+        GroupQuestionMember member = new GroupQuestionMember();
+        member.setQuestion(sharedQ);
+        member.setDisplayOrder(0);
+
+        GroupQuestion groupQ = new GroupQuestion();
+        groupQ.setId(UUID.randomUUID());
+        groupQ.setTitle("Group Q");
+        groupQ.setBody("preamble");
+        groupQ.setMaxScore(5);
+        groupQ.setMembers(List.of(member));
+
+        AssessmentQuestion standaloneAq = buildAQ(sharedQ);
+        AssessmentQuestion groupAq = buildAQ(groupQ);
+
+        CandidateAnswer answer = buildAnswer(answerId, submissionId);
+        answer.setQuestionId(sharedQuestionId);
+        answer.setTextContent("Answer text");
+
+        AnswerScore score = new AnswerScore();
+        score.setCandidateAnswerId(answerId);
+        score.setScore(4);
+        score.setAutoMarked(false);
+        score.setMarkedAt(Instant.now());
+
+        setupGetResultMocks(List.of(standaloneAq, groupAq), List.of(answer), List.of(score));
+
+        ResultSummaryResponse result = service.getResult(submissionId);
+
+        // Only the GROUP entry is rendered — the standalone duplicate is skipped
+        assertThat(result.questions()).hasSize(1);
+        assertThat(result.questions().get(0).subQuestions()).hasSize(1);
+        assertThat(result.totalScore()).isEqualTo(4);
+        assertThat(result.maxScore()).isEqualTo(5);
+        assertThat(result.answeredCount()).isEqualTo(1);
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
 
     private CandidateAnswer buildAnswer(UUID answerId, UUID submissionId) {

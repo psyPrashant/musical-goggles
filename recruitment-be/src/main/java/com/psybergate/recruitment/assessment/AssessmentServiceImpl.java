@@ -16,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -108,6 +109,7 @@ public class AssessmentServiceImpl implements AssessmentService {
                 .ifPresentOrElse(
                         existing -> existing.setDisplayOrder(req.displayOrder()),
                         () -> {
+                            assertNoGroupOverlap(assessmentId, question);
                             AssessmentQuestion aq = new AssessmentQuestion();
                             aq.setAssessment(assessment);
                             aq.setQuestion(question);
@@ -119,6 +121,38 @@ public class AssessmentServiceImpl implements AssessmentService {
                 );
 
         return new AddQuestionResult(toDetailResponse(assessment), created[0]);
+    }
+
+    /**
+     * A question that's both a standalone entry and a member of a GROUP question on the
+     * same assessment would have its score counted twice when results are computed, so
+     * reject the combination at the source rather than relying on scoring code to dedupe.
+     */
+    private void assertNoGroupOverlap(UUID assessmentId, Question question) {
+        List<AssessmentQuestion> existing = assessmentQuestionRepository.findByAssessmentIdOrderByDisplayOrder(assessmentId);
+        Question rawQuestion = (Question) Hibernate.unproxy(question);
+
+        if (rawQuestion instanceof GroupQuestion gq) {
+            Set<UUID> memberIds = gq.getMembers().stream()
+                    .map(m -> m.getQuestion().getId())
+                    .collect(Collectors.toSet());
+            boolean conflict = existing.stream().anyMatch(aq -> memberIds.contains(aq.getQuestion().getId()));
+            if (conflict) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "One or more of this group's questions are already on the assessment individually");
+            }
+        } else {
+            boolean conflict = existing.stream()
+                    .map(aq -> (Question) Hibernate.unproxy(aq.getQuestion()))
+                    .filter(GroupQuestion.class::isInstance)
+                    .map(GroupQuestion.class::cast)
+                    .flatMap(g -> g.getMembers().stream())
+                    .anyMatch(m -> m.getQuestion().getId().equals(rawQuestion.getId()));
+            if (conflict) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "This question is already included in a group question on this assessment");
+            }
+        }
     }
 
     @Override

@@ -176,6 +176,18 @@ public class SubmissionServiceImpl implements SubmissionService {
                 scoreRepository.findByCandidateAnswerIdIn(answerIds).stream()
                         .collect(Collectors.toMap(AnswerScore::getCandidateAnswerId, Function.identity()));
 
+        // A question can end up both as its own standalone entry AND as a member of a
+        // GROUP question on the same assessment (should be prevented going forward by
+        // AssessmentServiceImpl.addQuestion(), but guards pre-existing data too). Skip the
+        // standalone entry in that case so its score/max score isn't counted twice.
+        Set<UUID> groupMemberQuestionIds = aqList.stream()
+                .map(aq -> (Question) Hibernate.unproxy(aq.getQuestion()))
+                .filter(GroupQuestion.class::isInstance)
+                .map(GroupQuestion.class::cast)
+                .flatMap(gq -> gq.getMembers().stream())
+                .map(m -> m.getQuestion().getId())
+                .collect(Collectors.toSet());
+
         // Build per-question DTOs
         List<ResultQuestionDto> questionDtos = new ArrayList<>();
         int totalScore = 0;
@@ -184,6 +196,10 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         for (AssessmentQuestion aq : aqList) {
             Question rawQ = (Question) Hibernate.unproxy(aq.getQuestion());
+
+            if (!(rawQ instanceof GroupQuestion) && groupMemberQuestionIds.contains(rawQ.getId())) {
+                continue; // already counted as part of its group above
+            }
 
             if (rawQ instanceof GroupQuestion gq) {
                 // Expand GROUP into nested sub-question DTOs
@@ -274,7 +290,9 @@ public class SubmissionServiceImpl implements SubmissionService {
         String markingStatus = fullyMarked && !aqList.isEmpty() ? "FULLY_MARKED" : "PENDING_REVIEW";
 
         int maxScore = aqList.stream()
-                .mapToInt(aq -> ((Question) Hibernate.unproxy(aq.getQuestion())).getMaxScore())
+                .map(aq -> (Question) Hibernate.unproxy(aq.getQuestion()))
+                .filter(q -> q instanceof GroupQuestion || !groupMemberQuestionIds.contains(q.getId()))
+                .mapToInt(Question::getMaxScore)
                 .sum();
 
         return new ResultSummaryResponse(
@@ -366,13 +384,20 @@ public class SubmissionServiceImpl implements SubmissionService {
         for (UUID assessmentId : nonRandomisedIds) {
             List<AssessmentQuestion> aqItems = assessmentQuestionRepository
                     .findByAssessmentIdOrderByDisplayOrder(assessmentId);
+            Set<UUID> groupMemberQIds = aqItems.stream()
+                    .map(aqItem -> (Question) Hibernate.unproxy(aqItem.getQuestion()))
+                    .filter(GroupQuestion.class::isInstance)
+                    .map(GroupQuestion.class::cast)
+                    .flatMap(gq -> gq.getMembers().stream())
+                    .map(m -> m.getQuestion().getId())
+                    .collect(Collectors.toSet());
             List<UUID> slots = new ArrayList<>();
             for (AssessmentQuestion aqItem : aqItems) {
                 Question q = (Question) Hibernate.unproxy(aqItem.getQuestion());
                 if (q instanceof GroupQuestion gq) {
                     Hibernate.initialize(gq.getMembers());
                     gq.getMembers().forEach(m -> slots.add(m.getQuestion().getId()));
-                } else {
+                } else if (!groupMemberQIds.contains(q.getId())) {
                     slots.add(q.getId());
                 }
             }
@@ -388,15 +413,23 @@ public class SubmissionServiceImpl implements SubmissionService {
             if (!randomisedAssessmentIds.contains(aId)) continue;
             List<AssessmentQuestion> snapshotAqs = resolveQuestionsForResult(
                     assessmentById.get(aId), sub.getId());
+            Set<UUID> groupMemberQIds = snapshotAqs.stream()
+                    .map(aqItem -> (Question) Hibernate.unproxy(aqItem.getQuestion()))
+                    .filter(GroupQuestion.class::isInstance)
+                    .map(GroupQuestion.class::cast)
+                    .flatMap(gq -> gq.getMembers().stream())
+                    .map(m -> m.getQuestion().getId())
+                    .collect(Collectors.toSet());
             List<UUID> slots = new ArrayList<>();
             int maxScore = 0;
             for (AssessmentQuestion aqItem : snapshotAqs) {
                 Question q = (Question) Hibernate.unproxy(aqItem.getQuestion());
-                maxScore += q.getMaxScore();
                 if (q instanceof GroupQuestion gq) {
+                    maxScore += q.getMaxScore();
                     Hibernate.initialize(gq.getMembers());
                     gq.getMembers().forEach(m -> slots.add(m.getQuestion().getId()));
-                } else {
+                } else if (!groupMemberQIds.contains(q.getId())) {
+                    maxScore += q.getMaxScore();
                     slots.add(q.getId());
                 }
             }
