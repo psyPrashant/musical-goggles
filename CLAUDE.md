@@ -38,15 +38,22 @@ Integration tests use TestContainers — Docker Desktop must be running. If test
 ### Stack & Architecture
 
 - **Spring Boot 4.0.6**, Java 17, Maven
-- **Spring Security** + **Spring Session JDBC** — session-based auth persisted in PostgreSQL
+- **Spring Security** with JWT auth + **Spring Session JDBC** — session-based auth persisted in PostgreSQL
 - **Spring Web MVC** for REST; **Spring Web Services** for SOAP endpoints
 - **Spring Mail** for email notifications
-- **PostgreSQL** as the database (configure via `application.yaml`)
+- **PostgreSQL** as the database, schema managed via **Flyway** (`src/main/resources/db/migration`)
 - **Lombok** for reducing boilerplate
 
 Base package: `com.psybergate.recruitment`
 
-`application.yaml` currently only sets the app name — database, mail, and security config will need to be added as the project grows.
+Config lives in `application.yaml` plus `application-{dev,staging,prod}.yaml` profiles — datasource, Flyway, JWT secret/expiry, mail, and the Piston sandbox are all externalized via environment variables with dev-only local defaults. `ddl-auto` is `none`/`validate` outside `dev`; never rely on Hibernate to manage schema — add a Flyway migration instead.
+
+### Conventions
+
+- **Package-by-feature**: each feature package (`assessment/`, `candidate/`, `flag/`, etc.) owns its controller, `XxxService` interface + `XxxServiceImpl`, and `dto/` subpackage. Entities/repositories used by a single feature live in that feature's `domain/`/`repository/` subpackage; anything used by 2+ features stays in the shared top-level `domain/`/`repository/` packages.
+- **Always inject the service interface**, never the impl, from controllers and other services.
+- **Constructor injection via Lombok `@RequiredArgsConstructor`** with `private final` fields — no field-level `@Autowired`.
+- Unmapped/unexpected exceptions are caught by `common/GlobalExceptionHandler` (`@RestControllerAdvice`), which logs server-side and returns a `ProblemDetail` response. `ResponseStatusException` and `@ResponseStatus`-annotated custom exceptions keep their existing status/reason — extend that class rather than adding ad hoc `try/catch` for new failure modes.
 
 ## Frontend (`recruitment-fe/`)
 

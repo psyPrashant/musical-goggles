@@ -73,10 +73,10 @@ The repository is split into two sub-projects:
 recruitment-project/
 ├── recruitment-be/                 # Spring Boot REST API
 │   ├── src/main/java/com/psybergate/recruitment/
-│   │   ├── api/                    # Health / ping endpoints
 │   │   ├── auth/                   # Login / candidate token generation
 │   │   ├── assessment/             # Assessment CRUD + question assembly
 │   │   ├── candidate/              # Candidate management
+│   │   ├── common/                 # Global exception handling
 │   │   ├── dashboard/              # Dashboard statistics
 │   │   ├── flag/                   # Submission flagging workflow
 │   │   ├── invitation/             # Candidate invitations
@@ -85,7 +85,7 @@ recruitment-project/
 │   │   ├── reminder/               # Scheduled reminder emails
 │   │   ├── security/               # JWT filter + security config
 │   │   ├── take/                   # Candidate assessment taking flow
-│   │   └── domain/                 # JPA entities
+│   │   └── domain/                 # Shared JPA entities (feature-owned entities live in each feature's own domain/ subpackage)
 │   ├── src/main/resources/
 │   │   ├── db/migration/           # Flyway migration scripts
 │   │   ├── db/seed/                # Dev seed data
@@ -302,10 +302,67 @@ npx tsc --noEmit
 
 > **Note:** On Docker Engine 29+, if integration tests fail with "Could not find a valid Docker environment", create or update `%USERPROFILE%\.docker-java.properties` with `api.version=1.44`.
 
+**Last run: 2026-07-23 — 241/241 passing**
+
+| Test class | Type | Tests |
+|---|---|---|
+| `AssessmentControllerIntegrationTest` | Integration | 27 |
+| `AuthControllerIntegrationTest` | Integration | 5 |
+| `AuthServiceTest` | Unit | 7 |
+| `CandidateAuthControllerIntegrationTest` | Integration | 3 |
+| `CandidateControllerIntegrationTest` | Integration | 7 |
+| `CandidateHistoryIntegrationTest` | Integration | 4 |
+| `CandidateHistoryServiceTest` | Unit | 7 |
+| `CandidateServiceTest` | Unit | 8 |
+| `CandidateTakeControllerIntegrationTest` | Integration | 12 |
+| `CandidateTakeServiceTest` | Unit | 11 |
+| `CodeExecutionControllerIntegrationTest` | Integration | 6 |
+| `CodeExecutionServiceTest` | Unit | 11 |
+| `DashboardControllerIntegrationTest` | Integration | 1 |
+| `DashboardServiceTest` | Unit | 3 |
+| `GlobalExceptionHandlerTest` | Unit | 5 |
+| `InvitationControllerIntegrationTest` | Integration | 3 |
+| `InvitationServiceTest` | Unit | 17 |
+| `JwtServiceTest` | Unit | 4 |
+| `MarkingIntegrationTest` | Integration | 11 |
+| `MarkingServiceTest` | Unit | 8 |
+| `QuestionControllerIntegrationTest` | Integration | 19 |
+| `RecruitmentApplicationTests` | Integration | 1 |
+| `ReminderControllerIntegrationTest` | Integration | 5 |
+| `ReminderServiceTest` | Unit | 6 |
+| `SubmissionFlagIntegrationTest` | Integration | 10 |
+| `SubmissionFlagServiceTest` | Unit | 22 |
+| `SubmissionServiceTest` | Unit | 15 |
+| `TagControllerIntegrationTest` | Integration | 3 |
+| **Total** | **28 classes** | **241** |
+
 ### Frontend
 
 - Unit tests use Vitest with jsdom
 - Type-checking is enforced via `npx tsc --noEmit`
+
+**Last run: 2026-07-23 — 102/102 passing**
+
+| Spec file | Tests |
+|---|---|
+| `app.spec.ts` | 1 |
+| `core/auth/auth.service.spec.ts` | 7 |
+| `core/candidate/candidate.service.spec.ts` | 3 |
+| `core/flag/flag.service.spec.ts` | 7 |
+| `core/marking/marking.service.spec.ts` | 4 |
+| `core/take/candidate-take.service.spec.ts` | 3 |
+| `features/assessments/assessment-detail.component.spec.ts` | 4 |
+| `features/assessments/assessment-form.component.spec.ts` | 5 |
+| `features/assessments/assessment-preview.component.spec.ts` | 4 |
+| `features/assessments/assessment-take.component.spec.ts` | 14 |
+| `features/candidates/candidates.component.spec.ts` | 12 |
+| `features/dashboard/dashboard.component.spec.ts` | 4 |
+| `features/flags/flagged-submissions.component.spec.ts` | 15 |
+| `features/results/results.component.spec.ts` | 7 |
+| `guards/auth.guard.spec.ts` | 2 |
+| `shared/code-editor/code-editor.component.spec.ts` | 4 |
+| `shared/code-runner/code-runner-panel.component.spec.ts` | 6 |
+| **Total** | **17 files, 102** |
 
 ## CI / CD
 
