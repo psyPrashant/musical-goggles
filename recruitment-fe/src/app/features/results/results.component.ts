@@ -1103,10 +1103,18 @@ export class ResultsComponent implements OnInit {
             this.result.set(updated);
             this.editScores.update(e => { const c = {...e}; delete c[q.questionId]; return c; });
             this.editFeedback.update(e => { const c = {...e}; delete c[q.questionId]; return c; });
-            // Update marking progress in list
+            // Update marking progress and score in list — reuse the same GROUP-aware
+            // count as the detail view's "X/Y questions marked" badge so the two stay
+            // consistent (a flat filter() undercounts submissions with GROUP questions).
+            const markedCount = this.markedQuestionCount();
             this.submissions.update(list => list.map(sub =>
               sub.submissionId === s.submissionId
-                ? { ...sub, markedCount: updated.questions.filter(qq => qq.score !== null).length }
+                ? {
+                    ...sub,
+                    markedCount,
+                    totalScore: updated.totalScore,
+                    maxScore: updated.maxScore,
+                  }
                 : sub
             ));
           },

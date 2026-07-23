@@ -246,33 +246,33 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
               </div>
             </div>
 
-            <div class="settings-card">
-              <span class="settings-section-label">Notifications</span>
+            <div class="settings-card settings-card--disabled">
+              <span class="settings-section-label">Notifications <span class="coming-soon-badge">Coming soon</span></span>
               <label class="toggle-label">
-                <div class="toggle" [class.on]="notifyOnSubmit()" (click)="notifyOnSubmit.set(!notifyOnSubmit())">
+                <div class="toggle">
                   <div class="toggle-thumb"></div>
                 </div>
                 Email notification when a candidate submits
               </label>
             </div>
 
-            <div class="settings-card">
-              <span class="settings-section-label">Anti-Cheating</span>
+            <div class="settings-card settings-card--disabled">
+              <span class="settings-section-label">Anti-Cheating <span class="coming-soon-badge">Coming soon</span></span>
               <div class="toggle-group">
                 <label class="toggle-label">
-                  <div class="toggle" [class.on]="tabMonitor()" (click)="tabMonitor.set(!tabMonitor())">
+                  <div class="toggle">
                     <div class="toggle-thumb"></div>
                   </div>
                   Detect and log tab switching / focus loss
                 </label>
                 <label class="toggle-label">
-                  <div class="toggle" [class.on]="aiDetect()" (click)="aiDetect.set(!aiDetect())">
+                  <div class="toggle">
                     <div class="toggle-thumb"></div>
                   </div>
                   Flag potentially AI-generated responses
                 </label>
                 <label class="toggle-label">
-                  <div class="toggle" [class.on]="clipMonitor()" (click)="clipMonitor.set(!clipMonitor())">
+                  <div class="toggle">
                     <div class="toggle-thumb"></div>
                   </div>
                   Monitor clipboard paste activity
@@ -784,6 +784,25 @@ import { Difficulty, Question, QuestionType } from '../../core/question/question
       margin-bottom: 14px;
     }
 
+    .settings-card--disabled {
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    .coming-soon-badge {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: var(--border);
+      color: var(--text-2);
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: normal;
+      vertical-align: middle;
+    }
+
     .settings-desc { font-size: 13px; color: var(--text-2); margin-bottom: 14px; }
 
     .toggle-group { display: flex; flex-direction: column; gap: 14px; }
@@ -863,10 +882,6 @@ export class AssessmentBuilderComponent implements OnInit {
   readonly accessPassword = signal('');
   readonly startDate = signal('');
   readonly endDate = signal('');
-  readonly notifyOnSubmit = signal(true);
-  readonly tabMonitor = signal(true);
-  readonly aiDetect = signal(false);
-  readonly clipMonitor = signal(false);
   readonly randomiseQuestions = signal(false);
   readonly randomisationQuotas = signal<Record<QuestionType, number>>({} as Record<QuestionType, number>);
 
