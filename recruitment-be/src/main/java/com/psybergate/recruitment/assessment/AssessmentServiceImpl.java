@@ -6,8 +6,8 @@ import com.psybergate.recruitment.repository.AssessmentQuestionRepository;
 import com.psybergate.recruitment.repository.AssessmentRepository;
 import com.psybergate.recruitment.repository.QuestionRepository;
 import com.psybergate.recruitment.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.hibernate.Hibernate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,13 +21,14 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class AssessmentServiceImpl implements AssessmentService {
 
-    @Autowired private AssessmentRepository assessmentRepository;
-    @Autowired private AssessmentQuestionRepository assessmentQuestionRepository;
-    @Autowired private QuestionRepository questionRepository;
-    @Autowired private UserRepository userRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
+    private final AssessmentRepository assessmentRepository;
+    private final AssessmentQuestionRepository assessmentQuestionRepository;
+    private final QuestionRepository questionRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public AssessmentDetailResponse create(AssessmentRequest req, UUID createdById) {
@@ -57,6 +58,16 @@ public class AssessmentServiceImpl implements AssessmentService {
     @Transactional(readOnly = true)
     public AssessmentDetailResponse findById(UUID id) {
         return toDetailResponse(requireAssessment(id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean verifyAccessPassword(UUID assessmentId, String rawPassword) {
+        Assessment assessment = requireAssessment(assessmentId);
+        if (assessment.getAccessPasswordHash() == null) {
+            return true;
+        }
+        return passwordEncoder.matches(rawPassword, assessment.getAccessPasswordHash());
     }
 
     @Override

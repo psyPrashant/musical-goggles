@@ -6,7 +6,7 @@ import com.psybergate.recruitment.take.dto.SaveAnswersResponse;
 import com.psybergate.recruitment.take.dto.SubmitRequest;
 import com.psybergate.recruitment.take.dto.SubmitResponse;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -17,10 +17,10 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/take")
 @PreAuthorize("hasRole('CANDIDATE')")
+@RequiredArgsConstructor
 public class CandidateTakeController {
 
-    @Autowired
-    private CandidateTakeService takeService;
+    private final CandidateTakeService takeService;
 
     @GetMapping("/assessment")
     public ResponseEntity<AssessmentTakeResponse> loadAssessment(Authentication auth) {

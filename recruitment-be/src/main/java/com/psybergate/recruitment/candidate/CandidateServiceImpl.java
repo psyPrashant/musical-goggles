@@ -8,7 +8,7 @@ import com.psybergate.recruitment.domain.*;
 import com.psybergate.recruitment.repository.SubmissionFlagRepository;
 import com.psybergate.recruitment.email.EmailService;
 import com.psybergate.recruitment.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,16 +20,17 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class CandidateServiceImpl implements CandidateService {
 
-    @Autowired private CandidateRepository candidateRepository;
-    @Autowired private UserRepository userRepository;
-    @Autowired private InvitationRepository invitationRepository;
-    @Autowired private CandidateSubmissionRepository submissionRepository;
-    @Autowired private CandidateAnswerRepository answerRepository;
-    @Autowired private AnswerScoreRepository scoreRepository;
-    @Autowired private EmailService emailService;
-    @Autowired private SubmissionFlagRepository flagRepository;
+    private final CandidateRepository candidateRepository;
+    private final UserRepository userRepository;
+    private final InvitationRepository invitationRepository;
+    private final CandidateSubmissionRepository submissionRepository;
+    private final CandidateAnswerRepository answerRepository;
+    private final AnswerScoreRepository scoreRepository;
+    private final EmailService emailService;
+    private final SubmissionFlagRepository flagRepository;
 
     @Override
     public CandidateResponse create(CandidateRequest request, UUID createdById) {

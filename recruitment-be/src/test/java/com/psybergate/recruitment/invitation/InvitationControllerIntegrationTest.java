@@ -20,6 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.Instant;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -95,11 +96,7 @@ class InvitationControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isConflict())
-                .andExpect(result -> {
-                    String msg = result.getResponse().getErrorMessage();
-                    assert "ASSESSMENT_ALREADY_COMPLETED".equals(msg)
-                            : "Expected ASSESSMENT_ALREADY_COMPLETED but got: " + msg;
-                });
+                .andExpect(jsonPath("$.detail").value("ASSESSMENT_ALREADY_COMPLETED"));
     }
 
     @Test
@@ -120,11 +117,7 @@ class InvitationControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isConflict())
-                .andExpect(result -> {
-                    String msg = result.getResponse().getErrorMessage();
-                    assert "ASSESSMENT_ALREADY_COMPLETED".equals(msg)
-                            : "Expected ASSESSMENT_ALREADY_COMPLETED but got: " + msg;
-                });
+                .andExpect(jsonPath("$.detail").value("ASSESSMENT_ALREADY_COMPLETED"));
     }
 
     @Test
@@ -151,17 +144,12 @@ class InvitationControllerIntegrationTest extends AbstractIntegrationTest {
         InviteRequest req = new InviteRequest(candidate.getId(), assessment.getId());
 
         // IN_PROGRESS must NOT trigger ASSESSMENT_ALREADY_COMPLETED guard.
-        // The request is blocked by ACTIVE_INVITE_EXISTS (the earlier guard), which does not
-        // set an HTTP error message — so we simply assert the completion guard error is absent.
+        // The request is blocked by ACTIVE_INVITE_EXISTS (the earlier guard) instead.
         mockMvc.perform(post("/api/invitations")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isConflict())
-                .andExpect(result -> {
-                    String msg = result.getResponse().getErrorMessage();
-                    assert !"ASSESSMENT_ALREADY_COMPLETED".equals(msg)
-                            : "IN_PROGRESS submission should not trigger completion guard";
-                });
+                .andExpect(jsonPath("$.detail").value(not("ASSESSMENT_ALREADY_COMPLETED")));
     }
 }

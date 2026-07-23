@@ -6,7 +6,7 @@ import com.psybergate.recruitment.candidate.dto.CandidateRequest;
 import com.psybergate.recruitment.candidate.dto.CandidateResponse;
 import com.psybergate.recruitment.candidate.dto.ContactCandidateRequest;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,10 +19,10 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/candidates")
 @PreAuthorize("hasAnyRole('ADMIN','RECRUITER')")
+@RequiredArgsConstructor
 public class CandidateController {
 
-    @Autowired
-    private CandidateService candidateService;
+    private final CandidateService candidateService;
 
     @PostMapping
     public ResponseEntity<CandidateResponse> create(@RequestBody @Valid CandidateRequest request,

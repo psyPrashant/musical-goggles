@@ -1,4 +1,4 @@
-package com.psybergate.recruitment.repository;
+package com.psybergate.recruitment.tag.repository;
 
 import com.psybergate.recruitment.domain.Tag;
 import org.springframework.data.jpa.repository.JpaRepository;

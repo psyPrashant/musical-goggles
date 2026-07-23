@@ -6,6 +6,7 @@ import com.psybergate.recruitment.TestDatasourceInitializer;
 import com.psybergate.recruitment.domain.*;
 import com.psybergate.recruitment.domain.SubmissionStatus;
 import com.psybergate.recruitment.marking.dto.ScoreAnswerRequest;
+import com.psybergate.recruitment.question.domain.TextQuestion;
 import com.psybergate.recruitment.repository.*;
 import com.psybergate.recruitment.security.JwtService;
 import com.psybergate.recruitment.take.dto.SubmitRequest;

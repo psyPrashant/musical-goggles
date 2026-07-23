@@ -26,4 +26,6 @@ public interface AssessmentService {
     AssessmentPreviewResponse getPreview(UUID assessmentId);
 
     AssessmentDetailResponse reorderQuestions(UUID assessmentId, ReorderAssessmentQuestionsRequest request);
+
+    boolean verifyAccessPassword(UUID assessmentId, String rawPassword);
 }

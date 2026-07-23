@@ -1,15 +1,13 @@
 package com.psybergate.recruitment.candidate;
 
+import com.psybergate.recruitment.assessment.AssessmentService;
 import com.psybergate.recruitment.candidate.dto.VerifyPasswordRequest;
-import com.psybergate.recruitment.domain.Assessment;
-import com.psybergate.recruitment.repository.AssessmentRepository;
 import com.psybergate.recruitment.security.JwtService;
 import io.jsonwebtoken.Claims;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -18,11 +16,11 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/candidate/assessments")
+@RequiredArgsConstructor
 public class CandidateAssessmentController {
 
-    @Autowired private AssessmentRepository assessmentRepository;
-    @Autowired private JwtService jwtService;
-    @Autowired private PasswordEncoder passwordEncoder;
+    private final AssessmentService assessmentService;
+    private final JwtService jwtService;
 
     @PostMapping("/{assessmentId}/verify-password")
     public ResponseEntity<Map<String, Boolean>> verifyPassword(
@@ -42,14 +40,7 @@ public class CandidateAssessmentController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Token does not match this assessment");
         }
 
-        Assessment assessment = assessmentRepository.findById(assessmentId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assessment not found"));
-
-        if (assessment.getAccessPasswordHash() == null) {
-            return ResponseEntity.ok(Map.of("valid", true));
-        }
-
-        boolean valid = passwordEncoder.matches(request.password(), assessment.getAccessPasswordHash());
+        boolean valid = assessmentService.verifyAccessPassword(assessmentId, request.password());
         return ResponseEntity.ok(Map.of("valid", valid));
     }
 }

@@ -20,7 +20,7 @@ class JwtServiceTest {
 
     @BeforeEach
     void setUp() {
-        jwtService = new JwtService(SECRET, 1L);
+        jwtService = new JwtServiceImpl(SECRET, 1L);
     }
 
     @Test

@@ -5,7 +5,7 @@ import com.psybergate.recruitment.marking.dto.ResultSummaryResponse;
 import com.psybergate.recruitment.marking.dto.ScoreAnswerRequest;
 import com.psybergate.recruitment.marking.dto.SubmissionSummaryResponse;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -16,10 +16,10 @@ import java.util.UUID;
 
 @RestController
 @PreAuthorize("hasAnyRole('RECRUITER','ADMIN')")
+@RequiredArgsConstructor
 public class SubmissionController {
 
-    @Autowired
-    private SubmissionService submissionService;
+    private final SubmissionService submissionService;
 
     /** List all submissions for a specific assessment (MG-36) */
     @GetMapping("/api/assessments/{assessmentId}/submissions")

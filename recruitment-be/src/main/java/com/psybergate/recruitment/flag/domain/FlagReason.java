@@ -1,4 +1,4 @@
-package com.psybergate.recruitment.domain;
+package com.psybergate.recruitment.flag.domain;
 
 public enum FlagReason {
     COPIED_ANSWERS,

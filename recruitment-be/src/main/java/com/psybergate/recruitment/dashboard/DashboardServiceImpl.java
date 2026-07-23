@@ -7,7 +7,7 @@ import com.psybergate.recruitment.domain.*;
 import com.psybergate.recruitment.marking.SubmissionService;
 import com.psybergate.recruitment.marking.dto.SubmissionSummaryResponse;
 import com.psybergate.recruitment.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class DashboardServiceImpl implements DashboardService {
 
     private static final List<InvitationStatus> ACTIVE_INVITATION_STATUSES =
@@ -30,12 +31,12 @@ public class DashboardServiceImpl implements DashboardService {
     private static final List<SubmissionStatus> ALL_SUBMISSION_STATUSES =
             List.of(SubmissionStatus.IN_PROGRESS, SubmissionStatus.SUBMITTED, SubmissionStatus.AUTO_SUBMITTED);
 
-    @Autowired private InvitationRepository invitationRepository;
-    @Autowired private CandidateSubmissionRepository submissionRepository;
-    @Autowired private AnswerScoreRepository answerScoreRepository;
-    @Autowired private CandidateRepository candidateRepository;
-    @Autowired private SubmissionFlagRepository flagRepository;
-    @Autowired private SubmissionService submissionService;
+    private final InvitationRepository invitationRepository;
+    private final CandidateSubmissionRepository submissionRepository;
+    private final AnswerScoreRepository answerScoreRepository;
+    private final CandidateRepository candidateRepository;
+    private final SubmissionFlagRepository flagRepository;
+    private final SubmissionService submissionService;
 
     private static final List<FlagStatus> OPEN_FLAG_STATUSES =
             List.of(FlagStatus.FLAGGED, FlagStatus.UNDER_REVIEW);

@@ -2,8 +2,8 @@ package com.psybergate.recruitment.marking;
 
 import com.psybergate.recruitment.domain.*;
 import com.psybergate.recruitment.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.hibernate.Hibernate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,11 +13,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class MarkingServiceImpl implements MarkingService {
 
-    @Autowired private CandidateAnswerRepository answerRepository;
-    @Autowired private AnswerScoreRepository scoreRepository;
-    @Autowired private QuestionRepository questionRepository;
+    private final CandidateAnswerRepository answerRepository;
+    private final AnswerScoreRepository scoreRepository;
+    private final QuestionRepository questionRepository;
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)

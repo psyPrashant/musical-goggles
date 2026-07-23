@@ -1,7 +1,7 @@
 package com.psybergate.recruitment.flag;
 
-import com.psybergate.recruitment.domain.FlagReason;
 import com.psybergate.recruitment.domain.FlagStatus;
+import com.psybergate.recruitment.flag.domain.FlagReason;
 import com.psybergate.recruitment.flag.dto.*;
 
 import java.time.LocalDate;

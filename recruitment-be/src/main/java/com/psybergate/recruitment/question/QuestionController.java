@@ -3,7 +3,7 @@ package com.psybergate.recruitment.question;
 import com.psybergate.recruitment.question.dto.QuestionRequest;
 import com.psybergate.recruitment.question.dto.QuestionResponse;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,10 +16,10 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/questions")
 @PreAuthorize("hasAnyRole('ADMIN','RECRUITER')")
+@RequiredArgsConstructor
 public class QuestionController {
 
-    @Autowired
-    private QuestionService questionService;
+    private final QuestionService questionService;
 
     @PostMapping
     public ResponseEntity<QuestionResponse> create(@RequestBody @Valid QuestionRequest request,

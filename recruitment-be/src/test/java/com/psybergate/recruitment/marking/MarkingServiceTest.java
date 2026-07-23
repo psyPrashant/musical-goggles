@@ -1,6 +1,7 @@
 package com.psybergate.recruitment.marking;
 
 import com.psybergate.recruitment.domain.*;
+import com.psybergate.recruitment.question.domain.TextQuestion;
 import com.psybergate.recruitment.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -6,8 +6,8 @@ import com.psybergate.recruitment.domain.SubmissionStatus;
 import com.psybergate.recruitment.email.EmailService;
 import com.psybergate.recruitment.repository.CandidateSubmissionRepository;
 import com.psybergate.recruitment.repository.InvitationRepository;
-import com.psybergate.recruitment.repository.ReminderSendLogRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.psybergate.recruitment.reminder.repository.ReminderSendLogRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -23,15 +23,16 @@ import java.util.UUID;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class ReminderServiceImpl implements ReminderService {
 
     @Value("${app.base-url}")
     private String baseUrl;
 
-    @Autowired private InvitationRepository invitationRepository;
-    @Autowired private CandidateSubmissionRepository submissionRepository;
-    @Autowired private ReminderSendLogRepository reminderLogRepository;
-    @Autowired private EmailService emailService;
+    private final InvitationRepository invitationRepository;
+    private final CandidateSubmissionRepository submissionRepository;
+    private final ReminderSendLogRepository reminderLogRepository;
+    private final EmailService emailService;
 
     @Override
     public ReminderSendLog sendManualReminder(UUID invitationId, UUID sentByUserId) {

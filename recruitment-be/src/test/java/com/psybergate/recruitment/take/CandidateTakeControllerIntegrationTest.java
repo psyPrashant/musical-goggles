@@ -4,6 +4,7 @@ import tools.jackson.databind.ObjectMapper;
 import com.psybergate.recruitment.AbstractIntegrationTest;
 import com.psybergate.recruitment.TestDatasourceInitializer;
 import com.psybergate.recruitment.domain.*;
+import com.psybergate.recruitment.question.domain.TextQuestion;
 import com.psybergate.recruitment.repository.*;
 
 import com.psybergate.recruitment.security.JwtService;
