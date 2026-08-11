@@ -27,6 +27,7 @@ public class GroqClient implements AiClient {
     private final AiProperties properties;
     private final RestClient restClient;
 
+    // Production constructor — builds RestClient from properties
     public GroqClient(AiProperties properties) {
         this.properties = properties;
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
@@ -37,8 +38,19 @@ public class GroqClient implements AiClient {
                 .build();
     }
 
+    // Package-private constructor for unit tests — accepts a pre-built RestClient
+    public GroqClient(AiProperties properties, RestClient restClient) {
+        this.properties = properties;
+        this.restClient = restClient;
+    }
+
     @Override
     public String sendPrompt(String prompt) {
+        // Fail at point of use — avoids breaking context startup when key is not configured
+        if (properties.apiKey() == null || properties.apiKey().isBlank()) {
+            throw new AiAuthenticationException("AI provider is not configured: missing API key");
+        }
+
         long startTime = System.currentTimeMillis();
         log.info("AI request initiated — provider: Groq, model: {}", properties.model());
 
@@ -56,13 +68,14 @@ public class GroqClient implements AiClient {
                     .body(request)
                     .retrieve()
                     .onStatus(status -> status.value() == 401, (req, res) -> {
-                        throw new AiAuthenticationException("AI authentication failed: invalid API key");
+                        throw new AiAuthenticationException("AI provider rejected the request due to an authentication failure");
                     })
                     .onStatus(status -> status.value() == 429, (req, res) -> {
-                        throw new AiRateLimitException("AI rate limit exceeded: too many requests");
+                        throw new AiRateLimitException("AI provider is temporarily unavailable due to rate limiting");
                     })
                     .onStatus(status -> status.is5xxServerError(), (req, res) -> {
-                        throw new AiCommunicationException("AI provider error: " + res.getStatusCode());
+                        log.error("AI request failed — provider returned server error status: {}", res.getStatusCode().value());
+                        throw new AiCommunicationException("The AI provider is currently unavailable");
                     })
                     .body(GroqChatResponse.class);
 
@@ -71,7 +84,7 @@ public class GroqClient implements AiClient {
                     || response.choices().isEmpty()
                     || response.choices().get(0).message() == null) {
                 long elapsed = System.currentTimeMillis() - startTime;
-                AiResponseException ex = new AiResponseException("AI response missing expected content structure");
+                AiResponseException ex = new AiResponseException("The AI provider returned an unrecognised response structure");
                 log.error("AI request failed — type: {}, elapsed: {}ms", ex.getClass().getSimpleName(), elapsed);
                 throw ex;
             }
@@ -79,7 +92,7 @@ public class GroqClient implements AiClient {
             String content = response.choices().get(0).message().content();
             if (content == null || content.isBlank()) {
                 long elapsed = System.currentTimeMillis() - startTime;
-                AiResponseException ex = new AiResponseException("AI response returned null or blank content");
+                AiResponseException ex = new AiResponseException("The AI provider returned an empty response");
                 log.error("AI request failed — type: {}, elapsed: {}ms", ex.getClass().getSimpleName(), elapsed);
                 throw ex;
             }
@@ -96,11 +109,12 @@ public class GroqClient implements AiClient {
             long elapsed = System.currentTimeMillis() - startTime;
             RuntimeException mapped;
             if (ex.getCause() instanceof SocketTimeoutException) {
-                mapped = new AiTimeoutException("AI request timed out after " + properties.timeoutSeconds() + " seconds");
+                mapped = new AiTimeoutException("The AI provider did not respond in time");
             } else {
-                mapped = new AiCommunicationException("AI request failed due to network error: " + ex.getMessage());
+                mapped = new AiCommunicationException("Unable to reach the AI provider");
             }
-            log.error("AI request failed — type: {}, elapsed: {}ms", mapped.getClass().getSimpleName(), elapsed);
+            log.error("AI request failed — type: {}, cause: {}, elapsed: {}ms",
+                    mapped.getClass().getSimpleName(), ex.getClass().getSimpleName(), elapsed);
             throw mapped;
         }
     }
