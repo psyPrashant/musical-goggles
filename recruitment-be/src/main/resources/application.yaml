@@ -34,3 +34,11 @@ piston:
   compile-timeout-ms: 10000
   min-interval-ms: 1100
   max-queue-wait-ms: 8000
+
+ai:
+  groq:
+    api-key: ${GROQ_API_KEY:}
+    base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1}
+    model: ${GROQ_MODEL:llama-3.3-70b-versatile}
+    temperature: ${GROQ_TEMPERATURE:0.7}
+    timeout-seconds: ${GROQ_TIMEOUT_SECONDS:30}
