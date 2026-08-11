@@ -160,6 +160,14 @@ DB_PASSWORD=recruitment
 SPRING_PROFILES_ACTIVE=dev
 ```
 
+To enable AI features, add your Groq API key to `.env`:
+
+```env
+GROQ_API_KEY=your-key-here
+```
+
+Get a free key at https://console.groq.com. The app starts and runs normally without it — only AI-backed features will return an error at call time.
+
 ### Run with Docker Compose
 
 The simplest way to run everything together:
